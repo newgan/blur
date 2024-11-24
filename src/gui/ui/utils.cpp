@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "base/fs.h"
 
 #ifdef _WIN32
 #	include <windows.h>
@@ -132,8 +133,8 @@ bool utils::show_file_selector( // aseprite
 #if LAF_LINUX // As the X11 version doesn't store the default path to
               // start navigating, we use our own
               // get_initial_path_to_select_filename()
-			dlg->setFileName(get_initial_path_to_select_filename(initialPath));
-#else // !LAF_LINUX
+			  //	dlg->setFileName(get_initial_path_to_select_filename(initialPath));
+#else         // !LAF_LINUX
 			dlg->setFileName(initialPath);
 #endif
 
@@ -152,7 +153,7 @@ bool utils::show_file_selector( // aseprite
 
 #if LAF_LINUX // Save the path in the configuration file
 					if (!output.empty()) {
-						set_current_dir_for_file_selector(base::get_file_path(output[0]));
+						// set_current_dir_for_file_selector(base::get_file_path(output[0]));
 					}
 #endif
 
