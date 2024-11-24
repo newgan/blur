@@ -163,7 +163,12 @@
 
       # Link the .icns file to the target
       target_sources(blur-gui PRIVATE resources/blur.icns)
-  endif()
+elseif(UNIX)
+  target_link_libraries(blur-gui PRIVATE 
+  X11
+  Xext
+  Xrandr)
+endif()
 
   set_target_properties(blur-gui PROPERTIES LINK_FLAGS
                                             "${LAF_BACKEND_LINK_FLAGS}")

@@ -238,3 +238,5 @@ poetry.toml
 
 # LSP config files
 pyrightconfig.json
+
+/vcpkg_installed
