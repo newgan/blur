@@ -189,24 +189,6 @@ void gui::event_loop() {
 	bool to_render = true;
 
 	while (!closing) {
-#ifdef _WIN32
-		HMONITOR screen_handle = (HMONITOR)window->screen()->nativeHandle();
-		static HMONITOR last_screen_handle;
-#elif defined(__APPLE__)
-		void* screen_handle = window->screen()->nativeHandle();
-		static void* last_screen_handle;
-#else
-		uint64_t screen_handle = (uint64_t)window->screen()->nativeHandle();
-		static int last_screen_handle;
-#endif
-
-		if (screen_handle != last_screen_handle) {
-			double rate = utils::get_display_refresh_rate(screen_handle);
-			vsync_frame_time = 1.f / (rate + vsync_extra_fps);
-			printf("switched screen, updated vsync_frame_time. refresh rate: %.2f hz\n", rate);
-			last_screen_handle = screen_handle;
-		}
-
 		auto frame_start = std::chrono::steady_clock::now();
 
 		update_vsync();
