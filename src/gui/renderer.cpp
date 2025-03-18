@@ -274,6 +274,14 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	if (settings.blur) {
 		ui::add_slider("blur amount", container, 0.f, 2.f, &settings.blur_amount, "blur amount: {:.2f}", fonts::font);
 		ui::add_slider("output fps", container, 1, 120, &settings.blur_output_fps, "output fps: {} fps", fonts::font);
+		ui::add_dropdown(
+			"blur weighting",
+			container,
+			"blur weighting",
+			{ "gaussian", "gaussian_sym", "pyramid", "pyramid_sym", "custom_weight", "custom_function", "equal" },
+			settings.blur_weighting,
+			fonts::font
+		);
 	}
 
 	/*
@@ -843,7 +851,7 @@ void gui::renderer::components::configs::screen(
 				interpolate_scale = true;
 			}
 			else {
-				interpolated_fps = std::stof(split[1]);
+				interpolated_fps = std::stof(settings.interpolated_fps);
 				interpolate_scale = false;
 			}
 
