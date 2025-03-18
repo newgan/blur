@@ -52,8 +52,10 @@ namespace {
 		options_rect.y = options_rect.y2() + OPTIONS_GAP;
 		options_rect.h = option_line_height * dropdown_data.options.size() + OPTIONS_PADDING.h * 2;
 
-		// if it'll pass the end of the container open upwards
-		if (options_rect.y2() > container.get_usable_rect().y2()) {
+		if (options_rect.y + options_rect.h + OPTIONS_GAP > container.get_usable_rect().y2() &&
+		    options_rect.y - options_rect.h - OPTIONS_GAP > 0)
+		{
+			// open upwards
 			options_rect.h *= anim;
 			options_rect.y = dropdown_rect.y - options_rect.h - OPTIONS_GAP;
 		}
