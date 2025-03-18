@@ -379,7 +379,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"input timescale",
 			container,
 			0.f,
-			1.f,
+			2.f,
 			&settings.input_timescale,
 			"input timescale: {:.2f}",
 			fonts::font,
@@ -391,7 +391,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"output timescale",
 			container,
 			0.f,
-			1.f,
+			2.f,
 			&settings.output_timescale,
 			"output timescale: {:.2f}",
 			fonts::font,
@@ -442,6 +442,16 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"custom ffmpeg filters",
 			fonts::font
 		);
+
+		if (settings.timescale && settings.ffmpeg_override.find("-c:a copy") != std::string::npos) {
+			ui::add_text(
+				"timescale audio copy warning",
+				container,
+				"cannot use -c:a copy while using timescale",
+				gfx::rgba(255, 0, 0, 255),
+				fonts::font
+			);
+		}
 
 		ui::add_checkbox("debug checkbox", container, "debug", settings.debug, fonts::font);
 
@@ -693,7 +703,7 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 void gui::renderer::components::configs::option_information(ui::Container& container, BlurSettings& settings) {
 	ui::AnimatedElement* hovered = ui::get_hovered_element();
 
-	if (!hovered)
+	if (!hovered || !hovered->element)
 		return;
 
 	const static std::unordered_map<std::string, std::vector<std::string>> option_explanations = {
