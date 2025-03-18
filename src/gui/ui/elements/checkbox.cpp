@@ -73,6 +73,7 @@ bool ui::update_checkbox(const Container& container, AnimatedElement& element) {
 
 	bool hovered = element.element->rect.contains(keys::mouse_pos) && set_hovered_element(element);
 	hover_anim.set_goal(hovered ? 1.f : 0.f);
+	check_anim.set_goal(*checkbox_data.checked ? 1.f : 0.f);
 
 	if (hovered) {
 		set_cursor(os::NativeCursor::Link);
