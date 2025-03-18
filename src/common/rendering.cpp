@@ -369,10 +369,42 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 #endif
 		);
 
-		std::thread vspipe_stderr_thread([&]() {
+		std::thread progress_thread([&]() {
 			std::string line;
-			while (std::getline(vspipe_stderr, line)) {
-				vspipe_stderr_output << line << '\n';
+			std::string progress_line;
+			char ch = 0;
+
+			while (ffmpeg_process.running() && vspipe_stderr.get(ch)) {
+				if (ch == '\n') {
+					// Handle full line for logging
+					vspipe_stderr_output << line << '\n';
+					line.clear();
+				}
+				else if (ch == '\r') {
+					// Handle progress update
+					static std::regex frame_regex(R"(Frame: (\d+)\/(\d+)(?: \((\d+\.\d+) fps\))?)");
+
+					std::smatch match;
+					if (std::regex_match(line, match, frame_regex)) {
+						int current_frame = std::stoi(match[1]);
+						int total_frames = std::stoi(match[2]);
+
+						update_progress(current_frame, total_frames);
+					}
+
+					// Don't clear the line for logging purposes
+					progress_line = line;
+					line.clear();
+				}
+				else {
+					line += ch; // Append character to the line
+				}
+			}
+
+			// Process any remaining data in the pipe
+			std::string remaining;
+			while (std::getline(vspipe_stderr, remaining)) {
+				vspipe_stderr_output << remaining << '\n';
 			}
 		});
 
@@ -380,9 +412,8 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 		ffmpeg_process.wait();
 
 		// Clean up
-		if (vspipe_stderr_thread.joinable()) {
-			vspipe_stderr_thread.join();
-		}
+		if (progress_thread.joinable())
+			progress_thread.join();
 
 		if (m_settings.debug)
 			u::log(
