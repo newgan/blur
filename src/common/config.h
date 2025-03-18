@@ -31,6 +31,8 @@ struct BlurSettings {
 	bool advanced = false;
 
 	std::string video_container = "mp4";
+	int deduplicate_range = 1;
+	std::string deduplicate_threshold = "0.001";
 	std::string ffmpeg_override;
 	bool debug = false;
 
@@ -62,7 +64,8 @@ public:
 		       quality == other.quality && deduplicate == other.deduplicate && preview == other.preview &&
 		       detailed_filenames == other.detailed_filenames && gpu_interpolation == other.gpu_interpolation &&
 		       gpu_rendering == other.gpu_rendering && gpu_type == other.gpu_type && advanced == other.advanced &&
-		       video_container == other.video_container && ffmpeg_override == other.ffmpeg_override &&
+		       video_container == other.video_container && deduplicate_range == other.deduplicate_range &&
+		       deduplicate_threshold == other.deduplicate_threshold && ffmpeg_override == other.ffmpeg_override &&
 		       debug == other.debug && blur_weighting_gaussian_std_dev == other.blur_weighting_gaussian_std_dev &&
 		       blur_weighting_triangle_reverse == other.blur_weighting_triangle_reverse &&
 		       blur_weighting_bound == other.blur_weighting_bound &&

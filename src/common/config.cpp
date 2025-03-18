@@ -51,6 +51,8 @@ void config::create(const std::filesystem::path& filepath, const BlurSettings& c
 	output << "\n";
 	output << "- advanced rendering" << "\n";
 	output << "video container: " << current_settings.video_container << "\n";
+	output << "deduplicate range: " << current_settings.deduplicate_range << "\n";
+	output << "deduplicate threshold: " << current_settings.deduplicate_threshold << "\n";
 	output << "custom ffmpeg filters: " << current_settings.ffmpeg_override << "\n";
 	output << "debug: " << (current_settings.debug ? "true" : "false") << "\n";
 
@@ -174,6 +176,8 @@ BlurSettings config::parse(const std::filesystem::path& config_filepath) {
 	config_get("advanced", settings.advanced);
 
 	config_get("video container", settings.video_container);
+	config_get("deduplicate range", settings.deduplicate_range);
+	config_get_str("deduplicate threshold", settings.deduplicate_threshold);
 	config_get_str("custom ffmpeg filters", settings.ffmpeg_override);
 	config_get("debug", settings.debug);
 
@@ -278,8 +282,10 @@ nlohmann::json BlurSettings::to_json() const {
 	j["gpu_rendering"] = this->gpu_rendering;
 	j["gpu_type"] = this->gpu_type;
 	// j["video_container"] = this->video_container;
+	j["deduplicate_range"] = this->deduplicate_range;
+	j["deduplicate_threshold"] = this->deduplicate_threshold;
 	// j["ffmpeg_override"] = this->ffmpeg_override;
-	// j["debug"] = this->debug;
+	j["debug"] = this->debug;
 
 	j["blur_weighting_gaussian_std_dev"] = this->blur_weighting_gaussian_std_dev;
 	j["blur_weighting_triangle_reverse"] = this->blur_weighting_triangle_reverse;

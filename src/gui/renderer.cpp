@@ -435,6 +435,42 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"video container text input", container, settings.video_container, "video container", fonts::font
 		);
 
+		ui::add_slider(
+			"deduplicate range",
+			container,
+			-1,
+			10,
+			&settings.deduplicate_range,
+			"deduplicate range: {}",
+			fonts::font,
+			{},
+			0.f,
+			"-1 = infinite"
+		);
+
+		ui::add_text_input(
+			"deduplicate threshold input",
+			container,
+			settings.deduplicate_threshold,
+			"deduplicate threshold",
+			fonts::font
+		);
+
+		std::istringstream iss(settings.deduplicate_threshold);
+		float f = NAN;
+		iss >> std::noskipws >> f; // try to read as float
+		bool is_float = iss.eof() && !iss.fail();
+
+		if (!is_float) {
+			ui::add_text(
+				"deduplicate threshold not a float warning",
+				container,
+				"deduplicate threshold must be a decimal number",
+				gfx::rgba(255, 0, 0, 255),
+				fonts::font
+			);
+		}
+
 		ui::add_text_input(
 			"custom ffmpeg filters text input",
 			container,
@@ -711,123 +747,178 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 		// { "section blur checkbox",
 		//   {
 		// 	  "Enable motion blur",
-		//   } },
-		{ "blur amount",
-		  {
-			  "Amount of motion blur",
-			  "(0 = no blur, 1 = fully blend all frames, >1 = blend extra frames (ghosting))",
-		  } },
+		//   }, },
+		{
+			"blur amount",
+			{
+				"Amount of motion blur",
+				"(0 = no blur, 1 = fully blend all frames, >1 = blend extra frames (ghosting))",
+			},
+		},
 		// { "output fps",
 		//   {
 		// 	  "FPS of the output video",
-		//   } },
-		{ "blur weighting gaussian std dev slider",
-		  {
-			  "Standard deviation for Gaussian blur weighting",
-		  } },
-		{ "blur weighting triangle reverse checkbox",
-		  {
-			  "Reverses the direction of triangle weighting",
-		  } },
-		{ "blur weighting bound input",
-		  {
-			  "Weighting bounds to spread weights more",
-		  } },
+		//   }, },
+		{
+			"blur weighting gaussian std dev slider",
+			{
+				"Standard deviation for Gaussian blur weighting",
+			},
+		},
+		{
+			"blur weighting triangle reverse checkbox",
+			{
+				"Reverses the direction of triangle weighting",
+			},
+		},
+		{
+			"blur weighting bound input",
+			{
+				"Weighting bounds to spread weights more",
+			},
+		},
 
 		// Interpolation settings
 		// { "section interpolation checkbox",
 		//   {
 		// 	  "Enable interpolation to a higher FPS before blurring",
-		//   } },
-		{ "interpolate scale checkbox",
-		  {
-			  "Use a multiplier for FPS interpolation rather than a set FPS",
-		  } },
-		{ "interpolated fps mult",
-		  {
-			  "Multiplier for FPS interpolation",
-			  "The input video will be interpolated to this FPS (before blurring)",
-		  } },
-		{ "interpolated fps",
-		  {
-			  "FPS to interpolate input video to (before blurring)",
-		  } },
-		{ "interpolation preset dropdown",
-		  {
-			  "Check the blur GitHub for more information",
-		  } },
-		{ "interpolation algorithm dropdown",
-		  {
-			  "Check the blur GitHub for more information",
-		  } },
-		{ "interpolation block size dropdown",
-		  {
-			  "Block size for interpolation",
-			  "(higher = less accurate, faster; lower = more accurate, slower)",
-		  } },
-		{ "interpolation mask area slider",
-		  {
-			  "Mask amount for interpolation",
-			  "(higher reduces blur on static objects but can affect smoothness)",
-		  } },
+		//   }, },
+		{
+			"interpolate scale checkbox",
+			{
+				"Use a multiplier for FPS interpolation rather than a set FPS",
+			},
+		},
+		{
+			"interpolated fps mult",
+			{
+				"Multiplier for FPS interpolation",
+				"The input video will be interpolated to this FPS (before blurring)",
+			},
+		},
+		{
+			"interpolated fps",
+			{
+				"FPS to interpolate input video to (before blurring)",
+			},
+		},
+		{
+			"interpolation preset dropdown",
+			{
+				"Check the blur GitHub for more information",
+			},
+		},
+		{
+			"interpolation algorithm dropdown",
+			{
+				"Check the blur GitHub for more information",
+			},
+		},
+		{
+			"interpolation block size dropdown",
+			{
+				"Block size for interpolation",
+				"(higher = less accurate, faster; lower = more accurate, slower)",
+			},
+		},
+		{
+			"interpolation mask area slider",
+			{
+				"Mask amount for interpolation",
+				"(higher reduces blur on static objects but can affect smoothness)",
+			},
+		},
 
 		// Rendering settings
-		{ "quality",
-		  {
-			  "Quality setting for output video",
-			  "(0 = lossless quality, 51 = really bad)",
-		  } },
-		{ "deduplicate checkbox",
-		  {
-			  "Removes duplicate frames and replaces them with interpolated frames",
-			  "(fixes 'unsmooth' looking output)",
-		  } },
-		{ "preview checkbox",
-		  {
-			  "Shows preview while rendering",
-		  } },
-		{ "detailed filenames checkbox",
-		  {
-			  "Adds blur settings to generated filenames",
-		  } },
+		{
+			"quality",
+			{
+				"Quality setting for output video",
+				"(0 = lossless quality, 51 = really bad)",
+			},
+		},
+		{
+			"deduplicate checkbox",
+			{
+				"Removes duplicate frames and replaces them with interpolated frames",
+				"(fixes 'unsmooth' looking output)",
+			},
+		},
+		{
+			"deduplicate range checkbox",
+			{
+				"Amount of frames beyond the current frame to look for unique frames when deduplicating",
+			},
+		},
+		{
+			"deduplicate threshold input",
+			{
+				"Threshold of movement that triggers deduplication",
+				"Turn on debug in advanced and render a video to embed text showing the movement in each frame",
+			},
+		},
+		{
+			"preview checkbox",
+			{
+				"Shows preview while rendering",
+			},
+		},
+		{
+			"detailed filenames checkbox",
+			{
+				"Adds blur settings to generated filenames",
+			},
+		},
 
 		// Timescale settings
-		{ "section timescale checkbox",
-		  {
-			  "Enable video timescale manipulation",
-		  } },
-		{ "input timescale",
-		  {
-			  "Timescale of the input video file",
-		  } },
-		{ "output timescale",
-		  {
-			  "Timescale of the output video file",
-		  } },
-		{ "adjust timescaled audio pitch checkbox",
-		  {
-			  "Pitch shift audio when speeding up or slowing down video",
-		  } },
+		{
+			"section timescale checkbox",
+			{
+				"Enable video timescale manipulation",
+			},
+		},
+		{
+			"input timescale",
+			{
+				"Timescale of the input video file",
+			},
+		},
+		{
+			"output timescale",
+			{
+				"Timescale of the output video file",
+			},
+		},
+		{
+			"adjust timescaled audio pitch checkbox",
+			{
+				"Pitch shift audio when speeding up or slowing down video",
+			},
+		},
 
 		// Filters
-		// { "section filters checkbox", { "Enable video filters", } },
-		// { "brightness", { "Adjusts brightness of the output video", } },
-		// { "saturation", { "Adjusts saturation of the output video", } },
-		// { "contrast", { "Adjusts contrast of the output video", } },
+		// { "section filters checkbox", { "Enable video filters", }, },
+		// { "brightness", { "Adjusts brightness of the output video", }, },
+		// { "saturation", { "Adjusts saturation of the output video", }, },
+		// { "contrast", { "Adjusts contrast of the output video", }, },
 
 		// Advanced rendering
-		// { "gpu interpolation checkbox", { "Uses GPU for interpolation", } },
-		// { "gpu rendering checkbox", { "Uses GPU for rendering", } },
-		// { "gpu rendering dropdown", { "Select GPU type", } },
-		{ "video container text input",
-		  {
-			  "Output video container format",
-		  } },
-		{ "custom ffmpeg filters text input",
-		  {
-			  "Custom FFmpeg filters for rendering",
-			  "(overrides GPU & quality options)",
-		  } },
+		// { "gpu interpolation checkbox", { "Uses GPU for interpolation", }, },
+		// { "gpu rendering checkbox", { "Uses GPU for rendering", }, },
+		// { "gpu rendering dropdown", { "Select GPU type", }, },
+		{
+			"video container text input",
+			{
+				"Output video container format",
+			},
+		},
+		{
+			"custom ffmpeg filters text input",
+			{
+				"Custom FFmpeg filters for rendering",
+				"(overrides GPU & quality options)",
+			},
+		},
 		// { "debug checkbox", { "Shows debug window and prints commands used by blur", } }
 	};
 

@@ -6,11 +6,13 @@ import blur.interpolate
 cur_interp = None
 dupe_last_good_idx = 0
 dupe_next_good_idx = 0
+duped_frames = 0
 
 
 def get_interp(
     clip,
     duplicate_index,
+    max_frames: int | None,
     svp_preset,
     svp_algorithm,
     svp_blocksize,
@@ -20,12 +22,15 @@ def get_interp(
     global cur_interp
     global dupe_last_good_idx
     global dupe_next_good_idx
+    global duped_frames
 
     duped_frame = clip[duplicate_index]
 
-    def find_next_good_frame():
+    def find_next_good_frame() -> int:
         index = duplicate_index + 1
-        last_possible_index = len(clip) - 1 # for clarity (this shit always trips me up)
+        last_possible_index = (
+            len(clip) - 1
+        )  # for clarity (this shit always trips me up)
 
         while index <= last_possible_index:
             test_frame = clip[index]
@@ -45,6 +50,12 @@ def get_interp(
     dupe_next_good_idx = find_next_good_frame()
 
     duped_frames = dupe_next_good_idx - duplicate_index
+
+    if max_frames is not None:
+        if duped_frames > max_frames:
+            # don't dedupe
+            cur_interp = None
+            return
 
     # generate fake clip which includes the two good frames. this will be used to interpolate between them.
     # todo: possibly including more frames will result in better results?
@@ -86,7 +97,14 @@ def get_interp(
 
 
 def interpolate_dupes(
-    clip, frame_index, svp_preset, svp_algorithm, svp_blocksize, svp_masking, svp_gpu
+    clip,
+    frame_index,
+    max_frames: int | None,
+    svp_preset,
+    svp_algorithm,
+    svp_blocksize,
+    svp_masking,
+    svp_gpu,
 ):
     global cur_interp
     global dupe_last_good_idx
@@ -99,12 +117,17 @@ def interpolate_dupes(
         get_interp(
             clip1,
             frame_index,
+            max_frames,
             svp_preset,
             svp_algorithm,
             svp_blocksize,
             svp_masking,
             svp_gpu,
         )
+
+    if cur_interp is None:
+        # interpolated but no dedupe solution. get out
+        return clip
 
     # combine the good frames with the interpolated ones so that vapoursynth can use them by indexing
     # (i hate how you have to do this, there might be nicer way idk)
@@ -119,6 +142,7 @@ def interpolate_dupes(
 def fill_drops(
     clip,
     threshold=0.1,
+    max_frames: int | None = None,
     svp_preset="default",
     svp_algorithm=13,
     svp_blocksize=8,
@@ -138,13 +162,20 @@ def fill_drops(
 
         # duplicate frame
         interp = interpolate_dupes(
-            clip, n, svp_preset, svp_algorithm, svp_blocksize, svp_masking, svp_gpu
+            clip,
+            n,
+            max_frames,
+            svp_preset,
+            svp_algorithm,
+            svp_blocksize,
+            svp_masking,
+            svp_gpu,
         )
 
         if debug:
             return core.text.Text(
                 clip=interp,
-                text="duplicate, diff: " + str(f.props["PlaneStatsDiff"]),
+                text=f"duplicate, {duped_frames} gap, diff: {f.props['PlaneStatsDiff']:.4f}",
                 alignment=8,
             )
 
@@ -202,6 +233,7 @@ def fill_drops_svp(
     [super_string, vectors_string, smooth_string] = (
         blur.interpolate.generate_svp_strings(
             video.fps,
+            from_dedupe=True,
             preset=preset,
             algorithm=algorithm,
             blocksize=blocksize,

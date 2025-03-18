@@ -19,6 +19,7 @@ def generate_svp_strings(
     speed="medium",
     masking=50,
     gpu=True,
+    from_dedupe=False,
 ):
     # build super json
     super_json = {
@@ -59,12 +60,15 @@ def generate_svp_strings(
             "area": masking,
             "area_sharp": 1.2,  # test if this does anything
         },
-        "scene": {
+    }
+
+    if not from_dedupe:
+        # dont want any scene detection stuff when normally blurring (i think?)
+        smooth_json["scene"] = {
             "blend": False,
             "mode": 0,
-            "limits": {"blocks": 9999999},  # dont want any scene detection stuff
-        },
-    }
+            "limits": {"blocks": 9999999},
+        }
 
     return [json.dumps(obj) for obj in [super_json, vectors_json, smooth_json]]
 

@@ -26,10 +26,21 @@ settings = json.loads(vars().get("settings"))
 
 video = core.bs.VideoSource(source=video_path, cachemode=0)
 
-if settings["deduplicate"]:
+if settings["deduplicate"] and settings["deduplicate_range"] != 0:
+    deduplicate_range: int | None = int(settings["deduplicate_range"])
+    if deduplicate_range == -1:  # -1 = infinite
+        deduplicate_range = None
+
+    try:
+        deduplicate_threshold = float(settings["deduplicate_threshold"])
+    except (ValueError, TypeError, KeyError):
+        deduplicate_threshold = 0.001
+
     video = blur.deduplicate.fill_drops(
         video,
-        threshold=0.001,
+        threshold=deduplicate_threshold,
+        max_frames=deduplicate_range,
+        debug=settings["debug"],
         svp_preset=settings["interpolation_preset"],
         svp_algorithm=int(settings["interpolation_algorithm"]),
         svp_blocksize=int(settings["interpolation_blocksize"]),
