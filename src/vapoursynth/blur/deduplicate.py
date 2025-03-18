@@ -12,6 +12,7 @@ duped_frames = 0
 def get_interp(
     clip,
     duplicate_index,
+    threshold: float,
     max_frames: int | None,
     svp_preset,
     svp_algorithm,
@@ -37,7 +38,7 @@ def get_interp(
             diffclip = core.std.PlaneStats(test_frame, duped_frame)
 
             for frame_index2, frame2 in enumerate(diffclip.frames()):
-                if frame2.props["PlaneStatsDiff"] >= 0.001:
+                if frame2.props["PlaneStatsDiff"] >= threshold:
                     return index
 
             index += 1
@@ -99,6 +100,7 @@ def get_interp(
 def interpolate_dupes(
     clip,
     frame_index,
+    threshold: float,
     max_frames: int | None,
     svp_preset,
     svp_algorithm,
@@ -117,6 +119,7 @@ def interpolate_dupes(
         get_interp(
             clip1,
             frame_index,
+            threshold,
             max_frames,
             svp_preset,
             svp_algorithm,
@@ -141,7 +144,7 @@ def interpolate_dupes(
 
 def fill_drops(
     clip,
-    threshold=0.1,
+    threshold: float = 0.1,
     max_frames: int | None = None,
     svp_preset="default",
     svp_algorithm=13,
@@ -156,7 +159,7 @@ def fill_drops(
     def handle_frames(n, f):
         global cur_interp
 
-        if f.props["PlaneStatsDiff"] > threshold or n == 0:
+        if f.props["PlaneStatsDiff"] >= threshold or n == 0:
             cur_interp = None
             return clip
 
@@ -164,6 +167,7 @@ def fill_drops(
         interp = interpolate_dupes(
             clip,
             n,
+            threshold,
             max_frames,
             svp_preset,
             svp_algorithm,
