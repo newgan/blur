@@ -17,5 +17,5 @@ If applicable, steps to recreate the issue.
 Screenshots if they help describe the issue.
 
 **system**
- - version [e.g. 1.8]
- - os: [e.g. Windows]
+Version (e.g. 1.8): 
+OS (e.g. Windows):
