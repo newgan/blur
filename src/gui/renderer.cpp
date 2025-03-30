@@ -124,10 +124,6 @@ void gui::renderer::components::render(
 		);
 
 		is_progress_shown = true;
-
-		ui::add_button("stop render button", container, "Stop render", fonts::font, [&] {
-			render.stop();
-		});
 	}
 	else {
 		ui::add_text(
@@ -139,6 +135,10 @@ void gui::renderer::components::render(
 			os::TextAlign::Center
 		);
 	}
+
+	ui::add_button("stop render button", container, "Stop render", fonts::font, [&] {
+		render.stop();
+	});
 }
 
 void gui::renderer::components::main_screen(ui::Container& container, float delta_time) {
