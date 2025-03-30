@@ -1,8 +1,8 @@
 ---
-name: issue
-about: an issue
+name: Issue
+about: Report an issue
 title: ''
-labels: ''
+labels: issue
 assignees: ''
 
 ---
