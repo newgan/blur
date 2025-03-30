@@ -139,12 +139,14 @@ void Blur::update_handler(
 			update_res.latest_tag_url
 		);
 
+#ifndef _DEBUG
 		if (config.auto_update) {
-#ifndef WIN32
+#	ifndef WIN32
 			// todo:
-#else
+#	else
 			updates::update_to_tag(update_res.latest_tag, message_callback);
-#endif
+#	endif
 		}
+#endif
 	}
 }
