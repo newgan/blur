@@ -155,6 +155,7 @@ void ui::set_next_same_line(Container& container) {
 	container.current_position.y = last_element->rect.y;
 }
 
+// NOLINTBEGIN(readability-function-cognitive-complexity) todo: refactor
 void ui::center_elements_in_container(Container& container, bool horizontal, bool vertical) {
 	int total_height = get_content_height(container);
 
@@ -164,6 +165,8 @@ void ui::center_elements_in_container(Container& container, bool horizontal, boo
 	// Calculate the starting y position shift to center elements vertically
 	if (vertical) {
 		shift_y = (container.get_usable_rect().h - total_height) / 2;
+		if (shift_y < 0)
+			vertical = false;
 	}
 
 	// Group elements by their y position
@@ -229,6 +232,8 @@ void ui::center_elements_in_container(Container& container, bool horizontal, boo
 	for (auto& [id, element] : container.elements)
 		element.element->orig_rect = element.element->rect;
 }
+
+// NOLINTEND(readability-function-cognitive-complexity)
 
 void ui::set_cursor(os::NativeCursor cursor) {
 	desired_cursor = cursor;
