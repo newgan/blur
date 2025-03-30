@@ -1,11 +1,13 @@
 #pragma once
 
 struct GlobalAppSettings {
-	std::string auto_updates = "off";
-	bool offline = false;
+	bool check_updates = true;
+	bool check_beta = false;
+	bool auto_update = false;
 
 	bool operator==(const GlobalAppSettings& other) const {
-		return auto_updates == other.auto_updates && offline == other.offline;
+		return check_updates == other.check_updates && check_beta == other.check_beta &&
+		       auto_update == other.auto_update;
 	}
 
 	[[nodiscard]] nlohmann::json to_json() const;
@@ -14,7 +16,7 @@ struct GlobalAppSettings {
 namespace config_app {
 	const std::string APP_CONFIG_FILENAME = "blur.cfg";
 
-	inline const std::vector<std::string> AUTO_UPDATE_OPTIONS = { "off", "on", "beta" };
+	// inline const std::vector<std::string> CHECK_UPDATES_OPTIONS = { "off", "on", "beta" };
 
 	void create(const std::filesystem::path& filepath, const GlobalAppSettings& current_settings = GlobalAppSettings());
 	GlobalAppSettings parse(const std::filesystem::path& config_filepath);

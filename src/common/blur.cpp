@@ -127,23 +127,21 @@ void Blur::update_handler(
 	const std::optional<std::function<void(const std::string&, const std::string&)>>& message_callback
 ) {
 	auto config = config_app::get_app_config();
-	if (config.offline)
+	if (!config.check_updates)
 		return;
 
-	bool check_beta = config.auto_updates == "beta";
-
-	auto update_res = updates::is_latest_version(check_beta);
+	auto update_res = updates::is_latest_version(config.check_beta);
 	if (!update_res.is_latest) {
-		if (message_callback) {
-#ifndef WIN32
-			// todo: download
+		(*message_callback)(
+			std::format(
+				"There's a newer version ({}) available! Click to go to the download page.", update_res.latest_tag
+			),
+			update_res.latest_tag_url
+		);
 
-			(*message_callback)(
-				std::format(
-					"There's a newer version ({}) available! Click to go to the download page.", update_res.latest_tag
-				),
-				update_res.latest_tag_url
-			);
+		if (config.auto_update) {
+#ifndef WIN32
+			// todo:
 #else
 			updates::update_to_tag(update_res.latest_tag, message_callback);
 #endif

@@ -1,7 +1,7 @@
 #pragma once
 
 const std::string APPLICATION_NAME = "blur";
-const std::string BLUR_VERSION = "1.7";
+const std::string BLUR_VERSION = "2.0-preview5";
 
 class Blur { // todo: switch all the classes which could be namespaces into namespaces
 public:
