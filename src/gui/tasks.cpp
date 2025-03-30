@@ -4,6 +4,7 @@
 #include "gui.h"
 #include "gui/renderer.h"
 #include "gui/ui/ui.h"
+#include "base/launcher.h"
 
 void tasks::run(const std::vector<std::string>& arguments) {
 	auto res = blur.initialise(false, true);
@@ -39,6 +40,13 @@ void tasks::run(const std::vector<std::string>& arguments) {
 	});
 
 	add_files(arguments); // todo: mac packaged app support (& linux? does it work?)
+
+	Blur::update_handler([](const std::string& message, const std::string& url) {
+		gui::renderer::add_notification("update progress", message, ui::NotificationType::INFO, [url] {
+			if (!url.empty())
+				base::launcher::open_url(url);
+		});
+	});
 
 	while (true) {
 		rendering.render_videos();

@@ -1,10 +1,12 @@
-#include "config.h"
+#include "config_blur.h"
+#include "config_base.h"
 
-void config::create(const std::filesystem::path& filepath, const BlurSettings& current_settings) {
+void config_blur::create(const std::filesystem::path& filepath, const BlurSettings& current_settings) {
 	std::ofstream output(filepath);
 
 	output << "[blur v" << BLUR_VERSION << "]" << "\n";
 
+	output << "\n";
 	output << "- blur" << "\n";
 	output << "blur: " << (current_settings.blur ? "true" : "false") << "\n";
 	output << "blur amount: " << current_settings.blur_amount << "\n";
@@ -65,7 +67,6 @@ void config::create(const std::filesystem::path& filepath, const BlurSettings& c
 
 	output << "\n";
 	output << "- advanced interpolation" << "\n";
-	// output << "interpolation program (svp/rife/rife-ncnn): " << current_settings.interpolation_program << "\n";
 	output << "interpolation preset: " << current_settings.interpolation_preset << "\n";
 	output << "interpolation algorithm: " << current_settings.interpolation_algorithm << "\n";
 	output << "interpolation block size: " << current_settings.interpolation_blocksize << "\n";
@@ -81,7 +82,7 @@ void config::create(const std::filesystem::path& filepath, const BlurSettings& c
 	}
 }
 
-config::ConfigValidationResponse config::validate(BlurSettings& config, bool fix) {
+config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config, bool fix) {
 	std::set<std::string> errors;
 
 	BlurSettings default_config;
@@ -115,120 +116,65 @@ config::ConfigValidationResponse config::validate(BlurSettings& config, bool fix
 	};
 }
 
-BlurSettings config::parse(const std::filesystem::path& config_filepath) {
-	auto read_config = [&]() {
-		std::map<std::string, std::string> config = {};
-
-		// retrieve all of the variables in the config file
-		std::ifstream input(config_filepath);
-		std::string line;
-		while (std::getline(input, line)) {
-			// get key & value
-			auto pos = line.find(':');
-			if (pos == std::string::npos) // not a variable
-				continue;
-
-			std::string key = line.substr(0, pos);
-			std::string value = line.substr(pos + 1);
-
-			// trim whitespace
-			key = u::trim(key);
-			if (key == "")
-				continue;
-
-			value = u::trim(value);
-
-			if (key != "custom ffmpeg filters") {
-				// remove all spaces in values (it breaks stringstream string parsing, this is a dumb workaround) todo:
-				// better solution
-				std::erase(value, ' ');
-			}
-
-			config[key] = value;
-		}
-
-		return config;
-	};
-
-	auto config = read_config();
-
-	auto config_get = [&]<typename t>(const std::string& var, t& out) {
-		if (!config.contains(var)) {
-			DEBUG_LOG("config missing variable '{}'", var);
-			return;
-		}
-
-		try {
-			std::stringstream ss(config[var]);
-			ss.exceptions(std::ios::failbit); // enable exceptions
-			ss >> std::boolalpha >> out;      // boolalpha: enable true/false bool parsing
-		}
-		catch (const std::exception&) {
-			DEBUG_LOG("failed to parse config variable '{}' (value: {})", var, config[var]);
-			return;
-		}
-	};
-
-	auto config_get_str = [&](const std::string& var, std::string& out) { // todo: clean this up i cant be bothered rn
-		if (!config.contains(var)) {
-			DEBUG_LOG("config missing variable '{}'", var);
-			return;
-		}
-
-		out = config[var];
-	};
+BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
+	auto config_map = config_base::read_config_map(config_filepath);
 
 	BlurSettings settings;
 
-	config_get("blur", settings.blur);
-	config_get("blur amount", settings.blur_amount);
-	config_get("blur output fps", settings.blur_output_fps);
-	config_get_str("blur weighting", settings.blur_weighting);
+	config_base::extract_config_value(config_map, "blur", settings.blur);
+	config_base::extract_config_value(config_map, "blur amount", settings.blur_amount);
+	config_base::extract_config_value(config_map, "blur output fps", settings.blur_output_fps);
+	config_base::extract_config_string(config_map, "blur weighting", settings.blur_weighting);
 
-	config_get("interpolate", settings.interpolate);
-	config_get_str("interpolated fps", settings.interpolated_fps);
+	config_base::extract_config_value(config_map, "interpolate", settings.interpolate);
+	config_base::extract_config_string(config_map, "interpolated fps", settings.interpolated_fps);
 
-	config_get("filters", settings.filters);
-	config_get("brightness", settings.brightness);
-	config_get("saturation", settings.saturation);
-	config_get("contrast", settings.contrast);
+	config_base::extract_config_value(config_map, "filters", settings.filters);
+	config_base::extract_config_value(config_map, "brightness", settings.brightness);
+	config_base::extract_config_value(config_map, "saturation", settings.saturation);
+	config_base::extract_config_value(config_map, "contrast", settings.contrast);
 
-	config_get("quality", settings.quality);
-	config_get("deduplicate", settings.deduplicate);
-	config_get("preview", settings.preview);
-	config_get("detailed filenames", settings.detailed_filenames);
+	config_base::extract_config_value(config_map, "quality", settings.quality);
+	config_base::extract_config_value(config_map, "deduplicate", settings.deduplicate);
+	config_base::extract_config_value(config_map, "preview", settings.preview);
+	config_base::extract_config_value(config_map, "detailed filenames", settings.detailed_filenames);
 
-	config_get("gpu interpolation", settings.gpu_interpolation);
-	config_get("gpu rendering", settings.gpu_rendering);
-	config_get_str("gpu type (nvidia/amd/intel)", settings.gpu_type);
+	config_base::extract_config_value(config_map, "gpu interpolation", settings.gpu_interpolation);
+	config_base::extract_config_value(config_map, "gpu rendering", settings.gpu_rendering);
+	config_base::extract_config_string(config_map, "gpu type (nvidia/amd/intel)", settings.gpu_type);
 
-	config_get("timescale", settings.timescale);
-	config_get("input timescale", settings.input_timescale);
-	config_get("output timescale", settings.output_timescale);
-	config_get("adjust timescaled audio pitch", settings.output_timescale_audio_pitch);
+	config_base::extract_config_value(config_map, "timescale", settings.timescale);
+	config_base::extract_config_value(config_map, "input timescale", settings.input_timescale);
+	config_base::extract_config_value(config_map, "output timescale", settings.output_timescale);
+	config_base::extract_config_value(
+		config_map, "adjust timescaled audio pitch", settings.output_timescale_audio_pitch
+	);
 
-	config_get("advanced", settings.advanced);
+	config_base::extract_config_value(config_map, "advanced", settings.advanced);
 
-	config_get("video container", settings.video_container);
-	config_get("deduplicate range", settings.deduplicate_range);
-	config_get_str("deduplicate threshold", settings.deduplicate_threshold);
-	config_get_str("custom ffmpeg filters", settings.ffmpeg_override);
-	config_get("debug", settings.debug);
+	config_base::extract_config_value(config_map, "video container", settings.video_container);
+	config_base::extract_config_value(config_map, "deduplicate range", settings.deduplicate_range);
+	config_base::extract_config_string(config_map, "deduplicate threshold", settings.deduplicate_threshold);
+	config_base::extract_config_string(config_map, "custom ffmpeg filters", settings.ffmpeg_override);
+	config_base::extract_config_value(config_map, "debug", settings.debug);
 
-	config_get("blur weighting gaussian std dev", settings.blur_weighting_gaussian_std_dev);
-	config_get("blur weighting triangle reverse", settings.blur_weighting_triangle_reverse);
-	config_get_str("blur weighting bound", settings.blur_weighting_bound);
+	config_base::extract_config_value(
+		config_map, "blur weighting gaussian std dev", settings.blur_weighting_gaussian_std_dev
+	);
+	config_base::extract_config_value(
+		config_map, "blur weighting triangle reverse", settings.blur_weighting_triangle_reverse
+	);
+	config_base::extract_config_string(config_map, "blur weighting bound", settings.blur_weighting_bound);
 
-	// config_get_str("interpolation program (svp/rife/rife-ncnn)", settings.interpolation_program);
-	config_get_str("interpolation preset", settings.interpolation_preset);
-	config_get_str("interpolation algorithm", settings.interpolation_algorithm);
-	config_get_str("interpolation block size", settings.interpolation_blocksize);
-	config_get("interpolation mask area", settings.interpolation_mask_area);
+	config_base::extract_config_string(config_map, "interpolation preset", settings.interpolation_preset);
+	config_base::extract_config_string(config_map, "interpolation algorithm", settings.interpolation_algorithm);
+	config_base::extract_config_string(config_map, "interpolation block size", settings.interpolation_blocksize);
+	config_base::extract_config_value(config_map, "interpolation mask area", settings.interpolation_mask_area);
 
-	config_get("manual svp", settings.manual_svp);
-	config_get_str("super string", settings.super_string);
-	config_get_str("vectors string", settings.vectors_string);
-	config_get_str("smooth string", settings.smooth_string);
+	config_base::extract_config_value(config_map, "manual svp", settings.manual_svp);
+	config_base::extract_config_string(config_map, "super string", settings.super_string);
+	config_base::extract_config_string(config_map, "vectors string", settings.vectors_string);
+	config_base::extract_config_string(config_map, "smooth string", settings.smooth_string);
 
 	// recreate the config file using the parsed values (keeps nice formatting)
 	create(config_filepath, settings);
@@ -236,30 +182,23 @@ BlurSettings config::parse(const std::filesystem::path& config_filepath) {
 	return settings;
 }
 
-BlurSettings config::parse_global_config() {
+BlurSettings config_blur::parse_global_config() {
 	return parse(get_global_config_path());
 }
 
-std::filesystem::path config::get_global_config_path() {
+std::filesystem::path config_blur::get_global_config_path() {
 	return blur.settings_path / CONFIG_FILENAME;
 }
 
-std::filesystem::path config::get_config_filename(const std::filesystem::path& video_folder) {
+std::filesystem::path config_blur::get_config_filename(const std::filesystem::path& video_folder) {
 	return video_folder / CONFIG_FILENAME;
 }
 
-BlurSettings config::get_global_config() {
-	auto global_cfg_path = get_global_config_path();
-	bool global_cfg_exists = std::filesystem::exists(global_cfg_path);
-
-	if (!global_cfg_exists) {
-		create(global_cfg_path);
-	}
-
-	return parse(global_cfg_path);
+BlurSettings config_blur::get_global_config() {
+	return config_base::load_config<BlurSettings>(get_global_config_path(), create, parse);
 }
 
-BlurSettings config::get_config(const std::filesystem::path& config_filepath, bool use_global) {
+BlurSettings config_blur::get_config(const std::filesystem::path& config_filepath, bool use_global) {
 	bool local_cfg_exists = std::filesystem::exists(config_filepath);
 
 	auto global_cfg_path = get_global_config_path();

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.h"
+#include "config_blur.h"
 
 struct RenderCommands {
 	std::wstring vspipe_path;

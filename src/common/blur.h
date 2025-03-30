@@ -1,7 +1,7 @@
 #pragma once
 
 const std::string APPLICATION_NAME = "blur";
-const std::string BLUR_VERSION = "2.0";
+const std::string BLUR_VERSION = "1.7";
 
 class Blur { // todo: switch all the classes which could be namespaces into namespaces
 public:
@@ -32,6 +32,10 @@ public:
 
 	[[nodiscard]] std::optional<std::filesystem::path> create_temp_path(const std::string& folder_name) const;
 	static bool remove_temp_path(const std::filesystem::path& temp_path);
+
+	static void update_handler(
+		const std::optional<std::function<void(const std::string&, const std::string&)>>& message_callback = {}
+	);
 };
 
 inline Blur blur;

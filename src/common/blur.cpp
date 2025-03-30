@@ -1,10 +1,22 @@
 #include "blur.h"
-#include "common/utils.h"
-#include "common/rendering.h"
+
+#include "utils.h"
+#include "rendering.h"
+#include "updates.h"
+#include "config_blur.h"
+#include "config_app.h"
 
 Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview) {
 	resources_path = u::get_resources_path();
 	settings_path = u::get_settings_path();
+
+	auto global_blur_config_path = config_blur::get_global_config_path();
+	if (!std::filesystem::exists(global_blur_config_path))
+		config_blur::create(global_blur_config_path, BlurSettings{});
+
+	auto app_config_path = config_app::get_app_config_path();
+	if (!std::filesystem::exists(app_config_path))
+		config_app::create(app_config_path, GlobalAppSettings{});
 
 	used_installer = std::filesystem::exists(resources_path / "lib\\vapoursynth\\vspipe.exe") &&
 	                 std::filesystem::exists(resources_path / "lib\\ffmpeg\\ffmpeg.exe");
@@ -45,10 +57,6 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 
 	if (res != 0)
 		DEBUG_LOG("failed to register atexit");
-
-	auto global_config_path = config::get_global_config_path();
-	if (!std::filesystem::exists(global_config_path))
-		config::create(global_config_path, DEFAULT_SETTINGS);
 
 	initialise_base_temp_path();
 
@@ -112,5 +120,33 @@ bool Blur::remove_temp_path(const std::filesystem::path& temp_path) {
 	catch (const std::filesystem::filesystem_error& e) {
 		u::log_error("Error removing temp path: {}", e.what());
 		return false;
+	}
+}
+
+void Blur::update_handler(
+	const std::optional<std::function<void(const std::string&, const std::string&)>>& message_callback
+) {
+	auto config = config_app::get_app_config();
+	if (config.offline)
+		return;
+
+	bool check_beta = config.auto_updates == "beta";
+
+	auto update_res = updates::is_latest_version(check_beta);
+	if (!update_res.is_latest) {
+		if (message_callback) {
+#ifndef WIN32
+			// todo: download
+
+			(*message_callback)(
+				std::format(
+					"There's a newer version ({}) available! Click to go to the download page.", update_res.latest_tag
+				),
+				update_res.latest_tag_url
+			);
+#else
+			updates::update_to_tag(update_res.latest_tag, message_callback);
+#endif
+		}
 	}
 }

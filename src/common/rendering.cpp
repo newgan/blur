@@ -110,9 +110,10 @@ Render::Render(
 
 	// parse config file (do it now, not when rendering. nice for batch rendering the same file with different settings)
 	if (config_path.has_value())
-		this->m_settings = config::get_config(output_path.value(), false); // specified config path, don't use global
+		this->m_settings =
+			config_blur::get_config(output_path.value(), false); // specified config path, don't use global
 	else
-		this->m_settings = config::get_config(config::get_config_filename(m_video_folder), true);
+		this->m_settings = config_blur::get_config(config_blur::get_config_filename(m_video_folder), true);
 
 	if (output_path.has_value())
 		this->m_output_path = output_path.value();

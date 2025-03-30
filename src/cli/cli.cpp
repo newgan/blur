@@ -16,6 +16,12 @@ bool cli::run(
 		return false;
 	}
 
+	Blur::update_handler([](const std::string& message, const std::string& url) {
+		u::log(message);
+		if (!url.empty())
+			u::log(url);
+	});
+
 	bool manual_output_files = !outputs.empty();
 	if (manual_output_files && inputs.size() != outputs.size()) {
 		u::log(L"Input/output filename count mismatch ({} inputs, {} outputs).", inputs.size(), outputs.size());

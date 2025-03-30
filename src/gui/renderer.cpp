@@ -497,7 +497,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"interpolation preset dropdown",
 			container,
 			"interpolation preset",
-			config::INTERPOLATION_PRESETS,
+			config_blur::INTERPOLATION_PRESETS,
 			settings.interpolation_preset,
 			fonts::font
 		);
@@ -506,7 +506,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"interpolation algorithm dropdown",
 			container,
 			"interpolation algorithm",
-			config::INTERPOLATION_ALGORITHMS,
+			config_blur::INTERPOLATION_ALGORITHMS,
 			settings.interpolation_algorithm,
 			fonts::font
 		);
@@ -515,7 +515,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"interpolation block size dropdown",
 			container,
 			"interpolation block size",
-			config::INTERPOLATION_BLOCK_SIZES,
+			config_blur::INTERPOLATION_BLOCK_SIZES,
 			settings.interpolation_blocksize,
 			fonts::font
 		);
@@ -686,7 +686,7 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 					os::TextAlign::Center
 				);
 
-				auto validation_res = config::validate(settings, false);
+				auto validation_res = config_blur::validate(settings, false);
 				if (!validation_res.success) {
 					ui::add_text(
 						"config validation error/s",
@@ -704,7 +704,7 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 						"Reset invalid config options to defaults",
 						fonts::font,
 						[&] {
-							config::validate(settings, true);
+							config_blur::validate(settings, true);
 						}
 					);
 				}
@@ -988,14 +988,14 @@ void gui::renderer::components::configs::screen(
 	};
 
 	auto save_config = [&] {
-		config::create(config::get_global_config_path(), settings);
+		config_blur::create(config_blur::get_global_config_path(), settings);
 		current_global_settings = settings;
 
 		u::log("saved global settings");
 	};
 
 	if (!loaded_config) {
-		settings = config::parse_global_config();
+		settings = config_blur::parse_global_config();
 		on_load();
 		loaded_config = true;
 	}
@@ -1015,10 +1015,10 @@ void gui::renderer::components::configs::screen(
 		});
 	}
 
-	if (settings != DEFAULT_SETTINGS) {
+	if (settings != BlurSettings{}) {
 		ui::set_next_same_line(nav_container);
 		ui::add_button("restore defaults button", nav_container, "Restore defaults", fonts::font, [&] {
-			settings = BlurSettings();
+			settings = BlurSettings{};
 			parse_interp();
 		});
 	}
@@ -1255,19 +1255,31 @@ bool gui::renderer::redraw_window(os::Window* window, bool force_render) {
 // NOLINTEND(readability-function-size,readability-function-cognitive-complexity)
 
 void gui::renderer::add_notification(
+	const std::string& id,
 	const std::string& text,
 	ui::NotificationType type,
-	std::chrono::steady_clock::time_point end_time,
-	const std::optional<std::function<void()>>& on_click
+	const std::optional<std::function<void()>>& on_click,
+	std::chrono::duration<float> duration
 ) {
 	std::lock_guard<std::mutex> lock(notification_mutex);
 
-	notifications.emplace_back(Notification{
-		.end_time = end_time,
+	Notification new_notification{
+		.id = id,
+		.end_time = std::chrono::steady_clock::now() +
+		            std::chrono::duration_cast<std::chrono::steady_clock::duration>(duration),
 		.text = text,
 		.type = type,
 		.on_click_fn = on_click,
-	});
+	};
+
+	for (auto& notification : notifications) {
+		if (notification.id == id) {
+			notification = new_notification;
+			return;
+		}
+	}
+
+	notifications.emplace_back(new_notification);
 }
 
 void gui::renderer::add_notification(
@@ -1276,12 +1288,8 @@ void gui::renderer::add_notification(
 	const std::optional<std::function<void()>>& on_click,
 	std::chrono::duration<float> duration
 ) {
-	add_notification(
-		text,
-		type,
-		std::chrono::steady_clock::now() + std::chrono::duration_cast<std::chrono::steady_clock::duration>(duration),
-		on_click
-	);
+	static uint32_t current_notification_id = 0;
+	add_notification(std::to_string(current_notification_id++), text, type, on_click, duration);
 }
 
 void gui::renderer::on_render_finished(Render* render, const RenderResult& result) {
