@@ -67,9 +67,6 @@ void gui::renderer::components::render(
 		os::TextAlign::Center
 	);
 
-	if (current)
-		ui::add_spacing(container, 5);
-
 	if (!current)
 		return;
 
@@ -116,6 +113,7 @@ void gui::renderer::components::render(
 			fonts::font,
 			os::TextAlign::Center
 		);
+		container.element_gap = old_element_gap;
 		ui::add_text(
 			"progress text 2",
 			container,
@@ -124,7 +122,6 @@ void gui::renderer::components::render(
 			fonts::font,
 			os::TextAlign::Center
 		);
-		container.element_gap = old_element_gap;
 
 		is_progress_shown = true;
 	}
