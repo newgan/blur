@@ -87,21 +87,23 @@ config::ConfigValidationResponse config::validate(BlurSettings& config, bool fix
 	BlurSettings default_config;
 
 	if (!u::contains(INTERPOLATION_PRESETS, config.interpolation_preset)) {
-		errors.insert(std::format("Interpolation preset ({}) is invalid", config.interpolation_preset));
+		errors.insert(std::format("Interpolation preset ({}) is not a valid option", config.interpolation_preset));
 
 		if (fix)
 			config.interpolation_preset = default_config.interpolation_preset;
 	}
 
 	if (!u::contains(INTERPOLATION_ALGORITHMS, config.interpolation_algorithm)) {
-		errors.insert(std::format("Interpolation algorithm ({}) is invalid", config.interpolation_algorithm));
+		errors.insert(std::format("Interpolation algorithm ({}) is not a valid option", config.interpolation_algorithm)
+		);
 
 		if (fix)
 			config.interpolation_algorithm = default_config.interpolation_algorithm;
 	}
 
 	if (!u::contains(INTERPOLATION_BLOCK_SIZES, config.interpolation_blocksize)) {
-		errors.insert(std::format("Interpolation block size ({}) is invalid", config.interpolation_blocksize));
+		errors.insert(std::format("Interpolation block size ({}) is not a valid option", config.interpolation_blocksize)
+		);
 
 		if (fix)
 			config.interpolation_blocksize = default_config.interpolation_blocksize;
