@@ -6,7 +6,7 @@
 os::WindowRef gui::window_manager::create_window(os::DragTarget& drag_target) {
 	auto screen = os::instance()->mainScreen();
 
-	os::WindowSpec spec(591, 381);
+	os::WindowSpec spec(591, 390);
 	// spec.scale(2);
 
 	os::WindowRef window = os::instance()->makeWindow(spec);

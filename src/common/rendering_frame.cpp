@@ -200,7 +200,3 @@ FrameRender::RenderResponse FrameRender::render(const std::filesystem::path& inp
 		.error_message = render_res.error_message,
 	};
 }
-
-void FrameRender::stop() {
-	m_to_kill = true;
-}

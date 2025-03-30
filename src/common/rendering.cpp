@@ -408,8 +408,22 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 			}
 		});
 
-		vspipe_process.wait();
-		ffmpeg_process.wait();
+		vspipe_process.detach();
+		ffmpeg_process.detach();
+
+		bool killed = false;
+
+		while (vspipe_process.running() || ffmpeg_process.running()) {
+			if (m_to_kill) {
+				ffmpeg_process.terminate();
+				vspipe_process.terminate();
+				u::log("render: killed processes early");
+				killed = true;
+				m_to_kill = false;
+			}
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		}
 
 		// Clean up
 		if (progress_thread.joinable())
@@ -420,9 +434,14 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 				"vspipe exit code: {}, ffmpeg exit code: {}", vspipe_process.exit_code(), ffmpeg_process.exit_code()
 			);
 
+		if (killed) {
+			return {
+				.stopped = true,
+			};
+		}
+
 		m_status.finished = true;
 		bool success = vspipe_process.exit_code() == 0 && ffmpeg_process.exit_code() == 0;
-
 		// Final progress update
 		if (success)
 			update_progress(m_status.total_frames, m_status.total_frames);
@@ -483,7 +502,11 @@ RenderResult Render::render() {
 
 	auto render_res = do_render(render_commands);
 
-	if (render_res.success) {
+	if (render_res.stopped) {
+		u::log(L"Stopped render '{}'", m_video_name);
+		std::filesystem::remove(m_output_path);
+	}
+	else if (render_res.success) {
 		if (blur.verbose) {
 			u::log(L"Finished rendering '{}'", m_video_name);
 		}
@@ -503,14 +526,9 @@ RenderResult Render::render() {
 }
 
 void Rendering::stop_rendering() {
-	// TODO: re-add
-
-	// // stop vspipe
-	// TerminateProcess(vspipe_pi.hProcess, 0);
-
-	// // send wm_close to ffmpeg so that it can gracefully stop
-	// if (HWND hwnd = u::get_window(ffmpeg_pi.dwProcessId))
-	// 	SendMessage(hwnd, WM_CLOSE, 0, 0);
+	for (auto& render : m_queue) {
+		render->stop();
+	}
 }
 
 void RenderStatus::update_progress_string(bool first) {

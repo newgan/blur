@@ -17,7 +17,9 @@ public:
 		m_can_delete = true;
 	}
 
-	void stop();
+	void stop() {
+		m_to_kill = true;
+	}
 
 	struct DoRenderResult {
 		bool success;

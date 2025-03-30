@@ -13,6 +13,7 @@ struct RenderCommands {
 struct RenderResult {
 	bool success;
 	std::string error_message;
+	bool stopped;
 };
 
 struct RenderStatus {
@@ -45,6 +46,8 @@ private:
 
 	BlurSettings m_settings;
 
+	bool m_to_kill = false;
+
 	void build_output_filename();
 
 	RenderCommands build_render_commands();
@@ -68,6 +71,10 @@ public:
 	bool remove_temp_path();
 
 	RenderResult render();
+
+	void stop() {
+		m_to_kill = true;
+	}
 
 	[[nodiscard]] uint32_t get_render_id() const {
 		return m_render_id;

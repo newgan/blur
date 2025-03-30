@@ -49,7 +49,7 @@ void gui::renderer::set_cursor(os::NativeCursor cursor) {
 
 void gui::renderer::components::render(
 	ui::Container& container,
-	const Render& render,
+	Render& render,
 	bool current,
 	float delta_time,
 	bool& is_progress_shown,
@@ -124,6 +124,10 @@ void gui::renderer::components::render(
 		);
 
 		is_progress_shown = true;
+
+		ui::add_button("stop render button", container, "Stop render", fonts::font, [&] {
+			render.stop();
+		});
 	}
 	else {
 		ui::add_text(
@@ -1276,7 +1280,12 @@ void gui::renderer::add_notification(
 }
 
 void gui::renderer::on_render_finished(Render* render, const RenderResult& result) {
-	if (result.success) {
+	if (result.stopped) {
+		add_notification(
+			std::format("Render '{}' stopped", base::to_utf8(render->get_video_name())), ui::NotificationType::INFO
+		);
+	}
+	else if (result.success) {
 		add_notification(
 			std::format("Render '{}' completed", base::to_utf8(render->get_video_name())), ui::NotificationType::SUCCESS
 		);
