@@ -118,6 +118,11 @@ namespace u {
 		return result.str();
 	}
 
+	template<std::ranges::range Container, typename T>
+	bool contains(const Container& container, const T& value) {
+		return std::ranges::find(container, value) != std::ranges::end(container);
+	}
+
 	std::string trim(std::string_view str);
 	std::string random_string(int len);
 	std::vector<std::string> split_string(std::string str, const std::string& delimiter);

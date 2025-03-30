@@ -106,8 +106,8 @@ void gui::renderer::components::render(
 			&fonts::font
 		);
 
-		auto old_line_height = container.line_height; // todo: push/pop line height
-		container.line_height = 9;
+		auto old_element_gap = container.element_gap; // todo: push/pop element gap
+		container.element_gap = 6;
 		ui::add_text(
 			"progress text",
 			container,
@@ -124,7 +124,7 @@ void gui::renderer::components::render(
 			fonts::font,
 			os::TextAlign::Center
 		);
-		container.line_height = old_line_height;
+		container.element_gap = old_element_gap;
 
 		is_progress_shown = true;
 	}
@@ -496,21 +496,11 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		*/
 		section_component("advanced interpolation");
 
-		static const std::vector<std::string> interpolation_presets = {
-			"weak", "film", "smooth", "animation", "default", "test",
-		};
-
-		static const std::vector<std::string> interpolation_algorithms = {
-			"1", "2", "11", "13", "21", "23",
-		};
-
-		static const std::vector<std::string> interpolation_block_sizes = { "4", "8", "16", "32" };
-
 		ui::add_dropdown(
 			"interpolation preset dropdown",
 			container,
 			"interpolation preset",
-			interpolation_presets,
+			config::INTERPOLATION_PRESETS,
 			settings.interpolation_preset,
 			fonts::font
 		);
@@ -519,7 +509,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"interpolation algorithm dropdown",
 			container,
 			"interpolation algorithm",
-			interpolation_algorithms,
+			config::INTERPOLATION_ALGORITHMS,
 			settings.interpolation_algorithm,
 			fonts::font
 		);
@@ -528,7 +518,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"interpolation block size dropdown",
 			container,
 			"interpolation block size",
-			interpolation_block_sizes,
+			config::INTERPOLATION_BLOCK_SIZES,
 			settings.interpolation_blocksize,
 			fonts::font
 		);
@@ -582,6 +572,7 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 	static size_t preview_id = 0;
 	static std::filesystem::path preview_path;
 	static bool loading = false;
+	static bool error = false;
 	static std::mutex preview_mutex;
 
 	auto sample_video_path = blur.settings_path / "sample_video.mp4";
@@ -644,6 +635,7 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 			if (render == renders.back().get())
 			{ // todo: this should be correct right? any cases where this doesn't work?
 				loading = false;
+				error = !res.success;
 
 				if (!res.success) {
 					if (res.error_message != "Input path does not exist")
@@ -665,7 +657,7 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 		});
 	}
 
-	if (!preview_path.empty() && std::filesystem::exists(preview_path)) {
+	if (!preview_path.empty() && std::filesystem::exists(preview_path) && !error) {
 		auto element = ui::add_image(
 			"config preview image",
 			container,
@@ -696,10 +688,34 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 					fonts::font,
 					os::TextAlign::Center
 				);
+
+				auto validation_res = config::validate(settings, false);
+				if (!validation_res.success) {
+					ui::add_text(
+						"config validation error/s",
+						container,
+						validation_res.error,
+						gfx::rgba(255, 50, 50, 255),
+						fonts::font,
+						os::TextAlign::Center,
+						ui::TextStyle::OUTLINE
+					);
+
+					ui::add_button(
+						"fix config button",
+						container,
+						"Reset invalid config options to defaults",
+						fonts::font,
+						[&] {
+							config::validate(settings, true);
+						}
+					);
+				}
 			}
 		}
 		else {
 			ui::add_text(
+
 				"sample video does not exist text",
 				container,
 				"No preview video found.",
@@ -1076,7 +1092,7 @@ bool gui::renderer::redraw_window(os::Window* window, bool force_render) {
 	int bottom_pad = std::max(PAD_Y, nav_cutoff);
 
 	const static int main_pad_x = std::min(100, window->width() / 10); // bit of magic never hurt anyone
-	ui::reset_container(main_container, rect, 15, ui::Padding{ PAD_Y, main_pad_x, bottom_pad, main_pad_x });
+	ui::reset_container(main_container, rect, 13, ui::Padding{ PAD_Y, main_pad_x, bottom_pad, main_pad_x });
 
 	const int config_page_container_gap = PAD_X / 2;
 
@@ -1097,7 +1113,7 @@ bool gui::renderer::redraw_window(os::Window* window, bool force_render) {
 	);
 
 	ui::reset_container(
-		option_information_container, config_preview_container_rect, 15, ui::Padding{ PAD_Y, PAD_X, bottom_pad, PAD_X }
+		option_information_container, config_preview_container_rect, 9, ui::Padding{ PAD_Y, PAD_X, bottom_pad, PAD_X }
 	);
 
 	gfx::Rect notification_container_rect = rect;

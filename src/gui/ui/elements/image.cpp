@@ -116,5 +116,5 @@ std::optional<ui::Element*> ui::add_image(
 		render_image
 	);
 
-	return add_element(container, std::move(element), container.line_height);
+	return add_element(container, std::move(element), container.element_gap);
 }

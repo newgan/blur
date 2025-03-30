@@ -3,8 +3,12 @@
 #include "../utils.h"
 
 namespace {
+	int get_line_spacing(const ui::Container& container, const SkFont& font) {
+		return font.getSize() * container.line_height;
+	}
+
 	int get_text_height(const ui::Container& container, const std::vector<std::string>& lines, const SkFont& font) {
-		return lines.size() * (std::max((int)font.getSize(), container.line_height));
+		return lines.size() * get_line_spacing(container, font);
 	}
 
 	std::vector<std::string> wrap_lines(
@@ -57,7 +61,7 @@ void ui::render_text(const Container& container, os::Surface* surface, const Ani
 		}
 
 		render::text(surface, text_pos, adjusted_color, line, text_data.font, text_data.align);
-		text_pos.y += container.line_height;
+		text_pos.y += get_line_spacing(container, text_data.font);
 	}
 }
 
@@ -96,7 +100,7 @@ ui::Element& ui::add_text(
 		render_text
 	);
 
-	return *add_element(container, std::move(element), container.line_height);
+	return *add_element(container, std::move(element), container.element_gap);
 }
 
 ui::Element& ui::add_text_fixed(
@@ -144,5 +148,5 @@ ui::Element& ui::add_text_fixed(
 		true
 	);
 
-	return *add_element(container, std::move(element), container.line_height);
+	return *add_element(container, std::move(element), container.element_gap);
 }

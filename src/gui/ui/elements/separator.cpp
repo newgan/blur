@@ -67,12 +67,12 @@ ui::Element& ui::add_separator(const std::string& id, Container& container, Sepa
 	Element element(
 		id,
 		ElementType::SEPARATOR,
-		gfx::Rect(container.current_position, gfx::Size(200, container.line_height)),
+		gfx::Rect(container.current_position, gfx::Size(200, container.element_gap)),
 		SeparatorElementData{
 			.style = style,
 		},
 		render_separator
 	);
 
-	return *add_element(container, std::move(element), container.line_height);
+	return *add_element(container, std::move(element), container.element_gap);
 }

@@ -56,8 +56,9 @@ namespace {
 void ui::reset_container(
 	Container& container,
 	const gfx::Rect& rect,
-	int line_height,
+	int element_gap,
 	const std::optional<Padding>& padding,
+	float line_height,
 	std::optional<gfx::Color> background_color
 ) {
 	container.rect = rect;
@@ -69,6 +70,7 @@ void ui::reset_container(
 		container.current_position.y += container.padding->top;
 	}
 
+	container.element_gap = element_gap;
 	container.line_height = line_height;
 	container.background_color = background_color;
 

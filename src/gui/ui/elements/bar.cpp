@@ -66,5 +66,5 @@ ui::Element& ui::add_bar(
 		render_bar
 	);
 
-	return *add_element(container, std::move(element), container.line_height);
+	return *add_element(container, std::move(element), container.element_gap);
 }

@@ -260,7 +260,9 @@ namespace ui {
 		std::unordered_map<std::string, AnimatedElement> elements;
 		std::vector<std::string> current_element_ids;
 
-		int line_height = 15;
+		int element_gap = 15;
+		float line_height = 1.2f;
+
 		gfx::Point current_position;
 		std::optional<Padding> padding;
 		bool updated = false;
@@ -317,8 +319,9 @@ namespace ui {
 	void reset_container(
 		Container& container,
 		const gfx::Rect& rect,
-		int line_height,
+		int element_gap,
 		const std::optional<Padding>& padding = {},
+		float line_height = 1.2f,
 		std::optional<gfx::Color> background_color = {}
 	);
 

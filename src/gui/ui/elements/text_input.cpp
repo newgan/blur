@@ -428,7 +428,7 @@ ui::Element& ui::add_text_input(
 	return *add_element(
 		container,
 		std::move(element),
-		container.line_height,
+		container.element_gap,
 		{
 			{ hasher("main"), { .speed = 25.f } },
 			{ hasher("hover"), { .speed = 80.f } },

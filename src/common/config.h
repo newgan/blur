@@ -85,7 +85,24 @@ const BlurSettings DEFAULT_SETTINGS;
 const std::string CONFIG_FILENAME = ".blur-config.cfg"; // todo: the . makes configs hidden on mac - is that an issue
 
 namespace config {
+	inline const std::vector<std::string> INTERPOLATION_PRESETS = {
+		"weak", "film", "smooth", "animation", "default", "test",
+	};
+
+	inline const std::vector<std::string> INTERPOLATION_ALGORITHMS = {
+		"1", "2", "11", "13", "21", "23",
+	};
+
+	inline const std::vector<std::string> INTERPOLATION_BLOCK_SIZES = { "4", "8", "16", "32" };
+
 	void create(const std::filesystem::path& filepath, const BlurSettings& current_settings = BlurSettings());
+
+	struct ConfigValidationResponse {
+		bool success;
+		std::string error;
+	};
+
+	ConfigValidationResponse validate(BlurSettings& config, bool fix);
 
 	BlurSettings parse(const std::filesystem::path& config_filepath);
 	BlurSettings parse_global_config();

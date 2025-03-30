@@ -126,7 +126,7 @@ ui::Element& ui::add_notification(
 	return *add_element(
 		container,
 		std::move(element),
-		container.line_height,
+		container.element_gap,
 		{
 			{ hasher("main"), { .speed = 5.f } },
 			{ hasher("hover"), { .speed = 80.f } },
