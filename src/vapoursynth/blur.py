@@ -90,6 +90,14 @@ if settings["interpolate"]:
             # video = core.resize.Bicubic(video, format=vs.YUV420P8, matrix_s="709")
 
         case _:
+            orig_format = video.format
+            needs_conversion = (
+                orig_format.id != vs.YUV420P8
+            )  # svp only accepts yv12 (SVSuper: Clip must be YV12)
+
+            if needs_conversion:
+                video = core.resize.Bicubic(video, format=vs.YUV420P8)
+
             if settings["manual_svp"]:
                 super = core.svp1.Super(video, settings["super_string"])
                 vectors = core.svp1.Analyse(
@@ -121,6 +129,9 @@ if settings["interpolate"]:
                     masking=int(settings["interpolation_mask_area"]),
                     gpu=settings["gpu_interpolation"],
                 )
+
+            if needs_conversion:
+                video = core.resize.Bicubic(video, format=orig_format.id)
 
 # output timescale
 if settings["timescale"]:
