@@ -131,10 +131,12 @@ updates::UpdateCheckRes Blur::check_updates() {
 	return updates::is_latest_version(config.check_beta);
 }
 
-void Blur::update(const std::string& tag) {
+void Blur::update(
+	const std::string& tag, const std::optional<std::function<void(const std::string&)>>& progress_callback
+) {
 #ifndef WIN32
 	// todo:
 #else
-	updates::update_to_tag(update_res.latest_tag, message_callback);
+	updates::update_to_tag(tag, progress_callback);
 #endif
 }

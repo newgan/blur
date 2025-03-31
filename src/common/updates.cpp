@@ -197,8 +197,7 @@ updates::UpdateCheckRes updates::is_latest_version(bool include_beta) {
 }
 
 bool updates::update_to_tag(
-	const std::string& tag,
-	const std::optional<std::function<void(const std::string&, const std::string&)>>& message_callback
+	const std::string& tag, const std::optional<std::function<void(const std::string&)>>& progress_callback
 ) {
 	try {
 		u::log("Beginning update to tag: {}", tag);
@@ -234,14 +233,14 @@ bool updates::update_to_tag(
 		// Setup download session
 		cpr::Session session;
 		session.SetUrl(cpr::Url{ download_url });
-		if (message_callback) {
+		if (progress_callback) {
 			session.SetWriteCallback(cpr::WriteCallback([&](const std::string_view& data, intptr_t userdata) -> bool {
 				downloaded_bytes += data.size();
 				installer_file.write(data.data(), data.size());
 
 				float progress = static_cast<float>(downloaded_bytes) / static_cast<float>(total_bytes);
 				if (progress - last_reported_progress >= 0.01f) {
-					(*message_callback)(std::format("Downloading update: {:.1f}%", progress * 100.f), {});
+					(*progress_callback)(std::format("Downloading update: {:.1f}%", progress * 100.f));
 					last_reported_progress = progress;
 				}
 
@@ -259,8 +258,8 @@ bool updates::update_to_tag(
 		}
 
 		// Complete progress
-		if (message_callback)
-			(*message_callback)("Update download complete", {});
+		if (progress_callback)
+			(*progress_callback)("Update download complete");
 
 		u::log("Download complete, launching installer");
 
@@ -276,13 +275,12 @@ bool updates::update_to_tag(
 }
 
 bool updates::update_to_latest(
-	bool include_beta,
-	const std::optional<std::function<void(const std::string&, const std::string&)>>& message_callback
+	bool include_beta, const std::optional<std::function<void(const std::string&)>>& progress_callback
 ) {
 	auto check_result = is_latest_version(include_beta);
 	if (!check_result.success || check_result.is_latest) {
 		return false;
 	}
 
-	return update_to_tag(check_result.latest_tag, message_callback);
+	return update_to_tag(check_result.latest_tag, progress_callback);
 }

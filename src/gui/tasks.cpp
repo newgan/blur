@@ -48,8 +48,17 @@ void tasks::run(const std::vector<std::string>& arguments) {
 			std::format("There's a newer version ({}) available! Click to run the installer.", update_res.latest_tag),
 			ui::NotificationType::INFO,
 			[&] {
-				Blur::update();
-			}
+				const static std::string UPDATE_NOTIFICATION_ID = "update progress notification";
+
+				gui::renderer::add_notification(
+					UPDATE_NOTIFICATION_ID, "Downloading update...", ui::NotificationType::INFO
+				);
+
+				Blur::update(update_res.latest_tag, [](const std::string& text) {
+					gui::renderer::add_notification(UPDATE_NOTIFICATION_ID, text, ui::NotificationType::INFO);
+				});
+			},
+			std::chrono::duration<float>(15.f)
 		);
 #else
 		gui::renderer::add_notification(

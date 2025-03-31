@@ -11,11 +11,9 @@ namespace updates {
 	UpdateCheckRes is_latest_version(bool include_beta = false);
 
 	bool update_to_tag(
-		const std::string& tag,
-		const std::optional<std::function<void(const std::string&, const std::string&)>>& message_callback = {}
+		const std::string& tag, const std::optional<std::function<void(const std::string&)>>& progress_callback = {}
 	);
 	bool update_to_latest(
-		bool include_beta = false,
-		const std::optional<std::function<void(const std::string&, const std::string&)>>& message_callback = {}
+		bool include_beta = false, const std::optional<std::function<void(const std::string&)>>& progress_callback = {}
 	);
 }

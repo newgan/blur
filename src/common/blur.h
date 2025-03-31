@@ -36,7 +36,9 @@ public:
 	static bool remove_temp_path(const std::filesystem::path& temp_path);
 
 	static updates::UpdateCheckRes check_updates();
-	static void update(const std::string& tag);
+	static void update(
+		const std::string& tag, const std::optional<std::function<void(const std::string&)>>& progress_callback = {}
+	);
 };
 
 inline Blur blur;
