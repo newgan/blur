@@ -135,10 +135,6 @@ void gui::renderer::components::render(
 			os::TextAlign::Center
 		);
 	}
-
-	ui::add_button("stop render button", container, "Stop render", fonts::font, [&] {
-		render.stop();
-	});
 }
 
 void gui::renderer::components::main_screen(ui::Container& container, float delta_time) {
@@ -1132,6 +1128,15 @@ bool gui::renderer::redraw_window(os::Window* window, bool force_render) {
 			components::main_screen(main_container, delta_time);
 
 			if (initialisation_res && initialisation_res->success) {
+				auto current_render = rendering.get_current_render();
+				if (current_render) {
+					ui::add_button("stop render button", nav_container, "Stop current render", fonts::font, [] {
+						auto current_render = rendering.get_current_render();
+						if (current_render)
+							(*current_render)->stop();
+					});
+				}
+
 				ui::set_next_same_line(nav_container);
 				ui::add_button("config button", nav_container, "Config", fonts::font, [] {
 					screen = Screens::CONFIG;
