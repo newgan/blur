@@ -10,7 +10,6 @@ void config_app::create(const std::filesystem::path& filepath, const GlobalAppSe
 	output << "- updates" << "\n";
 	output << "check for updates: " << (current_settings.check_updates ? "true" : "false") << "\n";
 	output << "include beta updates: " << (current_settings.check_beta ? "true" : "false") << "\n";
-	output << "auto update: " << (current_settings.auto_update ? "true" : "false") << "\n";
 }
 
 GlobalAppSettings config_app::parse(const std::filesystem::path& config_filepath) {
@@ -20,7 +19,6 @@ GlobalAppSettings config_app::parse(const std::filesystem::path& config_filepath
 
 	config_base::extract_config_value(config_map, "check for updates", settings.check_updates);
 	config_base::extract_config_value(config_map, "include beta updates", settings.check_beta);
-	config_base::extract_config_value(config_map, "auto update", settings.auto_update);
 
 	// recreate the config file using the parsed values (keeps nice formatting)
 	create(config_filepath, settings);
@@ -40,6 +38,5 @@ nlohmann::json GlobalAppSettings::to_json() const {
 	nlohmann::json j;
 	j["check_updates"] = this->check_updates;
 	j["check_beta"] = this->check_beta;
-	j["auto_update"] = this->auto_update;
 	return j;
 }

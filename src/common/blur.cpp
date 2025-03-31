@@ -123,30 +123,18 @@ bool Blur::remove_temp_path(const std::filesystem::path& temp_path) {
 	}
 }
 
-void Blur::update_handler(
-	const std::optional<std::function<void(const std::string&, const std::string&)>>& message_callback
-) {
+updates::UpdateCheckRes Blur::check_updates() {
 	auto config = config_app::get_app_config();
 	if (!config.check_updates)
-		return;
+		return { .success = false };
 
-	auto update_res = updates::is_latest_version(config.check_beta);
-	if (!update_res.is_latest) {
-		(*message_callback)(
-			std::format(
-				"There's a newer version ({}) available! Click to go to the download page.", update_res.latest_tag
-			),
-			update_res.latest_tag_url
-		);
+	return updates::is_latest_version(config.check_beta);
+}
 
-#ifndef _DEBUG
-		if (config.auto_update) {
-#	ifndef WIN32
-			// todo:
-#	else
-			updates::update_to_tag(update_res.latest_tag, message_callback);
-#	endif
-		}
+void Blur::update(const std::string& tag) {
+#ifndef WIN32
+	// todo:
+#else
+	updates::update_to_tag(update_res.latest_tag, message_callback);
 #endif
-	}
 }

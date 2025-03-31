@@ -1,5 +1,7 @@
 #pragma once
 
+#include "updates.h"
+
 const std::string APPLICATION_NAME = "blur";
 const std::string BLUR_VERSION = "2.0-preview5";
 
@@ -33,9 +35,8 @@ public:
 	[[nodiscard]] std::optional<std::filesystem::path> create_temp_path(const std::string& folder_name) const;
 	static bool remove_temp_path(const std::filesystem::path& temp_path);
 
-	static void update_handler(
-		const std::optional<std::function<void(const std::string&, const std::string&)>>& message_callback = {}
-	);
+	static updates::UpdateCheckRes check_updates();
+	static void update(const std::string& tag);
 };
 
 inline Blur blur;
