@@ -6,37 +6,27 @@
 TextInput::TextInput(std::string* text_pointer, const TextInputConfig& config)
 	: text_pointer(text_pointer), config(config) {
 	reset_selection();
+
 	last_blink_time = std::chrono::system_clock::now();
+
+	// NOLINTBEGIN fail
 	last_action_time = last_blink_time;
 	can_merge_actions = false;
+	// NOLINTEND
 }
 
 void TextInput::insert_text(const std::string& input) {
 	// handle potential filters
 	std::string filtered_input = input;
 	if (config.numbers_only) {
-		filtered_input.erase(
-			std::remove_if(
-				filtered_input.begin(),
-				filtered_input.end(),
-				[](char c) {
-					return !std::isdigit(c);
-				}
-			),
-			filtered_input.end()
-		);
+		std::erase_if(filtered_input, [](char c) {
+			return !std::isdigit(c);
+		});
 	}
 	else if (!config.allow_special_chars) {
-		filtered_input.erase(
-			std::remove_if(
-				filtered_input.begin(),
-				filtered_input.end(),
-				[](char c) {
-					return !std::isalnum(c) && !std::isspace(c);
-				}
-			),
-			filtered_input.end()
-		);
+		std::erase_if(filtered_input, [](char c) {
+			return !std::isalnum(c) && !std::isspace(c);
+		});
 	}
 
 	if (filtered_input.empty())
@@ -307,28 +297,21 @@ void TextInput::copy(const std::function<void(const std::string&)>& set_clipboar
 
 void TextInput::paste(const std::function<std::string()>& get_clipboard_func) {
 	std::string clipboard_text = get_clipboard_func();
-	if (!clipboard_text.empty()) {
-		// If we have selection, this is a replace operation
-		if (has_selection) {
-			size_t start = std::min(cursor_position, selection_start);
-			size_t end = std::max(cursor_position, selection_start);
-			std::string selected_text = text_pointer->substr(start, end - start);
+	if (clipboard_text.empty())
+		return;
 
-			// Delete selected text and insert clipboard text
-			text_pointer->erase(start, end - start);
-			text_pointer->insert(start, clipboard_text);
+	if (has_selection) {
+		size_t start = std::min(selection_start, selection_end);
+		size_t end = std::max(selection_start, selection_end);
 
-			// Track as replace action
-			add_replace_action(start, selected_text, clipboard_text);
+		// Delete selected text and insert clipboard text
+		text_pointer->erase(start, end - start);
 
-			cursor_position = start + clipboard_text.length();
-			reset_selection();
-		}
-		// Otherwise, it's a simple insert
-		else {
-			insert_text(clipboard_text);
-		}
+		cursor_position = start;
+		reset_selection();
 	}
+
+	insert_text(clipboard_text);
 }
 
 void TextInput::reset_selection() {
@@ -443,6 +426,7 @@ void TextInput::move_cursor_word_right(bool update_selection) {
 	set_cursor_position(pos, update_selection);
 }
 
+// NOLINTBEGIN(readability-function-cognitive-complexity)
 bool TextInput::handle_key_input(const keys::KeyPress& key) {
 	auto get_clipboard_func = []() -> std::string {
 		std::string out;
@@ -473,6 +457,7 @@ bool TextInput::handle_key_input(const keys::KeyPress& key) {
 	}
 
 	// handle keyboard shortcuts and navigation
+	// NOLINT()
 	switch (key.scancode) {
 		case os::KeyScancode::kKeyBackspace:
 // On Mac, Cmd+Backspace deletes to beginning of line
@@ -625,10 +610,15 @@ bool TextInput::handle_key_input(const keys::KeyPress& key) {
 			}
 			break;
 #endif
+
+		default:
+			break;
 	}
 
 	return false;
 }
+
+// NOLINTEND(readability-function-cognitive-complexity)
 
 void TextInput::ensure_cursor_visible(const SkFont& font, const gfx::Rect& rect) {
 	// Get the cursor position in pixels
@@ -680,7 +670,7 @@ float TextInput::calculate_scroll_for_cursor(const SkFont& font, const gfx::Rect
 }
 
 TextInput::ScrollbarMetrics TextInput::calculate_scrollbar_metrics(const gfx::Rect& rect) const {
-	ScrollbarMetrics metrics;
+	ScrollbarMetrics metrics{};
 
 	// Determine if scrollbar should be visible
 	metrics.visible = max_scroll_offset > 0.0f;
@@ -795,8 +785,8 @@ bool TextInput::handle_mouse_drag(const gfx::Rect& rect, const gfx::Point& pos, 
 	}
 
 	// If this is the first drag event, start selection
-	if (!has_selection) {
-		has_selection = true;
+	if (!drag_start) {
+		drag_start = true;
 		selection_start = cursor_position;
 	}
 
@@ -804,7 +794,16 @@ bool TextInput::handle_mouse_drag(const gfx::Rect& rect, const gfx::Point& pos, 
 	drag_pos = std::min(drag_pos, text_pointer->length());
 	selection_end = drag_pos;
 	cursor_position = drag_pos;
+
+	if (selection_end != selection_start) {
+		has_selection = true;
+	}
+
 	return true;
+}
+
+void TextInput::reset_mouse_drag() {
+	drag_start = false;
 }
 
 bool TextInput::handle_mouse_double_click(const gfx::Rect& rect, const gfx::Point& pos, const SkFont& font) {
@@ -877,13 +876,10 @@ void TextInput::render(
 
 	// Adjust text position to account for vertical centering
 	int text_height = font.getSize();
-	float text_y = text_area.y + (text_area.h - text_height) / 2 + text_height; // Position for baseline
-
-	// Create clipping rectangle to hide overflow
-	gfx::Rect clip_rect = text_area;
+	float text_y = text_area.y + ((text_area.h - text_height) / 2.f) + text_height; // Position for baseline
 
 	// Set clipping region to prevent text overflow
-	render::push_clip_rect(surface, clip_rect);
+	render::push_clip_rect(surface, text_area);
 
 	// Draw selection background if needed
 	if (has_selection) {
@@ -979,7 +975,8 @@ void TextInput::add_delete_action(size_t position, const std::string& text) {
 			last_action.text = text + last_action.text;
 			return;
 		}
-		else if (last_action.type == ActionType::DeleteText && position + text.length() == last_action.position) {
+
+		if (last_action.type == ActionType::DeleteText && position + text.length() == last_action.position) {
 			// Delete: we're deleting after previous deletion
 			last_action.text += text;
 			last_action.position = position;
@@ -1033,7 +1030,8 @@ bool TextInput::should_merge_with_last_action(ActionType type, size_t position) 
 		// Merge consecutive insertions at cursor position
 		return (last_action.position + last_action.text.length() == position);
 	}
-	else if (type == ActionType::DeleteText) {
+
+	if (type == ActionType::DeleteText) {
 		// Merge consecutive deletions at the same position (delete key)
 		// or consecutive backspaces (position decreasing by 1)
 		return (position == last_action.position || position + 1 == last_action.position);

@@ -56,6 +56,7 @@ public:
 	bool handle_key_input(const keys::KeyPress& key_press);
 	bool handle_mouse_click(const gfx::Rect& rect, const gfx::Point& pos, const SkFont& font);
 	bool handle_mouse_drag(const gfx::Rect& rect, const gfx::Point& pos, const SkFont& font);
+	void reset_mouse_drag();
 	bool handle_mouse_double_click(const gfx::Rect& rect, const gfx::Point& pos, const SkFont& font);
 	bool handle_mouse_triple_click(const gfx::Point& pos);
 	bool handle_scrollbar_drag(const gfx::Point& pos);
@@ -85,6 +86,7 @@ private:
 	bool has_selection = false;
 	size_t selection_start = 0;
 	size_t selection_end = 0;
+	bool drag_start = false;
 
 	// configuration
 	TextInputConfig config;

@@ -57,6 +57,9 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 		if (keys::is_mouse_dragging()) {
 			input->handle_mouse_drag(element.element->rect, keys::mouse_pos, input_data.font);
 		}
+		else {
+			input->reset_mouse_drag();
+		}
 
 		for (const auto& key : keys::pressed_keys) {
 			input->handle_key_input(key);
