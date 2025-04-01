@@ -49,7 +49,7 @@ void gui::renderer::set_cursor(os::NativeCursor cursor) {
 
 void gui::renderer::components::render(
 	ui::Container& container,
-	const Render& render,
+	Render& render,
 	bool current,
 	float delta_time,
 	bool& is_progress_shown,
@@ -1128,6 +1128,15 @@ bool gui::renderer::redraw_window(os::Window* window, bool force_render) {
 			components::main_screen(main_container, delta_time);
 
 			if (initialisation_res && initialisation_res->success) {
+				auto current_render = rendering.get_current_render();
+				if (current_render) {
+					ui::add_button("stop render button", nav_container, "Stop current render", fonts::font, [] {
+						auto current_render = rendering.get_current_render();
+						if (current_render)
+							(*current_render)->stop();
+					});
+				}
+
 				ui::set_next_same_line(nav_container);
 				ui::add_button("config button", nav_container, "Config", fonts::font, [] {
 					screen = Screens::CONFIG;
@@ -1276,7 +1285,12 @@ void gui::renderer::add_notification(
 }
 
 void gui::renderer::on_render_finished(Render* render, const RenderResult& result) {
-	if (result.success) {
+	if (result.stopped) {
+		add_notification(
+			std::format("Render '{}' stopped", base::to_utf8(render->get_video_name())), ui::NotificationType::INFO
+		);
+	}
+	else if (result.success) {
 		add_notification(
 			std::format("Render '{}' completed", base::to_utf8(render->get_video_name())), ui::NotificationType::SUCCESS
 		);

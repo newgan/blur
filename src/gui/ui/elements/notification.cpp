@@ -100,8 +100,9 @@ ui::Element& ui::add_notification(
 	gfx::Size notification_size = { 230, 100 }; // height is a maximum to start with
 	const int line_height = font.getSize() + 5;
 
-	std::vector<std::string> lines =
-		render::wrap_text(text, notification_size - NOTIFICATION_TEXT_PADDING * 2, font, line_height);
+	std::vector<std::string> lines = render::wrap_text(
+		text, notification_size - (NOTIFICATION_TEXT_PADDING * 2 + 1), font, line_height
+	); // +1 idk todo: it looks bad otherwise sometimes
 
 	notification_size.h = lines.size() * line_height;
 	notification_size.h += NOTIFICATION_TEXT_PADDING.h * 2;

@@ -56,7 +56,7 @@ namespace gui::renderer {
 	namespace components {
 		void render(
 			ui::Container& container,
-			const Render& render,
+			Render& render,
 			bool current,
 			float delta_time,
 			bool& is_progress_shown,
