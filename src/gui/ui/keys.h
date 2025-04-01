@@ -3,6 +3,7 @@
 namespace keys {
 	inline gfx::Point mouse_pos;
 	inline std::unordered_set<os::Event::MouseButton> pressed_mouse_keys;
+	inline std::unordered_set<os::Event::MouseButton> dragging_mouse_keys; // this feels wrong but it works
 
 	struct KeyPress {
 		os::KeyScancode scancode;
@@ -23,4 +24,5 @@ namespace keys {
 
 	bool is_rect_pressed(const gfx::Rect& rect, os::Event::MouseButton button);
 	bool is_mouse_down(os::Event::MouseButton button = os::Event::MouseButton::LeftButton);
+	bool is_mouse_dragging(os::Event::MouseButton button = os::Event::MouseButton::LeftButton);
 }

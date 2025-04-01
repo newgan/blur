@@ -6,6 +6,7 @@ bool keys::process_event(const os::Event& event) {
 			mouse_pos = { -1, -1 };
 			pressed_mouse_keys.clear(
 			); // fix mouseup not being registered when left the window todo: handle this properly
+			dragging_mouse_keys.clear();
 			return true;
 		}
 
@@ -25,6 +26,7 @@ bool keys::process_event(const os::Event& event) {
 			// mouse_pos = position; // TODO: this is inaccurate? if you press open file button move cursor off screen
 			// then close the picker there'll be a mouseup event with mouse pos still on the button
 			pressed_mouse_keys.erase(event.button());
+			dragging_mouse_keys.erase(event.button());
 			return true;
 		}
 
@@ -59,6 +61,7 @@ void keys::on_mouse_press_handled(os::Event::MouseButton button) {
 	// todo: is this naive and stupid? it seems kinda elegant, i cant think of a situation
 	// where you'd want to press two things with one click
 	pressed_mouse_keys.erase(button);
+	dragging_mouse_keys.insert(button);
 }
 
 bool keys::is_rect_pressed(const gfx::Rect& rect, os::Event::MouseButton button) {
@@ -67,4 +70,8 @@ bool keys::is_rect_pressed(const gfx::Rect& rect, os::Event::MouseButton button)
 
 bool keys::is_mouse_down(os::Event::MouseButton button) {
 	return pressed_mouse_keys.contains(button);
+}
+
+bool keys::is_mouse_dragging(os::Event::MouseButton button) {
+	return pressed_mouse_keys.contains(button) || dragging_mouse_keys.contains(button);
 }
