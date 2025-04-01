@@ -43,6 +43,8 @@ void tasks::run(const std::vector<std::string>& arguments) {
 
 	auto update_res = Blur::check_updates();
 	if (update_res.success && !update_res.is_latest) {
+		static const auto update_notification_duration = std::chrono::duration<float>(15.f);
+
 #ifdef WIN32
 		gui::renderer::add_notification(
 			std::format("There's a newer version ({}) available! Click to run the installer.", update_res.latest_tag),
@@ -58,7 +60,7 @@ void tasks::run(const std::vector<std::string>& arguments) {
 					gui::renderer::add_notification(UPDATE_NOTIFICATION_ID, text, ui::NotificationType::INFO);
 				});
 			},
-			std::chrono::duration<float>(15.f)
+			update_notification_duration
 		);
 #else
 		gui::renderer::add_notification(
@@ -68,7 +70,8 @@ void tasks::run(const std::vector<std::string>& arguments) {
 			ui::NotificationType::INFO,
 			[&] {
 				base::launcher::open_url(update_res.latest_tag_url);
-			}
+			},
+			update_notification_duration
 		);
 #endif
 	}
