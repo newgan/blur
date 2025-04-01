@@ -723,12 +723,12 @@ void TextInput::render_scrollbar(os::Surface* surface, const gfx::Rect& rect, fl
 	render::rounded_rect_filled(surface, scrollbar_thumb, gfx::rgba(120, 120, 120, thumb_alpha), 0.f);
 }
 
-bool TextInput::handle_scrollbar_drag(int x, int y) {
+bool TextInput::handle_scrollbar_drag(const gfx::Point& pos) {
 	if (!is_scrollbar_dragging) {
 		return false;
 	}
 
-	float drag_delta = x - scrollbar_drag_start_x;
+	float drag_delta = pos.x - scrollbar_drag_start_x;
 
 	// Calculate the new scroll offset based on drag delta
 	float available_track = max_scroll_offset;
@@ -743,31 +743,55 @@ bool TextInput::handle_scrollbar_drag(int x, int y) {
 	return true;
 }
 
-bool TextInput::handle_mouse_click(int x, int y, const std::function<size_t(int, int)>& get_char_index_at_position) {
+size_t TextInput::get_char_index_at_position(const gfx::Rect& rect, const gfx::Point& pos, const SkFont& font) {
+	const int adjusted_x = ((pos.x + scroll_offset) - config.padding_horizontal) - rect.x;
+
+	int last_size = 0;
+	for (size_t i = 1; i < text_pointer->size(); i++) {
+		int size = render::get_text_size(text_pointer->substr(0, i), font).w;
+		int half = (size - last_size) / 2;
+
+		if (i == 1) {
+			// first char need to check left side too since no char before it, redundant otherwise
+			if (adjusted_x < half)
+				return i - 1;
+		}
+
+		if (adjusted_x < size + half)
+			return i;
+
+		last_size = size;
+	}
+
+	return text_pointer->size();
+}
+
+bool TextInput::handle_mouse_click(const gfx::Rect& rect, const gfx::Point& pos, const SkFont& font) {
 	// Check if click is on scrollbar
-	ScrollbarMetrics metrics = calculate_scrollbar_metrics(gfx::Rect(x, y, 0, 0)); // Using dummy rect for context
+	ScrollbarMetrics metrics =
+		calculate_scrollbar_metrics(gfx::Rect(pos.x, pos.y, 0, 0)); // Using dummy rect for context
 
-	gfx::Rect scrollbar_area(x, y + y - config.scrollbar_height, x, config.scrollbar_height);
+	gfx::Rect scrollbar_area(pos.x, pos.y + pos.y - config.scrollbar_height, pos.x, config.scrollbar_height);
 
-	if (metrics.visible && y >= scrollbar_area.y && y <= scrollbar_area.y + scrollbar_area.h) {
+	if (metrics.visible && pos.y >= scrollbar_area.y && pos.y <= scrollbar_area.y + scrollbar_area.h) {
 		is_scrollbar_dragging = true;
-		scrollbar_drag_start_x = x;
+		scrollbar_drag_start_x = pos.x;
 		scrollbar_drag_start_offset = scroll_offset;
 		return true;
 	}
 
 	// Handle normal text click
 	is_scrollbar_dragging = false;
-	size_t click_pos = get_char_index_at_position(x + scroll_offset, y);
+	size_t click_pos = get_char_index_at_position(rect, pos, font);
 	click_pos = std::min(click_pos, text_pointer->length());
 	set_cursor_position(click_pos);
 	return true;
 }
 
-bool TextInput::handle_mouse_drag(int x, int y, const std::function<size_t(int, int)>& get_char_index_at_position) {
+bool TextInput::handle_mouse_drag(const gfx::Rect& rect, const gfx::Point& pos, const SkFont& font) {
 	// Check if we're dragging the scrollbar
 	if (is_scrollbar_dragging) {
-		return handle_scrollbar_drag(x, y);
+		return handle_scrollbar_drag(pos);
 	}
 
 	// If this is the first drag event, start selection
@@ -776,17 +800,15 @@ bool TextInput::handle_mouse_drag(int x, int y, const std::function<size_t(int, 
 		selection_start = cursor_position;
 	}
 
-	size_t drag_pos = get_char_index_at_position(x + scroll_offset, y);
+	size_t drag_pos = get_char_index_at_position(rect, pos, font);
 	drag_pos = std::min(drag_pos, text_pointer->length());
 	selection_end = drag_pos;
 	cursor_position = drag_pos;
 	return true;
 }
 
-bool TextInput::handle_mouse_double_click(
-	int x, int y, const std::function<size_t(int, int)>& get_char_index_at_position
-) {
-	size_t click_pos = get_char_index_at_position(x + scroll_offset, y);
+bool TextInput::handle_mouse_double_click(const gfx::Rect& rect, const gfx::Point& pos, const SkFont& font) {
+	size_t click_pos = get_char_index_at_position(rect, pos, font);
 	if (click_pos >= text_pointer->length())
 		return true;
 
@@ -805,16 +827,20 @@ bool TextInput::handle_mouse_double_click(
 	return true;
 }
 
-bool TextInput::handle_mouse_triple_click(
-	int x, int y, const std::function<size_t(int, int)>& get_char_index_at_position
-) {
+bool TextInput::handle_mouse_triple_click(const gfx::Point& pos) {
 	// Select the entire text on triple click
 	select_all();
 	return true;
 }
 
 void TextInput::render(
-	os::Surface* surface, const SkFont& font, const gfx::Rect& rect, float anim, float hover_anim, float focus_anim
+	os::Surface* surface,
+	const SkFont& font,
+	const gfx::Rect& rect,
+	float anim,
+	float hover_anim,
+	float focus_anim,
+	const std::string& placeholder
 ) {
 	const float input_rounding = 5.0f;
 	const float cursor_width = 2.0f;
@@ -873,14 +899,14 @@ void TextInput::render(
 		); // Semi-transparent blue
 	}
 
+	// Determine text to render (text or placeholder)
+	std::string display_text = text_pointer->empty() ? placeholder : *text_pointer;
+	gfx::Color text_color = utils::adjust_color(
+		text_pointer->empty() ? gfx::rgba(150, 150, 150, 255) : gfx::rgba(255, 255, 255, 255), anim
+	);
+
 	// Draw text with scroll offset
-	render::text(
-		surface,
-		gfx::Point(text_area.x - scroll_offset, text_y),
-		0xffffffff,
-		*text_pointer,
-		font
-	); // White text
+	render::text(surface, gfx::Point(text_area.x - scroll_offset, text_y), text_color, display_text, font);
 
 	// Draw cursor
 	if (show_cursor && focus_anim > 0.f) {

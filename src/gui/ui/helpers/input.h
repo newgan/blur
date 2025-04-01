@@ -54,12 +54,11 @@ public:
 
 	// input handling
 	bool handle_key_input(const keys::KeyPress& key_press);
-
-	bool handle_mouse_click(int x, int y, const std::function<size_t(int, int)>& get_char_index_at_position);
-	bool handle_mouse_drag(int x, int y, const std::function<size_t(int, int)>& get_char_index_at_position);
-	bool handle_mouse_double_click(int x, int y, const std::function<size_t(int, int)>& get_char_index_at_position);
-	bool handle_mouse_triple_click(int x, int y, const std::function<size_t(int, int)>& get_char_index_at_position);
-	bool handle_scrollbar_drag(int x, int y);
+	bool handle_mouse_click(const gfx::Rect& rect, const gfx::Point& pos, const SkFont& font);
+	bool handle_mouse_drag(const gfx::Rect& rect, const gfx::Point& pos, const SkFont& font);
+	bool handle_mouse_double_click(const gfx::Rect& rect, const gfx::Point& pos, const SkFont& font);
+	bool handle_mouse_triple_click(const gfx::Point& pos);
+	bool handle_scrollbar_drag(const gfx::Point& pos);
 
 	// state
 	void undo();
@@ -67,7 +66,13 @@ public:
 
 	// rendering
 	void render(
-		os::Surface* surface, const SkFont& font, const gfx::Rect& rect, float anim, float hover_anim, float focus_anim
+		os::Surface* surface,
+		const SkFont& font,
+		const gfx::Rect& rect,
+		float anim,
+		float hover_anim,
+		float focus_anim,
+		const std::string& placeholder = ""
 	);
 
 private:
@@ -150,4 +155,6 @@ private:
 	void add_delete_action(size_t position, const std::string& text);
 	void add_replace_action(size_t position, const std::string& old_text, const std::string& new_text);
 	bool should_merge_with_last_action(ActionType type, size_t position);
+
+	size_t get_char_index_at_position(const gfx::Rect& rect, const gfx::Point& pos, const SkFont& font);
 };

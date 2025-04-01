@@ -9,21 +9,19 @@
 
 namespace {
 	std::map<std::string, std::unique_ptr<TextInput>> input_map;
-
-	gfx::Rect get_input_rect(const ui::AnimatedElement& element) {
-		auto input_rect = element.element->rect;
-		return input_rect;
-	}
 }
 
 void ui::render_text_input(const Container& container, os::Surface* surface, const AnimatedElement& element) {
 	const auto& input_data = std::get<TextInputElementData>(element.element->data);
+
 	float anim = element.animations.at(hasher("main")).current;
 	float hover_anim = element.animations.at(hasher("hover")).current;
 	float focus_anim = element.animations.at(hasher("focus")).current;
 
 	auto& input = input_map.at(element.element->id);
-	input->render(surface, input_data.font, get_input_rect(element), anim, hover_anim, focus_anim);
+	input->render(
+		surface, input_data.font, element.element->rect, anim, hover_anim, focus_anim, input_data.placeholder
+	);
 }
 
 bool ui::update_text_input(const Container& container, AnimatedElement& element) {
@@ -33,8 +31,6 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 
 	auto& input = input_map.at(element.element->id);
 
-	auto input_rect = get_input_rect(element);
-
 	bool hovered = element.element->rect.contains(keys::mouse_pos) && set_hovered_element(element);
 
 	hover_anim.set_goal(hovered ? 1.f : 0.f);
@@ -42,33 +38,12 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 	if (hovered)
 		set_cursor(os::NativeCursor::IBeam);
 
-	auto get_char_index = [&](int x, int y) -> size_t {
-		int last_size = 0;
-		for (size_t i = 1; i < input_data.text->size(); i++) {
-			int size = render::get_text_size(input_data.text->substr(0, i), input_data.font).w;
-			int half = (size - last_size) / 2;
-
-			if (i == 1) {
-				// first char need to check left side too since no char before it, redundant otherwise
-				if (x < half)
-					return i - 1;
-			}
-
-			if (x < size + half)
-				return i;
-
-			last_size = size;
-		}
-
-		return input_data.text->size();
-	};
-
 	// Handle mouse click to focus/unfocus
 	if (hovered && keys::is_mouse_down()) {
 		active_element = &element;
 		focus_anim.set_goal(1.f);
 
-		input->handle_mouse_click(keys::mouse_pos.x - input_rect.x, keys::mouse_pos.y - input_rect.y, get_char_index);
+		input->handle_mouse_click(element.element->rect, keys::mouse_pos, input_data.font);
 		keys::on_mouse_press_handled(os::Event::MouseButton::LeftButton);
 	}
 	else if (keys::is_mouse_down() && !hovered) {
@@ -80,9 +55,7 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 
 	if (active) {
 		if (keys::is_mouse_dragging()) {
-			input->handle_mouse_drag(
-				keys::mouse_pos.x - input_rect.x, keys::mouse_pos.y - input_rect.y, get_char_index
-			);
+			input->handle_mouse_drag(element.element->rect, keys::mouse_pos, input_data.font);
 		}
 
 		for (const auto& key : keys::pressed_keys) {
