@@ -20,6 +20,7 @@ set(CMAKE_BINARY_DIR ${PROJECT_SOURCE_DIR}/build/${CMAKE_BUILD_TYPE})
 
 # packages
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(cpr CONFIG REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 find_package(CLI11 CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
@@ -54,6 +55,7 @@ function(setup_target target)
   target_link_libraries(
     ${target}
     PRIVATE nlohmann_json::nlohmann_json
+            cpr::cpr
             Boost::system
             Boost::filesystem
             Threads::Threads)
@@ -176,7 +178,7 @@ set(LAF_WITH_TESTS OFF) # disable tests
 
 add_subdirectory(dependencies/laf)
 
-# LAF libraries + Blur are compiled with config.h
+# LAF libraries + Blur are compiled with config_blur.h
 target_include_directories(laf-base PUBLIC src/gui)
 target_compile_definitions(laf-base PUBLIC HAVE_CONFIG_H)
 

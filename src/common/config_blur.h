@@ -81,10 +81,7 @@ public:
 	[[nodiscard]] nlohmann::json to_json() const;
 };
 
-const BlurSettings DEFAULT_SETTINGS;
-const std::string CONFIG_FILENAME = ".blur-config.cfg"; // todo: the . makes configs hidden on mac - is that an issue
-
-namespace config {
+namespace config_blur {
 	inline const std::vector<std::string> INTERPOLATION_PRESETS = {
 		"weak", "film", "smooth", "animation", "default", "test",
 	};
@@ -94,6 +91,8 @@ namespace config {
 	};
 
 	inline const std::vector<std::string> INTERPOLATION_BLOCK_SIZES = { "4", "8", "16", "32" };
+
+	const std::string CONFIG_FILENAME = ".blur-config.cfg";
 
 	void create(const std::filesystem::path& filepath, const BlurSettings& current_settings = BlurSettings());
 
@@ -108,10 +107,7 @@ namespace config {
 	BlurSettings parse_global_config();
 
 	std::filesystem::path get_global_config_path();
-
 	std::filesystem::path get_config_filename(const std::filesystem::path& video_folder);
-
 	BlurSettings get_global_config();
-
 	BlurSettings get_config(const std::filesystem::path& config_filepath, bool use_global);
-};
+}

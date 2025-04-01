@@ -1,7 +1,9 @@
 #pragma once
 
+#include "updates.h"
+
 const std::string APPLICATION_NAME = "blur";
-const std::string BLUR_VERSION = "2.0";
+const std::string BLUR_VERSION = "2.0-preview5";
 
 class Blur { // todo: switch all the classes which could be namespaces into namespaces
 public:
@@ -32,6 +34,11 @@ public:
 
 	[[nodiscard]] std::optional<std::filesystem::path> create_temp_path(const std::string& folder_name) const;
 	static bool remove_temp_path(const std::filesystem::path& temp_path);
+
+	static updates::UpdateCheckRes check_updates();
+	static void update(
+		const std::string& tag, const std::optional<std::function<void(const std::string&)>>& progress_callback = {}
+	);
 };
 
 inline Blur blur;

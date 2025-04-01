@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.h"
+#include "config_blur.h"
 #include "rendering.h"
 
 class FrameRender {

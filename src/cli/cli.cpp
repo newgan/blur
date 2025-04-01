@@ -16,6 +16,11 @@ bool cli::run(
 		return false;
 	}
 
+	auto update_res = Blur::check_updates();
+	if (update_res.success && !update_res.is_latest) {
+		u::log("There's a newer version ({}) available at {}!", update_res.latest_tag, update_res.latest_tag_url);
+	}
+
 	bool manual_output_files = !outputs.empty();
 	if (manual_output_files && inputs.size() != outputs.size()) {
 		u::log(L"Input/output filename count mismatch ({} inputs, {} outputs).", inputs.size(), outputs.size());

@@ -4,6 +4,7 @@
 #include "gui.h"
 #include "gui/renderer.h"
 #include "gui/ui/ui.h"
+#include "base/launcher.h"
 
 void tasks::run(const std::vector<std::string>& arguments) {
 	auto res = blur.initialise(false, true);
@@ -39,6 +40,41 @@ void tasks::run(const std::vector<std::string>& arguments) {
 	});
 
 	add_files(arguments); // todo: mac packaged app support (& linux? does it work?)
+
+	auto update_res = Blur::check_updates();
+	if (update_res.success && !update_res.is_latest) {
+		static const auto update_notification_duration = std::chrono::duration<float>(15.f);
+
+#ifdef WIN32
+		gui::renderer::add_notification(
+			std::format("There's a newer version ({}) available! Click to run the installer.", update_res.latest_tag),
+			ui::NotificationType::INFO,
+			[&] {
+				const static std::string UPDATE_NOTIFICATION_ID = "update progress notification";
+
+				gui::renderer::add_notification(
+					UPDATE_NOTIFICATION_ID, "Downloading update...", ui::NotificationType::INFO
+				);
+
+				Blur::update(update_res.latest_tag, [](const std::string& text) {
+					gui::renderer::add_notification(UPDATE_NOTIFICATION_ID, text, ui::NotificationType::INFO);
+				});
+			},
+			update_notification_duration
+		);
+#else
+		gui::renderer::add_notification(
+			std::format(
+				"There's a newer version ({}) available! Click to go to the download page.", update_res.latest_tag
+			),
+			ui::NotificationType::INFO,
+			[&] {
+				base::launcher::open_url(update_res.latest_tag_url);
+			},
+			update_notification_duration
+		);
+#endif
+	}
 
 	while (true) {
 		rendering.render_videos();

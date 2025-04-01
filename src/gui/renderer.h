@@ -16,14 +16,12 @@ namespace gui::renderer {
 		inline SkFont smaller_header_font;
 	}
 
-	inline uint32_t current_notification_id = 0;
-
 	struct Notification {
+		std::string id;
 		std::chrono::steady_clock::time_point end_time;
 		std::string text;
 		ui::NotificationType type;
 		std::optional<std::function<void()>> on_click_fn;
-		uint32_t id = current_notification_id++;
 	};
 
 	inline std::vector<Notification> notifications;
@@ -95,10 +93,11 @@ namespace gui::renderer {
 	bool redraw_window(os::Window* window, bool force_render);
 
 	void add_notification(
+		const std::string& id,
 		const std::string& text,
 		ui::NotificationType type,
-		std::chrono::steady_clock::time_point end_time,
-		const std::optional<std::function<void()>>& on_click = {}
+		const std::optional<std::function<void()>>& on_click = {},
+		std::chrono::duration<float> duration = std::chrono::duration<float>(NOTIFICATION_LENGTH)
 	);
 
 	void add_notification(

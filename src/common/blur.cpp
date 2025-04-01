@@ -1,10 +1,22 @@
 #include "blur.h"
-#include "common/utils.h"
-#include "common/rendering.h"
+
+#include "utils.h"
+#include "rendering.h"
+#include "updates.h"
+#include "config_blur.h"
+#include "config_app.h"
 
 Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview) {
 	resources_path = u::get_resources_path();
 	settings_path = u::get_settings_path();
+
+	auto global_blur_config_path = config_blur::get_global_config_path();
+	if (!std::filesystem::exists(global_blur_config_path))
+		config_blur::create(global_blur_config_path, BlurSettings{});
+
+	auto app_config_path = config_app::get_app_config_path();
+	if (!std::filesystem::exists(app_config_path))
+		config_app::create(app_config_path, GlobalAppSettings{});
 
 	used_installer = std::filesystem::exists(resources_path / "lib\\vapoursynth\\vspipe.exe") &&
 	                 std::filesystem::exists(resources_path / "lib\\ffmpeg\\ffmpeg.exe");
@@ -45,10 +57,6 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 
 	if (res != 0)
 		DEBUG_LOG("failed to register atexit");
-
-	auto global_config_path = config::get_global_config_path();
-	if (!std::filesystem::exists(global_config_path))
-		config::create(global_config_path, DEFAULT_SETTINGS);
 
 	initialise_base_temp_path();
 
@@ -113,4 +121,22 @@ bool Blur::remove_temp_path(const std::filesystem::path& temp_path) {
 		u::log_error("Error removing temp path: {}", e.what());
 		return false;
 	}
+}
+
+updates::UpdateCheckRes Blur::check_updates() {
+	auto config = config_app::get_app_config();
+	if (!config.check_updates)
+		return { .success = false };
+
+	return updates::is_latest_version(config.check_beta);
+}
+
+void Blur::update(
+	const std::string& tag, const std::optional<std::function<void(const std::string&)>>& progress_callback
+) {
+#ifndef WIN32
+	// todo:
+#else
+	updates::update_to_tag(tag, progress_callback);
+#endif
 }
