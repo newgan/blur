@@ -7,6 +7,8 @@ TextInput::TextInput(std::string* text_pointer, const TextInputConfig& config)
 	: text_pointer(text_pointer), config(config) {
 	reset_selection();
 	last_blink_time = std::chrono::system_clock::now();
+	last_action_time = last_blink_time;
+	can_merge_actions = false;
 }
 
 void TextInput::insert_text(const std::string& input) {
@@ -50,71 +52,143 @@ void TextInput::insert_text(const std::string& input) {
 			return;
 	}
 
+	// Store original text for undo if there's a selection
+	std::string selected_text;
+	size_t insert_position = cursor_position;
+
+	if (has_selection) {
+		size_t start = std::min(cursor_position, selection_start);
+		size_t end = std::max(cursor_position, selection_start);
+		selected_text = text_pointer->substr(start, end - start);
+		insert_position = start;
+	}
+
 	// delete selected text if there's a selection
 	if (has_selection)
 		delete_selected_text();
 
 	// insert the new text
 	text_pointer->insert(cursor_position, filtered_input);
+
+	// Track action for undo
+	if (!selected_text.empty()) {
+		// This is a replace operation (selection replaced with new text)
+		add_replace_action(insert_position, selected_text, filtered_input);
+	}
+	else {
+		// This is a simple insert
+		add_insert_action(insert_position, filtered_input);
+	}
+
 	cursor_position += filtered_input.length();
 	reset_selection();
 }
 
 void TextInput::backspace() {
 	if (has_selection) {
-		delete_selected_text();
+		size_t start = std::min(cursor_position, selection_start);
+		size_t end = std::max(cursor_position, selection_start);
+		std::string selected_text = text_pointer->substr(start, end - start);
+
+		// Delete the selected text
+		text_pointer->erase(start, end - start);
+		cursor_position = start;
+		reset_selection();
+
+		// Track action for undo
+		add_delete_action(start, selected_text);
 	}
 	else if (cursor_position > 0) {
+		// Save the character being deleted
+		std::string deleted_char = text_pointer->substr(cursor_position - 1, 1);
+
+		// Delete the character
 		text_pointer->erase(cursor_position - 1, 1);
 		cursor_position--;
+
+		// Track action for undo
+		add_delete_action(cursor_position, deleted_char);
 	}
 }
 
 void TextInput::delete_word_backward() {
 	if (has_selection) {
-		delete_selected_text();
+		size_t start = std::min(cursor_position, selection_start);
+		size_t end = std::max(cursor_position, selection_start);
+		std::string selected_text = text_pointer->substr(start, end - start);
+
+		// Delete the selected text
+		text_pointer->erase(start, end - start);
+		cursor_position = start;
+		reset_selection();
+
+		// Track action for undo
+		add_delete_action(start, selected_text);
 		return;
 	}
 
 	if (cursor_position == 0)
 		return;
 
-	// skip any spaces at current position
+	// Find word boundary
+	// same logic as before
 	size_t pos = cursor_position;
 	while (pos > 0 && std::isspace((*text_pointer)[pos - 1])) {
 		pos--;
 	}
-
-	// skip until we find a space or start of text
 	while (pos > 0 && !std::isspace((*text_pointer)[pos - 1])) {
 		pos--;
 	}
 
+	// Save the text being deleted
+	std::string deleted_text = text_pointer->substr(pos, cursor_position - pos);
+
+	// Delete the text
 	text_pointer->erase(pos, cursor_position - pos);
+
+	// Track action for undo - we'll treat word delete as a single action
+	add_delete_action(pos, deleted_text);
+
 	cursor_position = pos;
 }
 
 void TextInput::delete_word_forward() {
 	if (has_selection) {
-		delete_selected_text();
+		size_t start = std::min(cursor_position, selection_start);
+		size_t end = std::max(cursor_position, selection_start);
+		std::string selected_text = text_pointer->substr(start, end - start);
+
+		// Delete the selected text
+		text_pointer->erase(start, end - start);
+		cursor_position = start;
+		reset_selection();
+
+		// Track action for undo
+		add_delete_action(start, selected_text);
 		return;
 	}
 
 	if (cursor_position == text_pointer->length())
 		return;
 
-	// skip current word
+	// Find word boundary
+	// same logic as before
 	size_t pos = cursor_position;
 	while (pos < text_pointer->length() && !std::isspace((*text_pointer)[pos])) {
 		pos++;
 	}
-
-	// skip any spaces
 	while (pos < text_pointer->length() && std::isspace((*text_pointer)[pos])) {
 		pos++;
 	}
 
+	// Save the text being deleted
+	std::string deleted_text = text_pointer->substr(cursor_position, pos - cursor_position);
+
+	// Delete the text
 	text_pointer->erase(cursor_position, pos - cursor_position);
+
+	// Track action for undo - we'll treat word delete as a single action
+	add_delete_action(cursor_position, deleted_text);
 }
 
 void TextInput::delete_all_backward() {
@@ -123,8 +197,18 @@ void TextInput::delete_all_backward() {
 		return;
 	}
 
+	if (cursor_position == 0)
+		return;
+
+	// Save the text being deleted
+	std::string deleted_text = text_pointer->substr(0, cursor_position);
+
+	// Delete the text
 	text_pointer->erase(0, cursor_position);
 	cursor_position = 0;
+
+	// Track action for undo
+	add_delete_action(0, deleted_text);
 }
 
 void TextInput::delete_all_forward() {
@@ -133,15 +217,42 @@ void TextInput::delete_all_forward() {
 		return;
 	}
 
+	if (cursor_position >= text_pointer->length())
+		return;
+
+	// Save the text being deleted
+	std::string deleted_text = text_pointer->substr(cursor_position);
+
+	// Delete the text
 	text_pointer->erase(cursor_position, text_pointer->length() - cursor_position);
+
+	// Track action for undo
+	add_delete_action(cursor_position, deleted_text);
 }
 
 void TextInput::delete_forward() {
 	if (has_selection) {
-		delete_selected_text();
+		size_t start = std::min(cursor_position, selection_start);
+		size_t end = std::max(cursor_position, selection_start);
+		std::string selected_text = text_pointer->substr(start, end - start);
+
+		// Delete the selected text
+		text_pointer->erase(start, end - start);
+		cursor_position = start;
+		reset_selection();
+
+		// Track action for undo
+		add_delete_action(start, selected_text);
 	}
 	else if (cursor_position < text_pointer->length()) {
+		// Save the character being deleted
+		std::string deleted_char = text_pointer->substr(cursor_position, 1);
+
+		// Delete the character
 		text_pointer->erase(cursor_position, 1);
+
+		// Track action for undo
+		add_delete_action(cursor_position, deleted_char);
 	}
 }
 
@@ -151,17 +262,37 @@ void TextInput::delete_selected_text() {
 
 	size_t start = std::min(cursor_position, selection_start);
 	size_t end = std::max(cursor_position, selection_start);
+
+	// Save the text being deleted
+	std::string deleted_text = text_pointer->substr(start, end - start);
+
+	// Delete the text
 	text_pointer->erase(start, end - start);
 	cursor_position = start;
 	reset_selection();
+
+	// Track action for undo
+	add_delete_action(start, deleted_text);
 }
 
 void TextInput::cut(const std::function<void(const std::string&)>& set_clipboard_func) {
 	if (!has_selection)
 		return;
 
-	copy(set_clipboard_func);
-	delete_selected_text();
+	size_t start = std::min(cursor_position, selection_start);
+	size_t end = std::max(cursor_position, selection_start);
+	std::string selected_text = text_pointer->substr(start, end - start);
+
+	// Put the selected text in clipboard
+	set_clipboard_func(selected_text);
+
+	// Delete the selected text
+	text_pointer->erase(start, end - start);
+	cursor_position = start;
+	reset_selection();
+
+	// Track action for undo
+	add_delete_action(start, selected_text);
 }
 
 void TextInput::copy(const std::function<void(const std::string&)>& set_clipboard_func) {
@@ -177,7 +308,26 @@ void TextInput::copy(const std::function<void(const std::string&)>& set_clipboar
 void TextInput::paste(const std::function<std::string()>& get_clipboard_func) {
 	std::string clipboard_text = get_clipboard_func();
 	if (!clipboard_text.empty()) {
-		insert_text(clipboard_text);
+		// If we have selection, this is a replace operation
+		if (has_selection) {
+			size_t start = std::min(cursor_position, selection_start);
+			size_t end = std::max(cursor_position, selection_start);
+			std::string selected_text = text_pointer->substr(start, end - start);
+
+			// Delete selected text and insert clipboard text
+			text_pointer->erase(start, end - start);
+			text_pointer->insert(start, clipboard_text);
+
+			// Track as replace action
+			add_replace_action(start, selected_text, clipboard_text);
+
+			cursor_position = start + clipboard_text.length();
+			reset_selection();
+		}
+		// Otherwise, it's a simple insert
+		else {
+			insert_text(clipboard_text);
+		}
 	}
 }
 
@@ -457,10 +607,10 @@ bool TextInput::handle_key_input(const keys::KeyPress& key) {
 		case os::KeyScancode::kKeyZ:
 			if (ctrl) {
 				if (shift) {
-					// redo();
+					redo();
 				}
 				else {
-					// undo();
+					undo();
 				}
 				return true;
 			}
@@ -470,7 +620,7 @@ bool TextInput::handle_key_input(const keys::KeyPress& key) {
 #if !defined(__APPLE__)
 		case os::KeyScancode::kKeyY:
 			if (ctrl) {
-				// redo();
+				redo();
 				return true;
 			}
 			break;
@@ -748,4 +898,212 @@ void TextInput::render(
 
 	// Draw scrollbar if needed
 	render_scrollbar(surface, rect, focus_anim);
+}
+
+void TextInput::add_insert_action(size_t position, const std::string& text) {
+	if (is_undoing || is_redoing)
+		return;
+
+	auto now = std::chrono::system_clock::now();
+	std::chrono::duration<float> elapsed = now - last_action_time;
+	last_action_time = now;
+
+	// Check if we should merge with the previous action
+	if (can_merge_actions && !undo_stack.empty() && elapsed.count() < 1.0f && // Less than 1 second between actions
+	    should_merge_with_last_action(ActionType::InsertText, position))
+	{
+		// Merge with previous insert
+		TextAction& last_action = undo_stack.back();
+		if (last_action.type == ActionType::InsertText && last_action.position + last_action.text.length() == position)
+		{
+			last_action.text += text;
+			return;
+		}
+	}
+
+	// Otherwise add as new action
+	undo_stack.emplace_back(position, text);
+	can_merge_actions = true;
+
+	// Clear redo stack since we've made a new action
+	redo_stack.clear();
+
+	// Limit the size of the undo stack
+	if (undo_stack.size() > max_history_size) {
+		undo_stack.erase(undo_stack.begin());
+	}
+}
+
+void TextInput::add_delete_action(size_t position, const std::string& text) {
+	if (is_undoing || is_redoing)
+		return;
+
+	auto now = std::chrono::system_clock::now();
+	std::chrono::duration<float> elapsed = now - last_action_time;
+	last_action_time = now;
+
+	// Check if we should merge with the previous action
+	if (can_merge_actions && !undo_stack.empty() && elapsed.count() < 1.0f && // Less than 1 second between actions
+	    should_merge_with_last_action(ActionType::DeleteText, position))
+	{
+		// Merge with previous delete
+		TextAction& last_action = undo_stack.back();
+		if (last_action.type == ActionType::DeleteText && position == last_action.position) {
+			// Backspace: we're deleting before previous deletion
+			last_action.text = text + last_action.text;
+			return;
+		}
+		else if (last_action.type == ActionType::DeleteText && position + text.length() == last_action.position) {
+			// Delete: we're deleting after previous deletion
+			last_action.text += text;
+			last_action.position = position;
+			return;
+		}
+	}
+
+	// Otherwise add as new action
+	undo_stack.emplace_back(ActionType::DeleteText, position, text);
+	can_merge_actions = true;
+
+	// Clear redo stack since we've made a new action
+	redo_stack.clear();
+
+	// Limit the size of the undo stack
+	if (undo_stack.size() > max_history_size) {
+		undo_stack.erase(undo_stack.begin());
+	}
+}
+
+void TextInput::add_replace_action(size_t position, const std::string& old_text, const std::string& new_text) {
+	if (is_undoing || is_redoing)
+		return;
+
+	undo_stack.emplace_back(position, old_text, new_text);
+	can_merge_actions = false; // Don't merge replacements
+
+	// Clear redo stack since we've made a new action
+	redo_stack.clear();
+
+	// Update the last action time
+	last_action_time = std::chrono::system_clock::now();
+
+	// Limit the size of the undo stack
+	if (undo_stack.size() > max_history_size) {
+		undo_stack.erase(undo_stack.begin());
+	}
+}
+
+bool TextInput::should_merge_with_last_action(ActionType type, size_t position) {
+	if (undo_stack.empty())
+		return false;
+
+	TextAction& last_action = undo_stack.back();
+
+	// Only merge actions of the same type
+	if (last_action.type != type)
+		return false;
+
+	if (type == ActionType::InsertText) {
+		// Merge consecutive insertions at cursor position
+		return (last_action.position + last_action.text.length() == position);
+	}
+	else if (type == ActionType::DeleteText) {
+		// Merge consecutive deletions at the same position (delete key)
+		// or consecutive backspaces (position decreasing by 1)
+		return (position == last_action.position || position + 1 == last_action.position);
+	}
+
+	return false;
+}
+
+void TextInput::undo() {
+	if (undo_stack.empty()) {
+		return;
+	}
+
+	is_undoing = true;
+
+	// Get the last action
+	TextAction action = undo_stack.back();
+	undo_stack.pop_back();
+
+	// Handle different action types
+	switch (action.type) {
+		case ActionType::InsertText:
+			// Undo an insert by deleting the inserted text
+			text_pointer->erase(action.position, action.text.length());
+			cursor_position = action.position;
+			break;
+
+		case ActionType::DeleteText:
+			// Undo a deletion by inserting the deleted text
+			text_pointer->insert(action.position, action.text);
+			cursor_position = action.position + action.text.length();
+			break;
+
+		case ActionType::ReplaceText:
+			// Undo a replacement by replacing with the original text
+			text_pointer->replace(action.position, action.text.length(), action.replaced_text);
+			cursor_position = action.position + action.replaced_text.length();
+			break;
+	}
+
+	// Save to redo stack
+	redo_stack.push_back(action);
+
+	// Reset selection
+	reset_selection();
+
+	// Reset cursor blink
+	show_cursor = true;
+	last_blink_time = std::chrono::system_clock::now();
+
+	can_merge_actions = false;
+	is_undoing = false;
+}
+
+void TextInput::redo() {
+	if (redo_stack.empty()) {
+		return;
+	}
+
+	is_redoing = true;
+
+	// Get the next action
+	TextAction action = redo_stack.back();
+	redo_stack.pop_back();
+
+	// Handle different action types
+	switch (action.type) {
+		case ActionType::InsertText:
+			// Redo an insert
+			text_pointer->insert(action.position, action.text);
+			cursor_position = action.position + action.text.length();
+			break;
+
+		case ActionType::DeleteText:
+			// Redo a deletion
+			text_pointer->erase(action.position, action.text.length());
+			cursor_position = action.position;
+			break;
+
+		case ActionType::ReplaceText:
+			// Redo a replacement
+			text_pointer->replace(action.position, action.replaced_text.length(), action.text);
+			cursor_position = action.position + action.text.length();
+			break;
+	}
+
+	// Save back to undo stack
+	undo_stack.push_back(action);
+
+	// Reset selection
+	reset_selection();
+
+	// Reset cursor blink
+	show_cursor = true;
+	last_blink_time = std::chrono::system_clock::now();
+
+	can_merge_actions = false;
+	is_redoing = false;
 }

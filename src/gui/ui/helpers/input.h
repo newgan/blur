@@ -61,6 +61,10 @@ public:
 	bool handle_mouse_triple_click(int x, int y, const std::function<size_t(int, int)>& get_char_index_at_position);
 	bool handle_scrollbar_drag(int x, int y);
 
+	// state
+	void undo();
+	void redo();
+
 	// rendering
 	void render(
 		os::Surface* surface, const SkFont& font, const gfx::Rect& rect, float anim, float hover_anim, float focus_anim
@@ -108,4 +112,42 @@ private:
 	};
 
 	[[nodiscard]] ScrollbarMetrics calculate_scrollbar_metrics(const gfx::Rect& rect) const;
+
+	enum class ActionType {
+		InsertText,
+		DeleteText,
+		ReplaceText
+	};
+
+	struct TextAction {
+		ActionType type;
+		size_t position;
+		std::string text;          // Text that was inserted or deleted
+		std::string replaced_text; // For ReplaceText actions
+
+		// Insert constructor
+		TextAction(size_t pos, const std::string& inserted)
+			: type(ActionType::InsertText), position(pos), text(inserted) {}
+
+		// Delete constructor
+		TextAction(ActionType type, size_t pos, const std::string& deleted)
+			: type(type), position(pos), text(deleted) {}
+
+		// Replace constructor
+		TextAction(size_t pos, const std::string& deleted, const std::string& inserted)
+			: type(ActionType::ReplaceText), position(pos), text(inserted), replaced_text(deleted) {}
+	};
+
+	std::vector<TextAction> undo_stack;
+	std::vector<TextAction> redo_stack;
+	size_t max_history_size = 100; // Maximum number of undo operations
+	bool is_undoing = false;
+	bool is_redoing = false;
+	std::chrono::system_clock::time_point last_action_time;
+	bool can_merge_actions = false;
+
+	void add_insert_action(size_t position, const std::string& text);
+	void add_delete_action(size_t position, const std::string& text);
+	void add_replace_action(size_t position, const std::string& old_text, const std::string& new_text);
+	bool should_merge_with_last_action(ActionType type, size_t position);
 };
