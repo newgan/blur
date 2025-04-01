@@ -334,9 +334,10 @@ bool ui::update_container_frame(Container& container, float delta_time) {
 	// animate scroll
 	float last_scroll_y = container.scroll_y;
 
-	const int scroll_speed_reset_speed = 17.f;
-	const int scroll_speed_overscroll_reset_speed = 25.f;
-	const int scroll_overscroll_reset_speed = 10.f;
+	const float scroll_speed_reset_speed = 17.f;
+	const float scroll_speed_overscroll_reset_speed = 25.f;
+	const float scroll_overscroll_reset_speed = 10.f;
+	const float scroll_reset_speed = 10.f;
 
 	if (can_scroll(container)) {
 		// clamp scroll
@@ -360,7 +361,7 @@ bool ui::update_container_frame(Container& container, float delta_time) {
 	}
 	else if (container.scroll_y != 0.f) {
 		// no longer scrollable but scroll set, reset it
-		container.scroll_y = 0.f;
+		container.scroll_y = u::lerp(container.scroll_y, 0.f, scroll_reset_speed * delta_time);
 	}
 
 	if (container.scroll_y != last_scroll_y)
