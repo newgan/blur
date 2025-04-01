@@ -1305,7 +1305,7 @@ void gui::renderer::on_render_finished(Render* render, const RenderResult& resul
 			std::format("Render '{}' completed", base::to_utf8(render->get_video_name())),
 			ui::NotificationType::SUCCESS,
 			[output_path] {
-				base::launcher::open_folder(output_path);
+				base::launcher::open_folder(output_path.string());
 			}
 		);
 	}
