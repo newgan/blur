@@ -1,7 +1,3 @@
-#include <algorithm>
-#include <utility>
-#include <vector>
-
 #include "../ui.h"
 #include "../render.h"
 #include "../utils.h"
@@ -233,15 +229,15 @@ ui::Element& ui::add_dropdown(
 	const SkFont& font,
 	std::optional<std::function<void(std::string*)>> on_change
 ) {
-	gfx::Size max_text_size(0, font.getSize());
+	// gfx::Size max_text_size(0, font.getSize());
 
-	// Find max text size for width calculation
-	for (const auto& option : options) {
-		gfx::Size text_size = render::get_text_size(option, font);
-		max_text_size.w = std::max(max_text_size.w, text_size.w);
-	}
+	// // Find max text size for width calculation
+	// for (const auto& option : options) {
+	// 	gfx::Size text_size = render::get_text_size(option, font);
+	// 	max_text_size.w = std::max(max_text_size.w, text_size.w);
+	// }
 
-	gfx::Size total_size(200, font.getSize() + LABEL_GAP + max_text_size.h + (DROPDOWN_PADDING.h * 2));
+	gfx::Size total_size(200, font.getSize() + LABEL_GAP + font.getSize() + (DROPDOWN_PADDING.h * 2));
 
 	Element element(
 		id,
