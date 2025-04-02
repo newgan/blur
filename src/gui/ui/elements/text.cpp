@@ -41,6 +41,21 @@ void ui::render_text(const Container& container, os::Surface* surface, const Ani
 	gfx::Point text_pos = element.element->rect.origin();
 	text_pos.y += text_data.font.getSize() - 1;
 
+	switch (text_data.align) {
+		case os::TextAlign::Left:
+			break;
+
+		case os::TextAlign::Center: {
+			text_pos.x += element.element->rect.w / 2;
+			break;
+		}
+
+		case os::TextAlign::Right: {
+			text_pos.x = element.element->rect.x2();
+			break;
+		}
+	}
+
 	for (const auto& line : text_data.lines) {
 		if (text_data.style == TextStyle::OUTLINE) {
 			render::text(
@@ -95,7 +110,7 @@ ui::Element& ui::add_text(
 	Element element(
 		id,
 		ElementType::TEXT,
-		gfx::Rect(container.current_position, gfx::Size(0, text_height)), // todo: set width
+		gfx::Rect(container.current_position, gfx::Size(container.get_usable_rect().w, text_height)),
 		TextElementData{ .lines = lines, .color = color, .font = font, .align = align, .style = style },
 		render_text
 	);

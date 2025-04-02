@@ -445,6 +445,16 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"-1 = infinite"
 		);
 
+		std::istringstream iss(settings.deduplicate_threshold);
+		float f = NAN;
+		iss >> std::noskipws >> f; // try to read as float
+		bool is_float = iss.eof() && !iss.fail();
+
+		auto old_element_gap = container.element_gap; // todo: push/pop element gap THIS IS NPC
+
+		if (!is_float)
+			container.element_gap = 2;
+
 		ui::add_text_input(
 			"deduplicate threshold input",
 			container,
@@ -452,11 +462,8 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"deduplicate threshold",
 			fonts::font
 		);
-
-		std::istringstream iss(settings.deduplicate_threshold);
-		float f = NAN;
-		iss >> std::noskipws >> f; // try to read as float
-		bool is_float = iss.eof() && !iss.fail();
+		if (!is_float)
+			container.element_gap = old_element_gap;
 
 		if (!is_float) {
 			ui::add_text(
