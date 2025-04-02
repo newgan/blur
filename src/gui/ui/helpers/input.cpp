@@ -876,7 +876,7 @@ void TextInput::render(
 
 	// Adjust text position to account for vertical centering
 	int text_height = font.getSize();
-	float text_y = text_area.y + ((text_area.h - text_height) / 2.f) + text_height; // Position for baseline
+	float text_y = text_area.y + ((text_area.h + text_height) / 2.f) - 1;
 
 	// Set clipping region to prevent text overflow
 	render::push_clip_rect(surface, text_area);
