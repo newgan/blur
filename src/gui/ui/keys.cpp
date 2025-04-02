@@ -1,4 +1,5 @@
 #include "keys.h"
+#include "ui/ui.h"
 
 bool keys::process_event(const os::Event& event) {
 	switch (event.type()) {
@@ -31,6 +32,12 @@ bool keys::process_event(const os::Event& event) {
 		}
 
 		case os::Event::KeyDown: {
+			if (!ui::active_element)
+				break;
+
+			if (ui::active_element->element->type != ui::ElementType::TEXT_INPUT)
+				break;
+
 			pressed_keys.emplace_back(KeyPress{
 				.scancode = event.scancode(),
 				.modifiers = event.modifiers(),
@@ -52,6 +59,8 @@ bool keys::process_event(const os::Event& event) {
 		default:
 			return false;
 	}
+
+	return false;
 }
 
 void keys::on_input_end() {}
