@@ -12,8 +12,8 @@ struct TextInputConfig {
 	int scrollbar_gap = 2;
 	int scrollbar_height = 3;       // height of the scrollbar in pixels
 	float scrollbar_opacity = 0.5f; // scrollbar opacity
-	int padding_horizontal = 8;     // horizontal padding inside the text input
-	int padding_vertical = 4;       // vertical padding inside the text input
+	int padding_horizontal = 10;    // horizontal padding inside the text input
+	int padding_vertical = 5;       // vertical padding inside the text input
 };
 
 class TextInput {
