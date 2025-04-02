@@ -1,14 +1,39 @@
 #include "../ui.h"
 #include "../render.h"
-#include "../utils.h"
 #include "../keys.h"
 
 #include "../../renderer.h"
 
 #include "../helpers/input.h"
 
+const int LABEL_GAP = 10;
+const gfx::Size TEXT_INPUT_PADDING(10, 5);
+
 namespace {
 	std::map<std::string, std::unique_ptr<TextInput>> input_map;
+
+	struct Positions {
+		int font_height;
+		gfx::Point label_pos;
+		gfx::Rect input_rect;
+	};
+
+	Positions get_positions(const ui::TextInputElementData& input_data, const ui::AnimatedElement& element) {
+		int font_height = render::get_font_height(input_data.font);
+
+		gfx::Point label_pos = element.element->rect.origin();
+		label_pos.y += font_height;
+
+		auto input_rect = element.element->rect;
+		input_rect.y = label_pos.y + LABEL_GAP;
+		input_rect.h -= input_rect.y - element.element->rect.y;
+
+		return {
+			.font_height = font_height,
+			.label_pos = label_pos,
+			.input_rect = input_rect,
+		};
+	}
 }
 
 void ui::render_text_input(const Container& container, os::Surface* surface, const AnimatedElement& element) {
@@ -18,10 +43,12 @@ void ui::render_text_input(const Container& container, os::Surface* surface, con
 	float hover_anim = element.animations.at(hasher("hover")).current;
 	float focus_anim = element.animations.at(hasher("focus")).current;
 
+	auto pos = get_positions(input_data, element);
+
+	render::text(surface, pos.label_pos, gfx::rgba(255, 255, 255), input_data.placeholder, input_data.font);
+
 	auto& input = input_map.at(element.element->id);
-	input->render(
-		surface, input_data.font, element.element->rect, anim, hover_anim, focus_anim, input_data.placeholder
-	);
+	input->render(surface, input_data.font, pos.input_rect, anim, hover_anim, focus_anim, input_data.placeholder);
 }
 
 bool ui::update_text_input(const Container& container, AnimatedElement& element) {
@@ -31,7 +58,9 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 
 	auto& input = input_map.at(element.element->id);
 
-	bool hovered = element.element->rect.contains(keys::mouse_pos) && set_hovered_element(element);
+	auto pos = get_positions(input_data, element);
+
+	bool hovered = pos.input_rect.contains(keys::mouse_pos) && set_hovered_element(element);
 
 	hover_anim.set_goal(hovered ? 1.f : 0.f);
 
@@ -43,7 +72,7 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 		active_element = &element;
 		focus_anim.set_goal(1.f);
 
-		input->handle_mouse_click(element.element->rect, keys::mouse_pos, input_data.font);
+		input->handle_mouse_click(pos.input_rect, keys::mouse_pos, input_data.font);
 		keys::on_mouse_press_handled(os::Event::MouseButton::LeftButton);
 	}
 	else if (keys::is_mouse_down() && !hovered) {
@@ -55,7 +84,7 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 
 	if (active) {
 		if (keys::is_mouse_dragging()) {
-			input->handle_mouse_drag(element.element->rect, keys::mouse_pos, input_data.font);
+			input->handle_mouse_drag(pos.input_rect, keys::mouse_pos, input_data.font);
 		}
 		else {
 			input->reset_mouse_drag();
@@ -86,7 +115,7 @@ ui::Element& ui::add_text_input(
 	const SkFont& font,
 	std::optional<std::function<void(const std::string&)>> on_change
 ) {
-	const gfx::Size input_size(200, font.getSize() + 12);
+	const gfx::Size input_size(200, font.getSize() + LABEL_GAP + font.getSize() + (TEXT_INPUT_PADDING.h * 2));
 
 	if (!input_map.contains(id))
 		input_map.emplace(id, std::make_unique<TextInput>(&text));
