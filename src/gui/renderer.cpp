@@ -642,8 +642,21 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 				error = !res.success;
 
 				if (!res.success) {
-					if (res.error_message != "Input path does not exist")
-						add_notification("Failed to generate config preview", ui::NotificationType::NOTIF_ERROR);
+					if (res.error_message != "Input path does not exist") {
+						add_notification(
+							"Failed to generate config preview. Click to copy error message",
+							ui::NotificationType::NOTIF_ERROR,
+							[res] {
+								clip::set_text(res.error_message);
+								add_notification(
+									"Copied error message to clipboard",
+									ui::NotificationType::INFO,
+									{},
+									std::chrono::duration<float>(2.f)
+								);
+							}
+						);
+					}
 				}
 			}
 
@@ -757,11 +770,6 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 }
 
 void gui::renderer::components::configs::option_information(ui::Container& container, BlurSettings& settings) {
-	ui::AnimatedElement* hovered = ui::get_hovered_element();
-
-	if (!hovered || !hovered->element)
-		return;
-
 	const static std::unordered_map<std::string, std::vector<std::string>> option_explanations = {
 		// Blur settings
 		// { "section blur checkbox",
@@ -941,6 +949,11 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 		},
 		// { "debug checkbox", { "Shows debug window and prints commands used by blur", } }
 	};
+
+	ui::AnimatedElement* hovered = ui::get_hovered_element();
+
+	if (!hovered || !hovered->element)
+		return;
 
 	if (!option_explanations.contains(hovered->element->id))
 		return;
