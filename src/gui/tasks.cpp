@@ -56,9 +56,13 @@ void tasks::run(const std::vector<std::string>& arguments) {
 					UPDATE_NOTIFICATION_ID, "Downloading update...", ui::NotificationType::INFO
 				);
 
-				Blur::update(update_res.latest_tag, [](const std::string& text) {
-					gui::renderer::add_notification(UPDATE_NOTIFICATION_ID, text, ui::NotificationType::INFO);
-				});
+				std::thread([update_res] {
+					Blur::update(update_res.latest_tag, [](const std::string& text) {
+						gui::renderer::add_notification(UPDATE_NOTIFICATION_ID, text, ui::NotificationType::INFO);
+					});
+
+					gui::closing = true;
+				}).detach();
 			},
 			update_notification_duration
 		);
