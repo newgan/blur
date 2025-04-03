@@ -10,12 +10,12 @@ assignees: ''
 **description**
 A description of the issue.
 
-**steps**
+**system**
+Blur version (e.g. 1.8): 
+OS (e.g. Windows 11):
+
+**steps (optional)**
 If applicable, steps to recreate the issue.
 
-**screenshots**
+**screenshots (optional)**
 Screenshots if they help describe the issue.
-
-**system**
-Version (e.g. 1.8): 
-OS (e.g. Windows):
