@@ -334,7 +334,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	*/
 	section_component("rendering");
 
-	ui::add_slider("quality", container, 1, 51, &settings.quality, "quality: {}", fonts::font, {}, 0.f);
+	ui::add_slider("quality", container, 0, 51, &settings.quality, "quality: {}", fonts::font, {}, 0.f);
 
 	ui::add_checkbox("deduplicate checkbox", container, "deduplicate", settings.deduplicate, fonts::font);
 
