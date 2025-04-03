@@ -35,6 +35,7 @@ struct BlurSettings {
 	std::string deduplicate_threshold = "0.001";
 	std::string ffmpeg_override;
 	bool debug = false;
+	bool copy_dates = false;
 
 	float blur_weighting_gaussian_std_dev = 2.f;
 	bool blur_weighting_triangle_reverse = false;
@@ -66,7 +67,8 @@ public:
 		       gpu_rendering == other.gpu_rendering && gpu_type == other.gpu_type && advanced == other.advanced &&
 		       video_container == other.video_container && deduplicate_range == other.deduplicate_range &&
 		       deduplicate_threshold == other.deduplicate_threshold && ffmpeg_override == other.ffmpeg_override &&
-		       debug == other.debug && blur_weighting_gaussian_std_dev == other.blur_weighting_gaussian_std_dev &&
+		       debug == other.debug && copy_dates == other.copy_dates &&
+		       blur_weighting_gaussian_std_dev == other.blur_weighting_gaussian_std_dev &&
 		       blur_weighting_triangle_reverse == other.blur_weighting_triangle_reverse &&
 		       blur_weighting_bound == other.blur_weighting_bound &&
 		       interpolation_program == other.interpolation_program &&

@@ -202,14 +202,16 @@ RenderCommands Render::build_render_commands() {
 
 	if (!audio_filters.empty()) {
 		commands.ffmpeg.emplace_back(L"-af");
-		commands.ffmpeg.push_back(std::accumulate(
-			std::next(audio_filters.begin()),
-			audio_filters.end(),
-			audio_filters[0],
-			[](const std::wstring& a, const std::wstring& b) {
-				return a + L"," + b;
-			}
-		));
+		commands.ffmpeg.push_back(
+			std::accumulate(
+				std::next(audio_filters.begin()),
+				audio_filters.end(),
+				audio_filters[0],
+				[](const std::wstring& a, const std::wstring& b) {
+					return a + L"," + b;
+				}
+			)
+		);
 	}
 
 	if (!m_settings.ffmpeg_override.empty()) {
@@ -510,6 +512,20 @@ RenderResult Render::render() {
 	else if (render_res.success) {
 		if (blur.verbose) {
 			u::log(L"Finished rendering '{}'", m_video_name);
+		}
+
+		if (m_settings.copy_dates) {
+			try {
+				auto inputTime = std::filesystem::last_write_time(m_video_path);
+				std::filesystem::last_write_time(m_output_path, inputTime);
+
+				if (m_settings.debug) {
+					u::log(L"Set output file modified time to match input file");
+				}
+			}
+			catch (const std::exception& e) {
+				u::log_error("Failed to set output file timestamp: {}", e.what());
+			}
 		}
 	}
 	else {

@@ -57,6 +57,7 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 	output << "deduplicate threshold: " << current_settings.deduplicate_threshold << "\n";
 	output << "custom ffmpeg filters: " << current_settings.ffmpeg_override << "\n";
 	output << "debug: " << (current_settings.debug ? "true" : "false") << "\n";
+	output << "copy dates: " << (current_settings.copy_dates ? "true" : "false") << "\n";
 
 	output << "\n";
 	output << "- advanced blur" << "\n";
@@ -95,7 +96,8 @@ config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config
 	}
 
 	if (!u::contains(INTERPOLATION_ALGORITHMS, config.interpolation_algorithm)) {
-		errors.insert(std::format("Interpolation algorithm ({}) is not a valid option", config.interpolation_algorithm)
+		errors.insert(
+			std::format("Interpolation algorithm ({}) is not a valid option", config.interpolation_algorithm)
 		);
 
 		if (fix)
@@ -103,7 +105,8 @@ config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config
 	}
 
 	if (!u::contains(INTERPOLATION_BLOCK_SIZES, config.interpolation_blocksize)) {
-		errors.insert(std::format("Interpolation block size ({}) is not a valid option", config.interpolation_blocksize)
+		errors.insert(
+			std::format("Interpolation block size ({}) is not a valid option", config.interpolation_blocksize)
 		);
 
 		if (fix)
@@ -157,6 +160,7 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 	config_base::extract_config_string(config_map, "deduplicate threshold", settings.deduplicate_threshold);
 	config_base::extract_config_string(config_map, "custom ffmpeg filters", settings.ffmpeg_override);
 	config_base::extract_config_value(config_map, "debug", settings.debug);
+	config_base::extract_config_value(config_map, "copy dates", settings.copy_dates);
 
 	config_base::extract_config_value(
 		config_map, "blur weighting gaussian std dev", settings.blur_weighting_gaussian_std_dev
@@ -259,6 +263,7 @@ nlohmann::json BlurSettings::to_json() const {
 	j["deduplicate_threshold"] = this->deduplicate_threshold;
 	// j["ffmpeg_override"] = this->ffmpeg_override;
 	j["debug"] = this->debug;
+	// j["copy_dates"] = this->copy_dates;
 
 	j["blur_weighting_gaussian_std_dev"] = this->blur_weighting_gaussian_std_dev;
 	j["blur_weighting_triangle_reverse"] = this->blur_weighting_triangle_reverse;

@@ -494,96 +494,102 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 				fonts::font
 			);
 		}
-	}
 
-	bool bad_audio = settings.timescale && settings.ffmpeg_override.find("-c:a copy") != std::string::npos;
-	if (bad_audio)
-		container.push_element_gap(2);
+		bool bad_audio = settings.timescale && settings.ffmpeg_override.find("-c:a copy") != std::string::npos;
+		if (bad_audio)
+			container.push_element_gap(2);
 
-	ui::add_text_input(
-		"custom ffmpeg filters text input", container, settings.ffmpeg_override, "custom ffmpeg filters", fonts::font
-	);
-
-	if (bad_audio) {
-		container.pop_element_gap();
-
-		ui::add_text(
-			"timescale audio copy warning",
+		ui::add_text_input(
+			"custom ffmpeg filters text input",
 			container,
-			"cannot use -c:a copy while using timescale",
-			gfx::rgba(255, 0, 0, 255),
+			settings.ffmpeg_override,
+			"custom ffmpeg filters",
 			fonts::font
 		);
+
+		if (bad_audio) {
+			container.pop_element_gap();
+
+			ui::add_text(
+				"timescale audio copy warning",
+				container,
+				"cannot use -c:a copy while using timescale",
+				gfx::rgba(255, 0, 0, 255),
+				fonts::font
+			);
+		}
+
+		ui::add_checkbox("debug checkbox", container, "debug", settings.debug, fonts::font);
+
+		ui::add_checkbox("copy dates checkbox", container, "copy dates", settings.copy_dates, fonts::font);
+
+		/*
+		    Advanced Interpolation
+		*/
+		section_component("advanced interpolation");
+
+		ui::add_dropdown(
+			"interpolation preset dropdown",
+			container,
+			"interpolation preset",
+			config_blur::INTERPOLATION_PRESETS,
+			settings.interpolation_preset,
+			fonts::font
+		);
+
+		ui::add_dropdown(
+			"interpolation algorithm dropdown",
+			container,
+			"interpolation algorithm",
+			config_blur::INTERPOLATION_ALGORITHMS,
+			settings.interpolation_algorithm,
+			fonts::font
+		);
+
+		ui::add_dropdown(
+			"interpolation block size dropdown",
+			container,
+			"interpolation block size",
+			config_blur::INTERPOLATION_BLOCK_SIZES,
+			settings.interpolation_blocksize,
+			fonts::font
+		);
+
+		ui::add_slider(
+			"interpolation mask area slider",
+			container,
+			0,
+			500,
+			&settings.interpolation_mask_area,
+			"interpolation mask area: {}",
+			fonts::font
+		);
+
+		/*
+		    Advanced Blur
+		*/
+		section_component("advanced blur");
+
+		ui::add_slider(
+			"blur weighting gaussian std dev slider",
+			container,
+			0.f,
+			10.f,
+			&settings.blur_weighting_gaussian_std_dev,
+			"blur weighting gaussian std dev: {:.2f}",
+			fonts::font
+		);
+		ui::add_checkbox(
+			"blur weighting triangle reverse checkbox",
+			container,
+			"blur weighting triangle reverse",
+			settings.blur_weighting_triangle_reverse,
+			fonts::font
+		);
+		ui::add_text_input(
+			"blur weighting bound input", container, settings.blur_weighting_bound, "blur weighting bound", fonts::font
+		);
 	}
-
-	ui::add_checkbox("debug checkbox", container, "debug", settings.debug, fonts::font);
-
-	/*
-	    Advanced Interpolation
-	*/
-	section_component("advanced interpolation");
-
-	ui::add_dropdown(
-		"interpolation preset dropdown",
-		container,
-		"interpolation preset",
-		config_blur::INTERPOLATION_PRESETS,
-		settings.interpolation_preset,
-		fonts::font
-	);
-
-	ui::add_dropdown(
-		"interpolation algorithm dropdown",
-		container,
-		"interpolation algorithm",
-		config_blur::INTERPOLATION_ALGORITHMS,
-		settings.interpolation_algorithm,
-		fonts::font
-	);
-
-	ui::add_dropdown(
-		"interpolation block size dropdown",
-		container,
-		"interpolation block size",
-		config_blur::INTERPOLATION_BLOCK_SIZES,
-		settings.interpolation_blocksize,
-		fonts::font
-	);
-
-	ui::add_slider(
-		"interpolation mask area slider",
-		container,
-		0,
-		500,
-		&settings.interpolation_mask_area,
-		"interpolation mask area: {}",
-		fonts::font
-	);
-
-	/*
-	    Advanced Blur
-	*/
-	section_component("advanced blur");
-
-	ui::add_slider(
-		"blur weighting gaussian std dev slider",
-		container,
-		0.f,
-		10.f,
-		&settings.blur_weighting_gaussian_std_dev,
-		"blur weighting gaussian std dev: {:.2f}",
-		fonts::font
-	);
-	ui::add_checkbox(
-		"blur weighting triangle reverse checkbox",
-		container,
-		"blur weighting triangle reverse",
-		settings.blur_weighting_triangle_reverse,
-		fonts::font
-	);
-	ui::add_text_input(
-		"blur weighting bound input", container, settings.blur_weighting_bound, "blur weighting bound", fonts::font
-	);
 }
 
 // NOLINTBEGIN(readability-function-cognitive-complexity) todo: refactor
@@ -972,6 +978,12 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 			},
 		},
 		// { "debug checkbox", { "Shows debug window and prints commands used by blur", } }
+		{
+			"copy dates checkbox",
+			{
+				"Copies over the modified date from the input",
+			},
+		},
 	};
 
 	ui::AnimatedElement* hovered = ui::get_hovered_element();
