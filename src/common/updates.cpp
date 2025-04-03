@@ -5,6 +5,8 @@
 using json = nlohmann::json;
 namespace bp = boost::process;
 
+const std::string WINDOWS_INSTALLER_NAME = "blur-Windows-Installer-x64.exe";
+
 namespace {
 	// NOLINTBEGIN ai code idc
 	bool is_version_newer(const std::string& current, const std::string& latest) {
@@ -158,8 +160,27 @@ updates::UpdateCheckRes updates::is_latest_version(bool include_beta) {
 				return { .success = false };
 			}
 
-			// most recent release (first in the array)
-			latest_tag = releases[0]["tag_name"];
+			// get most recent release (needs to have an installer, might make a release without one temporarily - don't
+			// want anyone updating until i have)
+			for (const auto& release : releases) {
+				if (!latest_tag.empty())
+					break;
+
+				for (const auto& asset : release["assets"]) {
+#if defined(_WIN32)
+					if (asset["name"] == WINDOWS_INSTALLER_NAME) {
+#elif defined(__linux__)
+					// todo when there's an installer
+					{
+#elif defined(__APPLE__)
+					// todo when there's an installer
+					{
+#endif
+						latest_tag = release["tag_name"];
+						break;
+					}
+				}
+			}
 		}
 		else {
 			json release = json::parse(response.text);
@@ -204,7 +225,7 @@ bool updates::update_to_tag(
 
 		// Create download URL and temp file path
 		std::string download_url =
-			"https://github.com/f0e/blur/releases/download/" + tag + "/blur-Windows-Installer-x64.exe";
+			"https://github.com/f0e/blur/releases/download/" + tag + "/" + WINDOWS_INSTALLER_NAME;
 		std::filesystem::path installer_path = std::filesystem::temp_directory_path() / "blur-installer.exe";
 
 		// Open file for writing
