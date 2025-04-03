@@ -281,6 +281,19 @@ namespace ui {
 			}
 			return usable;
 		}
+
+		std::stack<int> element_gaps;
+
+		void push_element_gap(int new_element_gap) {
+			element_gaps.push(element_gap);
+			element_gap = new_element_gap;
+		}
+
+		void pop_element_gap() {
+			int new_element_gap = element_gaps.top();
+			element_gap = new_element_gap;
+			element_gaps.pop();
+		}
 	};
 
 	inline auto hasher = std::hash<std::string>{};

@@ -45,7 +45,7 @@ void ui::render_text_input(const Container& container, os::Surface* surface, con
 
 	auto pos = get_positions(input_data, element);
 
-	render::text(surface, pos.label_pos, gfx::rgba(255, 255, 255), input_data.placeholder, input_data.font);
+	render::text(surface, pos.label_pos, gfx::rgba(255, 255, 255, anim * 255), input_data.placeholder, input_data.font);
 
 	auto& input = input_map.at(element.element->id);
 	input->render(surface, input_data.font, pos.input_rect, anim, hover_anim, focus_anim, input_data.placeholder);
@@ -118,7 +118,16 @@ ui::Element& ui::add_text_input(
 	const gfx::Size input_size(200, font.getSize() + LABEL_GAP + font.getSize() + (TEXT_INPUT_PADDING.h * 2));
 
 	if (!input_map.contains(id))
-		input_map.emplace(id, std::make_unique<TextInput>(&text));
+		input_map.emplace(
+			id,
+			std::make_unique<TextInput>(
+				&text,
+				TextInputConfig{
+					.padding_horizontal = TEXT_INPUT_PADDING.w,
+					.padding_vertical = TEXT_INPUT_PADDING.h,
+				}
+			)
+		);
 
 	Element element(
 		id,

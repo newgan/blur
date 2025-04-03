@@ -460,18 +460,22 @@ bool TextInput::handle_key_input(const keys::KeyPress& key) {
 	// NOLINT()
 	switch (key.scancode) {
 		case os::KeyScancode::kKeyBackspace:
-// On Mac, Cmd+Backspace deletes to beginning of line
 #if defined(__APPLE__)
 			if (ctrl) {
 				delete_all_backward();
 				return true;
 			}
-#endif
 
 			if (alt) {
 				delete_word_backward();
 				return true;
 			}
+#else
+			if (ctrl) {
+				delete_word_backward();
+				return true;
+			}
+#endif
 
 			backspace();
 			return true;
@@ -489,11 +493,17 @@ bool TextInput::handle_key_input(const keys::KeyPress& key) {
 				delete_all_forward();
 				return true;
 			}
-#endif
+
 			if (alt) {
 				delete_word_forward();
 				return true;
 			}
+#else
+			if (ctrl) {
+				delete_word_forward();
+				return true;
+			}
+#endif
 
 			delete_forward();
 			return true;
@@ -874,9 +884,7 @@ void TextInput::render(
 		rect.h - (2 * config.padding_vertical)
 	);
 
-	// Adjust text position to account for vertical centering
-	int text_height = font.getSize();
-	float text_y = text_area.y + ((text_area.h + text_height) / 2.f) - 1;
+	float text_y = text_area.y + font.getSize() - 1;
 
 	// Set clipping region to prevent text overflow
 	render::push_clip_rect(surface, text_area);

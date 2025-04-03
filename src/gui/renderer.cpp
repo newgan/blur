@@ -103,8 +103,7 @@ void gui::renderer::components::render(
 			&fonts::font
 		);
 
-		auto old_element_gap = container.element_gap; // todo: push/pop element gap
-		container.element_gap = 6;
+		container.push_element_gap(6);
 		ui::add_text(
 			"progress text",
 			container,
@@ -113,7 +112,8 @@ void gui::renderer::components::render(
 			fonts::font,
 			os::TextAlign::Center
 		);
-		container.element_gap = old_element_gap;
+		container.pop_element_gap();
+
 		ui::add_text(
 			"progress text 2",
 			container,
@@ -334,7 +334,18 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	*/
 	section_component("rendering");
 
-	ui::add_slider("quality", container, 0, 51, &settings.quality, "quality: {}", fonts::font, {}, 0.f);
+	if (settings.ffmpeg_override.empty()) {
+		ui::add_slider("quality", container, 0, 51, &settings.quality, "quality: {}", fonts::font, {}, 0.f);
+	}
+	else {
+		ui::add_text(
+			"ffmpeg override quality warning",
+			container,
+			"quality overridden by custom ffmpeg filters",
+			gfx::rgba(252, 186, 3, 150),
+			fonts::font
+		);
+	}
 
 	ui::add_checkbox("deduplicate checkbox", container, "deduplicate", settings.deduplicate, fonts::font);
 
@@ -353,15 +364,26 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		"gpu interpolation checkbox", container, "gpu interpolation", settings.gpu_interpolation, fonts::font
 	);
 
-	ui::add_checkbox("gpu rendering checkbox", container, "gpu rendering", settings.gpu_rendering, fonts::font);
+	if (settings.ffmpeg_override.empty()) {
+		ui::add_checkbox("gpu rendering checkbox", container, "gpu rendering", settings.gpu_rendering, fonts::font);
 
-	if (settings.gpu_rendering) {
-		ui::add_dropdown(
-			"gpu rendering dropdown",
+		if (settings.gpu_rendering) {
+			ui::add_dropdown(
+				"gpu rendering dropdown",
+				container,
+				"gpu rendering - gpu type",
+				{ "nvidia", "amd", "intel" },
+				settings.gpu_type,
+				fonts::font
+			);
+		}
+	}
+	else {
+		ui::add_text(
+			"ffmpeg override gpu rendering warning",
 			container,
-			"gpu rendering - gpu type",
-			{ "nvidia", "amd", "intel" },
-			settings.gpu_type,
+			"gpu rendering overridden by custom ffmpeg filters",
+			gfx::rgba(252, 186, 3, 150),
 			fonts::font
 		);
 	}
@@ -450,10 +472,8 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		iss >> std::noskipws >> f; // try to read as float
 		bool is_float = iss.eof() && !iss.fail();
 
-		auto old_element_gap = container.element_gap; // todo: push/pop element gap THIS IS NPC
-
 		if (!is_float)
-			container.element_gap = 2;
+			container.push_element_gap(2);
 
 		ui::add_text_input(
 			"deduplicate threshold input",
@@ -462,10 +482,10 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"deduplicate threshold",
 			fonts::font
 		);
-		if (!is_float)
-			container.element_gap = old_element_gap;
 
 		if (!is_float) {
+			container.pop_element_gap();
+
 			ui::add_text(
 				"deduplicate threshold not a float warning",
 				container,
@@ -474,94 +494,96 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 				fonts::font
 			);
 		}
+	}
 
-		ui::add_text_input(
-			"custom ffmpeg filters text input",
+	bool bad_audio = settings.timescale && settings.ffmpeg_override.find("-c:a copy") != std::string::npos;
+	if (bad_audio)
+		container.push_element_gap(2);
+
+	ui::add_text_input(
+		"custom ffmpeg filters text input", container, settings.ffmpeg_override, "custom ffmpeg filters", fonts::font
+	);
+
+	if (bad_audio) {
+		container.pop_element_gap();
+
+		ui::add_text(
+			"timescale audio copy warning",
 			container,
-			settings.ffmpeg_override,
-			"custom ffmpeg filters",
+			"cannot use -c:a copy while using timescale",
+			gfx::rgba(255, 0, 0, 255),
 			fonts::font
-		);
-
-		if (settings.timescale && settings.ffmpeg_override.find("-c:a copy") != std::string::npos) {
-			ui::add_text(
-				"timescale audio copy warning",
-				container,
-				"cannot use -c:a copy while using timescale",
-				gfx::rgba(255, 0, 0, 255),
-				fonts::font
-			);
-		}
-
-		ui::add_checkbox("debug checkbox", container, "debug", settings.debug, fonts::font);
-
-		/*
-		    Advanced Interpolation
-		*/
-		section_component("advanced interpolation");
-
-		ui::add_dropdown(
-			"interpolation preset dropdown",
-			container,
-			"interpolation preset",
-			config_blur::INTERPOLATION_PRESETS,
-			settings.interpolation_preset,
-			fonts::font
-		);
-
-		ui::add_dropdown(
-			"interpolation algorithm dropdown",
-			container,
-			"interpolation algorithm",
-			config_blur::INTERPOLATION_ALGORITHMS,
-			settings.interpolation_algorithm,
-			fonts::font
-		);
-
-		ui::add_dropdown(
-			"interpolation block size dropdown",
-			container,
-			"interpolation block size",
-			config_blur::INTERPOLATION_BLOCK_SIZES,
-			settings.interpolation_blocksize,
-			fonts::font
-		);
-
-		ui::add_slider(
-			"interpolation mask area slider",
-			container,
-			0,
-			500,
-			&settings.interpolation_mask_area,
-			"interpolation mask area: {}",
-			fonts::font
-		);
-
-		/*
-		    Advanced Blur
-		*/
-		section_component("advanced blur");
-
-		ui::add_slider(
-			"blur weighting gaussian std dev slider",
-			container,
-			0.f,
-			10.f,
-			&settings.blur_weighting_gaussian_std_dev,
-			"blur weighting gaussian std dev: {:.2f}",
-			fonts::font
-		);
-		ui::add_checkbox(
-			"blur weighting triangle reverse checkbox",
-			container,
-			"blur weighting triangle reverse",
-			settings.blur_weighting_triangle_reverse,
-			fonts::font
-		);
-		ui::add_text_input(
-			"blur weighting bound input", container, settings.blur_weighting_bound, "blur weighting bound", fonts::font
 		);
 	}
+
+	ui::add_checkbox("debug checkbox", container, "debug", settings.debug, fonts::font);
+
+	/*
+	    Advanced Interpolation
+	*/
+	section_component("advanced interpolation");
+
+	ui::add_dropdown(
+		"interpolation preset dropdown",
+		container,
+		"interpolation preset",
+		config_blur::INTERPOLATION_PRESETS,
+		settings.interpolation_preset,
+		fonts::font
+	);
+
+	ui::add_dropdown(
+		"interpolation algorithm dropdown",
+		container,
+		"interpolation algorithm",
+		config_blur::INTERPOLATION_ALGORITHMS,
+		settings.interpolation_algorithm,
+		fonts::font
+	);
+
+	ui::add_dropdown(
+		"interpolation block size dropdown",
+		container,
+		"interpolation block size",
+		config_blur::INTERPOLATION_BLOCK_SIZES,
+		settings.interpolation_blocksize,
+		fonts::font
+	);
+
+	ui::add_slider(
+		"interpolation mask area slider",
+		container,
+		0,
+		500,
+		&settings.interpolation_mask_area,
+		"interpolation mask area: {}",
+		fonts::font
+	);
+
+	/*
+	    Advanced Blur
+	*/
+	section_component("advanced blur");
+
+	ui::add_slider(
+		"blur weighting gaussian std dev slider",
+		container,
+		0.f,
+		10.f,
+		&settings.blur_weighting_gaussian_std_dev,
+		"blur weighting gaussian std dev: {:.2f}",
+		fonts::font
+	);
+	ui::add_checkbox(
+		"blur weighting triangle reverse checkbox",
+		container,
+		"blur weighting triangle reverse",
+		settings.blur_weighting_triangle_reverse,
+		fonts::font
+	);
+	ui::add_text_input(
+		"blur weighting bound input", container, settings.blur_weighting_bound, "blur weighting bound", fonts::font
+	);
 }
 
 // NOLINTBEGIN(readability-function-cognitive-complexity) todo: refactor
@@ -625,23 +647,22 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 
 			auto res = render->render(sample_video_path, settings);
 
-			if (res.success) {
-				std::lock_guard<std::mutex> lock(preview_mutex);
-				preview_id++;
-
-				Blur::remove_temp_path(preview_path.parent_path());
-
-				preview_path = res.output_path;
-
-				u::log("config preview finished rendering");
-			}
-
 			if (render == renders.back().get())
 			{ // todo: this should be correct right? any cases where this doesn't work?
 				loading = false;
 				error = !res.success;
 
-				if (!res.success) {
+				if (!error) {
+					std::lock_guard<std::mutex> lock(preview_mutex);
+					preview_id++;
+
+					Blur::remove_temp_path(preview_path.parent_path());
+
+					preview_path = res.output_path;
+
+					u::log("config preview finished rendering");
+				}
+				else {
 					if (res.error_message != "Input path does not exist") {
 						add_notification(
 							"Failed to generate config preview. Click to copy error message",
@@ -873,9 +894,12 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 			},
 		},
 		{
-			"deduplicate range checkbox",
+			"deduplicate range",
 			{
 				"Amount of frames beyond the current frame to look for unique frames when deduplicating",
+				"Make it higher if your footage is at a lower FPS than it should be, e.g. choppy 120fps gameplay "
+				"recorded at 240fps",
+				"Lower it if your blurred footage starts blurring static elements such as menu screens",
 			},
 		},
 		{
