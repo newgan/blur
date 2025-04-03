@@ -36,7 +36,7 @@ void Rendering::render_videos() {
 		rendering.call_progress_callback();
 	}
 	else {
-		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	}
 }
 
