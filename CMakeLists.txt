@@ -218,6 +218,34 @@ if(APPLE)
 
     # Link the .icns file to the target
     target_sources(blur-gui PRIVATE ${CMAKE_SOURCE_DIR}/resources/blur.icns)
+
+    # Add a post-build step that will run after the bundle is created
+    add_custom_command(
+      TARGET blur-gui POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E echo "Copying resources to bundle..."
+
+      # Make sure the destination directories exist
+      COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/"
+      COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/vapoursynth"
+
+      # Copy ci/out directory if it exists
+      COMMAND ${CMAKE_COMMAND} -E echo "Copying ci/out files..."
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+              "${CMAKE_SOURCE_DIR}/ci/out"
+              "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/"
+
+      # Copy vapoursynth scripts
+      COMMAND ${CMAKE_COMMAND} -E echo "Copying vapoursynth files..."
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+              "${CMAKE_SOURCE_DIR}/src/vapoursynth"
+              "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/lib"
+
+      # Verify the copy worked
+      COMMAND ${CMAKE_COMMAND} -E echo "Resource copying complete"
+
+      # The VERBATIM flag ensures command arguments are correctly escaped
+      VERBATIM
+    )
   else()
     # For Debug and other build types, disable bundling
     set_target_properties(blur-gui PROPERTIES

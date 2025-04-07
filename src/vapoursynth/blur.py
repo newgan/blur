@@ -8,6 +8,18 @@ from vapoursynth import core
 from pathlib import Path
 import sys
 
+if vars().get("macos_bundled") == "true":
+    # load plugins
+    plugin_dir = Path("../vapoursynth-plugins")
+    ignored = {
+        "libbestsource.dylib",
+    }
+
+    for dylib in plugin_dir.glob("*.dylib"):
+        if dylib.name not in ignored:
+            print("loading", dylib.name)
+            core.std.LoadPlugin(path=str(dylib))
+
 # add blur.py folder to path so it can reference scripts
 sys.path.insert(1, str(Path(__file__).parent))
 
@@ -203,7 +215,9 @@ if settings["blur"]:
             weights = do_weighting_fn(settings["blur_weighting"])
 
             # frame blend
-            # video = core.misc.AverageFrames(video, [1] * blended_frames)
+            # if vars().get("macos_bundled") == "true":
+            #     video = blur.blending.average_expr1(video, weights)
+            # else:
             video = blur.blending.average(video, weights)
 
     # if frame_gap > 0:
