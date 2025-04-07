@@ -487,7 +487,14 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		settings.codec = "h264";
 	}
 
-	ui::add_dropdown("codec dropdown", container, "codec", available_codecs, settings.codec, fonts::font);
+	ui::add_dropdown(
+		"codec dropdown",
+		container,
+		std::format("codec ({})", settings.gpu_encoding ? settings.gpu_type : "cpu"),
+		available_codecs,
+		settings.codec,
+		fonts::font
+	);
 
 	if (settings.advanced.ffmpeg_override.empty()) {
 		int min_quality = 0;
