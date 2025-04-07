@@ -3,10 +3,7 @@
 #include "config_blur.h"
 
 struct RenderCommands {
-	std::wstring vspipe_path;
 	std::vector<std::wstring> vspipe;
-
-	std::wstring ffmpeg_path;
 	std::vector<std::wstring> ffmpeg;
 };
 

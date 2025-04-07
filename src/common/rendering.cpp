@@ -142,22 +142,6 @@ bool Render::remove_temp_path() {
 RenderCommands Render::build_render_commands() {
 	RenderCommands commands;
 
-	if (blur.used_installer) {
-#if defined(_WIN32)
-		commands.vspipe_path = (blur.resources_path / "lib\\vapoursynth\\vspipe.exe").wstring();
-		commands.ffmpeg_path = (blur.resources_path / "lib\\ffmpeg\\ffmpeg.exe").wstring();
-#elif defined(__linux__)
-		// todo
-#elif defined(__APPLE__)
-		commands.vspipe_path = (blur.resources_path / "vapoursynth/vspipe").wstring();
-		commands.ffmpeg_path = (blur.resources_path / "ffmpeg/ffmpeg").wstring();
-#endif
-	}
-	else {
-		commands.vspipe_path = blur.vspipe_path.wstring();
-		commands.ffmpeg_path = blur.ffmpeg_path.wstring();
-	}
-
 	std::wstring path_string = m_video_path.wstring();
 	std::ranges::replace(path_string, '\\', '/');
 
@@ -351,8 +335,8 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 		bp::ipstream vspipe_stderr;
 
 		if (m_settings.debug) {
-			u::log(L"VSPipe command: {} {}", render_commands.vspipe_path, u::join(render_commands.vspipe, L" "));
-			u::log(L"FFmpeg command: {} {}", render_commands.ffmpeg_path, u::join(render_commands.ffmpeg, L" "));
+			u::log(L"VSPipe command: {} {}", blur.vspipe_path.wstring(), u::join(render_commands.vspipe, L" "));
+			u::log(L"FFmpeg command: {} {}", blur.ffmpeg_path.wstring(), u::join(render_commands.ffmpeg, L" "));
 		}
 
 		bp::environment env = boost::this_process::environment();
@@ -366,7 +350,7 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 
 		// Launch vspipe process
 		bp::child vspipe_process(
-			render_commands.vspipe_path,
+			blur.vspipe_path.wstring(),
 			bp::args(render_commands.vspipe),
 			bp::std_out > vspipe_stdout,
 			bp::std_err > vspipe_stderr,
@@ -380,7 +364,7 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 
 		// Launch ffmpeg process
 		bp::child ffmpeg_process(
-			render_commands.ffmpeg_path,
+			blur.ffmpeg_path.wstring(),
 			bp::args(render_commands.ffmpeg),
 			bp::std_in < vspipe_stdout,
 			bp::std_out.null(),

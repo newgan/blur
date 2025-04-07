@@ -247,27 +247,12 @@ std::filesystem::path u::get_settings_path() {
 bool u::is_video_file(const std::filesystem::path& path) {
 	namespace bp = boost::process;
 
-	std::wstring ffmpeg_path;
-
-	if (blur.used_installer) {
-#if defined(_WIN32)
-		ffmpeg_path = (blur.resources_path / "lib\\ffmpeg\\ffmpeg.exe").wstring();
-#elif defined(__linux__)
-		// todo
-#elif defined(__APPLE__)
-		ffmpeg_path = (blur.resources_path / "ffmpeg/ffmpeg").wstring();
-#endif
-	}
-	else {
-		ffmpeg_path = blur.ffmpeg_path.wstring();
-	}
-
 	std::stringstream output;
 	std::stringstream error;
 
 	bp::ipstream pipe_stream;
 	bp::child c(
-		ffmpeg_path,
+		blur.ffmpeg_path.wstring(),
 		"-i",
 		path.wstring(),
 		bp::std_out > bp::null,

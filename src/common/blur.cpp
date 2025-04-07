@@ -22,13 +22,25 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 	used_installer = std::filesystem::exists(resources_path / "lib\\vapoursynth\\vspipe.exe") &&
 	                 std::filesystem::exists(resources_path / "lib\\ffmpeg\\ffmpeg.exe");
 #elif defined(__linux__)
+	// todo
 	used_installer = false;
 #elif defined(__APPLE__)
 	used_installer = std::filesystem::exists(resources_path / "vapoursynth/vspipe") &&
 	                 std::filesystem::exists(resources_path / "ffmpeg/ffmpeg");
 #endif
 
-	if (!used_installer) {
+	if (used_installer) {
+#if defined(_WIN32)
+		vspipe_path = (blur.resources_path / "lib\\vapoursynth\\vspipe.exe").wstring();
+		ffmpeg_path = (blur.resources_path / "lib\\ffmpeg\\ffmpeg.exe").wstring();
+#elif defined(__linux__)
+		// todo
+#elif defined(__APPLE__)
+		vspipe_path = (blur.resources_path / "vapoursynth/vspipe").wstring();
+		ffmpeg_path = (blur.resources_path / "ffmpeg/ffmpeg").wstring();
+#endif
+	}
+	else {
 		const static std::string manual_troubleshooting_info =
 			"If you’re not sure what that means, try using the installer.";
 
