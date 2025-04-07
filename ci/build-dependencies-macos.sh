@@ -126,6 +126,7 @@ cp -R python/* "$python_dest_path"
 
 cd ../..
 
+# it uses /install - change it to what it actually is, it'll be changed later anyway by dylibbundler (https://gregoryszorc.com/docs/python-build-standalone/main/quirks.html)
 install_name_tool -change /install/lib/libpython3.12.dylib "$PWD/$out_dir/python/lib/libpython3.12.dylib" $out_dir/python/lib/libpython3.12.dylib
 install_name_tool -id "$PWD/$out_dir/python/lib/libpython3.12.dylib" $out_dir/python/lib/libpython3.12.dylib
 
