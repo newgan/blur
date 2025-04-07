@@ -3,7 +3,7 @@
 #include "updates.h"
 
 const std::string APPLICATION_NAME = "blur";
-const std::string BLUR_VERSION = "2.01";
+const std::string BLUR_VERSION = "2.02";
 
 class Blur { // todo: switch all the classes which could be namespaces into namespaces
 public:
