@@ -96,11 +96,11 @@ cd download/svpflow
 
 if [ ! -f "libsvpflow1_arm.dylib" ] || [ ! -f "libsvpflow2_arm.dylib" ]; then
   echo "Downloading SVPFlow libraries from GitHub..."
-  wget -q https://github.com/Spritzerland/svpflow-arm64/raw/main/libsvpflow1_arm.dylib
-  wget -q https://github.com/Spritzerland/svpflow-arm64/raw/main/libsvpflow2_arm.dylib
+  wget -q https://github.com/Spritzerland/svpflow-arm64/raw/4922e4bcfeb0ee80d80555ac54b4f0e92e4d6316/libsvpflow1_arm.dylib
+  wget -q https://github.com/Spritzerland/svpflow-arm64/raw/4922e4bcfeb0ee80d80555ac54b4f0e92e4d6316/libsvpflow2_arm.dylib
 fi
 
-# copy libraries to output directory
+### copy libraries to output directory
 dest_path="../../$out_dir/vapoursynth-plugins"
 mkdir -p "$dest_path"
 cp libsvpflow1_arm.dylib "$dest_path"
