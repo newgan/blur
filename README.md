@@ -6,7 +6,7 @@
   <img src="https://github.com/user-attachments/assets/e8b749dc-9232-4e45-93b4-8df2e3854ffb" width="30%" />
 </p>
 
-Blur is a native desktop application made for easily and efficiently adding motion blur to videos through frame blending, with the ability to add frame interpolation and more.
+Blur is a native desktop application made for easily and efficiently adding motion blur to videos through frame blending, with the ability to utilise frame interpolation and more.
 
 [YouTube showcase](https://www.youtube.com/watch?v=HicPaXNxtUw)
 
