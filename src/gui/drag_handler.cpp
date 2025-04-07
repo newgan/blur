@@ -39,9 +39,14 @@ void gui::drag_handler::DragTarget::drop(os::DragEvent& ev) {
 	if (ev.dataProvider()->contains(os::DragDataItemType::Paths)) {
 		std::vector<std::string> paths = ev.dataProvider()->getPaths();
 
+		std::vector<std::wstring> wpaths;
+		for (const auto path : paths) {
+			wpaths.push_back(base::from_utf8(path));
+		}
+
 		switch (gui::renderer::screen) {
 			case gui::renderer::Screens::MAIN: {
-				tasks::add_files(paths);
+				tasks::add_files(wpaths);
 				break;
 			}
 			case gui::renderer::Screens::CONFIG: {
@@ -54,7 +59,7 @@ void gui::drag_handler::DragTarget::drop(os::DragEvent& ev) {
 					break;
 				}
 
-				tasks::add_sample_video(paths[0]);
+				tasks::add_sample_video(wpaths[0]);
 				break;
 			}
 		}

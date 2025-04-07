@@ -44,8 +44,6 @@ void tasks::run(const std::vector<std::string>& arguments) {
 		gui::renderer::on_render_finished(render, result);
 	});
 
-	add_files(arguments); // todo: mac packaged app support (& linux? does it work?)
-
 	auto update_res = Blur::check_updates();
 	if (update_res.success && !update_res.is_latest) {
 		static const auto update_notification_duration = std::chrono::duration<float>(15.f);
@@ -85,18 +83,25 @@ void tasks::run(const std::vector<std::string>& arguments) {
 #endif
 	}
 
+	std::vector<std::wstring> wargs;
+	for (const auto argument : arguments) {
+		wargs.push_back(base::from_utf8(argument));
+	}
+
+	add_files(wargs); // todo: mac packaged app support (& linux? does it work?)
+
 	while (!gui::stop) {
 		rendering.render_videos();
 	}
 }
 
-void tasks::add_files(const std::vector<std::string>& path_strs) {
-	for (const std::string& path_str : path_strs) {
+void tasks::add_files(const std::vector<std::wstring>& path_strs) {
+	for (const std::wstring& path_str : path_strs) {
 		std::filesystem::path path = std::filesystem::canonical(path_str);
 		if (path.empty() || !std::filesystem::exists(path))
 			continue;
 
-		u::log("queueing {}", path.string());
+		u::log(L"queueing {}", path.wstring());
 
 		Render render(path);
 
@@ -110,7 +115,7 @@ void tasks::add_files(const std::vector<std::string>& path_strs) {
 	}
 }
 
-void tasks::add_sample_video(const std::string& path_str) {
+void tasks::add_sample_video(const std::wstring& path_str) {
 	std::filesystem::path path = std::filesystem::canonical(path_str);
 	if (path.empty() || !std::filesystem::exists(path))
 		return;
@@ -121,4 +126,6 @@ void tasks::add_sample_video(const std::string& path_str) {
 	std::filesystem::copy(path, sample_video_path);
 
 	gui::renderer::add_notification("Added sample video", ui::NotificationType::SUCCESS);
+
+	gui::renderer::just_added_sample_video = true;
 }

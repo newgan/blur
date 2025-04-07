@@ -181,7 +181,13 @@ void gui::renderer::components::main_screen(ui::Container& container, float delt
 		ui::add_button("open file button", container, "Open files", fonts::font, [] {
 			base::paths paths;
 			utils::show_file_selector("Blur input", "", {}, os::FileDialog::Type::OpenFiles, paths);
-			tasks::add_files(paths);
+
+			std::vector<std::wstring> wpaths;
+			for (const auto path : paths) {
+				wpaths.push_back(base::from_utf8(path));
+			}
+
+			tasks::add_files(wpaths);
 		});
 
 		ui::add_text(
@@ -622,7 +628,7 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 			first = false;
 		}
 		else {
-			if (settings == previewed_settings && !first)
+			if (settings == previewed_settings && !first && !just_added_sample_video)
 				return;
 
 			if (now - last_render_time < debounce_time)
@@ -632,6 +638,7 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 		u::log("generating config preview");
 
 		previewed_settings = settings;
+		just_added_sample_video = false;
 		last_render_time = now;
 
 		{
@@ -786,7 +793,7 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 				if (paths.size() != 1)
 					return; // ??
 
-				tasks::add_sample_video(paths[0]);
+				tasks::add_sample_video(base::from_utf8(paths[0]));
 			});
 		}
 	}

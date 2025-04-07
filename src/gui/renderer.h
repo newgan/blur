@@ -31,6 +31,8 @@ namespace gui::renderer {
 	inline os::NativeCursor current_cursor;
 	inline bool set_cursor_this_frame = false;
 
+	inline bool just_added_sample_video = false;
+
 	inline std::optional<Render> current_render_copy;
 
 	void init_fonts();

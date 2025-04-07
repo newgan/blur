@@ -18,7 +18,13 @@ bool gui::event_handler::process_event(const os::Event& event) {
 		case os::Event::DropFiles: {
 			// mac dropping files onto executable (todo: when else is this triggered?)
 			DEBUG_LOG("file drop event");
-			tasks::add_files(event.files());
+
+			std::vector<std::wstring> wpaths;
+			for (const auto path : event.files()) {
+				wpaths.push_back(base::from_utf8(path));
+			}
+
+			tasks::add_files(wpaths);
 			break;
 		}
 
@@ -47,7 +53,8 @@ bool gui::event_handler::process_event(const os::Event& event) {
 	return updated;
 }
 
-bool gui::event_handler::handle_events(bool rendered_last
+bool gui::event_handler::handle_events(
+	bool rendered_last
 ) { // https://github.com/aseprite/aseprite/blob/45c2a5950445c884f5d732edc02989c3fb6ab1a6/src/ui/manager.cpp#L393
 	const static int default_tickrate = 60;
 	const static double default_timeout = 1.f / default_tickrate;
