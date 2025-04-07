@@ -21,6 +21,8 @@ Blur is a native desktop application made for easily and efficiently adding moti
 
 The amount of motion blur is easily configurable, and there are additional options to enable other features such as interpolating the video's fps. This can be used to generate 'fake' motion blur through frame blending the interpolated footage. This motion blur does not blur non-moving parts of the video, like the HUD in gameplay footage.
 
+The program can also be used in the command line via `blur-cli`, use -h or --help for more information.
+
 ## Sample output
 
 ### 600fps footage, blurred with 0.6 blur amount
