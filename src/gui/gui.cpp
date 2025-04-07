@@ -9,7 +9,9 @@
 
 #define DEBUG_RENDER_LOGGING 0
 
-float scale = 1.f;
+namespace {
+	float scale = 1.f;
+}
 
 void gui::update_vsync() {
 #ifdef _WIN32
@@ -34,7 +36,7 @@ void gui::update_vsync() {
 void gui::event_loop() {
 	bool rendered_last = false;
 
-	while (!closing) {
+	while (!stop) {
 		auto frame_start = std::chrono::steady_clock::now();
 
 		update_vsync();

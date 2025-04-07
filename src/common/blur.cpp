@@ -141,9 +141,5 @@ updates::UpdateCheckRes Blur::check_updates() {
 void Blur::update(
 	const std::string& tag, const std::optional<std::function<void(const std::string&)>>& progress_callback
 ) {
-#ifndef WIN32
-	// todo:
-#else
 	updates::update_to_tag(tag, progress_callback);
-#endif
 }

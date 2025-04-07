@@ -11,7 +11,7 @@ bool gui::event_handler::process_event(const os::Event& event) {
 	switch (event.type()) {
 		case os::Event::CloseApp:
 		case os::Event::CloseWindow: {
-			closing = true;
+			stop = true;
 			return false;
 		}
 

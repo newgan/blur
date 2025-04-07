@@ -4,7 +4,6 @@
 #include "gui.h"
 #include "gui/renderer.h"
 #include "gui/ui/ui.h"
-#include "base/launcher.h"
 
 void tasks::run(const std::vector<std::string>& arguments) {
 	auto res = blur.initialise(false, true);
@@ -45,23 +44,23 @@ void tasks::run(const std::vector<std::string>& arguments) {
 	if (update_res.success && !update_res.is_latest) {
 		static const auto update_notification_duration = std::chrono::duration<float>(15.f);
 
-#ifdef WIN32
+#if defined(WIN32) || defined(__APPLE__)
 		gui::renderer::add_notification(
 			std::format("There's a newer version ({}) available! Click to run the installer.", update_res.latest_tag),
 			ui::NotificationType::INFO,
 			[&] {
-				const static std::string UPDATE_NOTIFICATION_ID = "update progress notification";
+				const static std::string update_notification_id = "update progress notification";
 
 				gui::renderer::add_notification(
-					UPDATE_NOTIFICATION_ID, "Downloading update...", ui::NotificationType::INFO
+					update_notification_id, "Downloading update...", ui::NotificationType::INFO
 				);
 
 				std::thread([update_res] {
 					Blur::update(update_res.latest_tag, [](const std::string& text) {
-						gui::renderer::add_notification(UPDATE_NOTIFICATION_ID, text, ui::NotificationType::INFO);
+						gui::renderer::add_notification(update_notification_id, text, ui::NotificationType::INFO);
 					});
 
-					gui::closing = true;
+					gui::stop = true;
 				}).detach();
 			},
 			update_notification_duration
@@ -80,7 +79,7 @@ void tasks::run(const std::vector<std::string>& arguments) {
 #endif
 	}
 
-	while (true) {
+	while (!gui::stop) {
 		rendering.render_videos();
 	}
 }

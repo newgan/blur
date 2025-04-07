@@ -6,7 +6,7 @@ namespace gui {
 
 	inline std::optional<Blur::InitialisationResponse> initialisation_res;
 
-	inline bool closing = false;
+	inline bool stop = false;
 	inline bool to_render = true;
 
 	const inline float VSYNC_EXTRA_FPS = 50;

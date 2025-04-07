@@ -6,6 +6,7 @@ using json = nlohmann::json;
 namespace bp = boost::process;
 
 const std::string WINDOWS_INSTALLER_NAME = "blur-Windows-Installer-x64.exe";
+const std::string MACOS_INSTALLER_NAME = "blur-macOS-Release-arm64.dmg";
 
 namespace {
 	// NOLINTBEGIN ai code idc
@@ -173,8 +174,7 @@ updates::UpdateCheckRes updates::is_latest_version(bool include_beta) {
 					// todo when there's an installer
 					{
 #elif defined(__APPLE__)
-					// todo when there's an installer
-					{
+					if (asset["name"] == MACOS_INSTALLER_NAME) {
 #endif
 						latest_tag = release["tag_name"];
 						break;
@@ -223,10 +223,19 @@ bool updates::update_to_tag(
 	try {
 		u::log("Beginning update to tag: {}", tag);
 
-		// Create download URL and temp file path
-		std::string download_url =
-			"https://github.com/f0e/blur/releases/download/" + tag + "/" + WINDOWS_INSTALLER_NAME;
-		std::filesystem::path installer_path = std::filesystem::temp_directory_path() / "blur-installer.exe";
+#ifdef _WIN32
+		std::string installer_filename = WINDOWS_INSTALLER_NAME;
+		std::filesystem::path installer_path = std::filesystem::temp_directory_path() / installer_filename;
+#elif defined(__APPLE__)
+		std::string installer_filename = MACOS_INSTALLER_NAME;
+		std::filesystem::path installer_path = std::filesystem::temp_directory_path() / installer_filename;
+#else
+		u::log("Unsupported platform for automatic updates");
+		return false;
+#endif
+
+		// Create download URL
+		std::string download_url = "https://github.com/f0e/blur/releases/download/" + tag + "/" + installer_filename;
 
 		// Open file for writing
 		std::ofstream installer_file(installer_path.string(), std::ios::binary);
@@ -284,9 +293,12 @@ bool updates::update_to_tag(
 
 		u::log("Download complete, launching installer");
 
-		// Launch installer and exit
+#ifdef _WIN32
 		bp::spawn(installer_path.string());
-		std::exit(0);
+#elif defined(__APPLE__)
+		bp::spawn("/usr/bin/open", installer_path.string());
+#endif
+
 		return true;
 	}
 	catch (const std::exception& e) {
