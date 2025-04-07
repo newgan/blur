@@ -27,8 +27,9 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 
 	output << "\n";
 	output << "- gpu acceleration" << "\n";
+	output << "gpu decoding: " << (current_settings.gpu_decoding ? "true" : "false") << "\n";
 	output << "gpu interpolation: " << (current_settings.gpu_interpolation ? "true" : "false") << "\n";
-	output << "gpu rendering: " << (current_settings.gpu_rendering ? "true" : "false") << "\n";
+	output << "gpu encoding: " << (current_settings.gpu_encoding ? "true" : "false") << "\n";
 	output << "gpu type (nvidia/amd/intel): " << current_settings.gpu_type << "\n";
 
 	output << "\n";
@@ -142,8 +143,9 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 	config_base::extract_config_value(config_map, "preview", settings.preview);
 	config_base::extract_config_value(config_map, "detailed filenames", settings.detailed_filenames);
 
+	config_base::extract_config_value(config_map, "gpu decoding", settings.gpu_decoding);
 	config_base::extract_config_value(config_map, "gpu interpolation", settings.gpu_interpolation);
-	config_base::extract_config_value(config_map, "gpu rendering", settings.gpu_rendering);
+	config_base::extract_config_value(config_map, "gpu encoding", settings.gpu_encoding);
 	config_base::extract_config_string(config_map, "gpu type (nvidia/amd/intel)", settings.gpu_type);
 
 	config_base::extract_config_value(config_map, "timescale", settings.timescale);
@@ -255,8 +257,9 @@ nlohmann::json BlurSettings::to_json() const {
 	j["preview"] = this->preview;
 	j["detailed_filenames"] = this->detailed_filenames;
 
+	j["gpu_decoding"] = this->gpu_decoding;
 	j["gpu_interpolation"] = this->gpu_interpolation;
-	j["gpu_rendering"] = this->gpu_rendering;
+	j["gpu_encoding"] = this->gpu_encoding;
 	j["gpu_type"] = this->gpu_type;
 	// j["video_container"] = this->video_container;
 	j["deduplicate_range"] = this->deduplicate_range;

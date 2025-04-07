@@ -24,8 +24,9 @@ struct BlurSettings {
 	bool preview = true;
 	bool detailed_filenames = false;
 
+	bool gpu_decoding = true;
 	bool gpu_interpolation = true;
-	bool gpu_rendering = false;
+	bool gpu_encoding = false;
 	std::string gpu_type = "nvidia";
 
 	bool advanced = false;
@@ -63,11 +64,11 @@ public:
 		       output_timescale_audio_pitch == other.output_timescale_audio_pitch && filters == other.filters &&
 		       brightness == other.brightness && saturation == other.saturation && contrast == other.contrast &&
 		       quality == other.quality && deduplicate == other.deduplicate && preview == other.preview &&
-		       detailed_filenames == other.detailed_filenames && gpu_interpolation == other.gpu_interpolation &&
-		       gpu_rendering == other.gpu_rendering && gpu_type == other.gpu_type && advanced == other.advanced &&
-		       video_container == other.video_container && deduplicate_range == other.deduplicate_range &&
-		       deduplicate_threshold == other.deduplicate_threshold && ffmpeg_override == other.ffmpeg_override &&
-		       debug == other.debug && copy_dates == other.copy_dates &&
+		       detailed_filenames == other.detailed_filenames && gpu_decoding == other.gpu_decoding &&
+		       gpu_interpolation == other.gpu_interpolation && gpu_encoding == other.gpu_encoding &&
+		       gpu_type == other.gpu_type && advanced == other.advanced && video_container == other.video_container &&
+		       deduplicate_range == other.deduplicate_range && deduplicate_threshold == other.deduplicate_threshold &&
+		       ffmpeg_override == other.ffmpeg_override && debug == other.debug && copy_dates == other.copy_dates &&
 		       blur_weighting_gaussian_std_dev == other.blur_weighting_gaussian_std_dev &&
 		       blur_weighting_triangle_reverse == other.blur_weighting_triangle_reverse &&
 		       blur_weighting_bound == other.blur_weighting_bound &&

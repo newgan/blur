@@ -5,8 +5,9 @@ from vapoursynth import core
 
 # import adjust
 
-from pathlib import Path
 import sys
+import json
+from pathlib import Path
 
 if vars().get("macos_bundled") == "true":
     # load plugins
@@ -29,14 +30,11 @@ import blur.interpolate
 import blur.weighting
 import blur.adjust
 
-import json
-from pathlib import Path
-
 video_path = Path(vars().get("video_path"))
 
 settings = json.loads(vars().get("settings"))
 
-video = core.bs.VideoSource(source=video_path, cachemode=0)
+video = core.lsmas.LibavSMASHSource(source=video_path, prefer_hw=3 if settings["gpu_decoding"] else 0)
 
 if settings["deduplicate"] and settings["deduplicate_range"] != 0:
     deduplicate_range: int | None = int(settings["deduplicate_range"])

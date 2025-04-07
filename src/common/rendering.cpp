@@ -212,14 +212,16 @@ RenderCommands Render::build_render_commands() {
 
 	if (!audio_filters.empty()) {
 		commands.ffmpeg.emplace_back(L"-af");
-		commands.ffmpeg.push_back(std::accumulate(
-			std::next(audio_filters.begin()),
-			audio_filters.end(),
-			audio_filters[0],
-			[](const std::wstring& a, const std::wstring& b) {
-				return a + L"," + b;
-			}
-		));
+		commands.ffmpeg.push_back(
+			std::accumulate(
+				std::next(audio_filters.begin()),
+				audio_filters.end(),
+				audio_filters[0],
+				[](const std::wstring& a, const std::wstring& b) {
+					return a + L"," + b;
+				}
+			)
+		);
 	}
 
 	if (!m_settings.ffmpeg_override.empty()) {
@@ -232,7 +234,7 @@ RenderCommands Render::build_render_commands() {
 	}
 	else {
 		// Video format
-		if (m_settings.gpu_rendering) {
+		if (m_settings.gpu_encoding) {
 			std::string gpu_type = u::to_lower(m_settings.gpu_type);
 			if (gpu_type == "nvidia") {
 				commands.ffmpeg.insert(

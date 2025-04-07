@@ -360,18 +360,20 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	*/
 	section_component("gpu acceleration");
 
+	ui::add_checkbox("gpu decoding checkbox", container, "gpu decoding", settings.gpu_decoding, fonts::font);
+
 	ui::add_checkbox(
 		"gpu interpolation checkbox", container, "gpu interpolation", settings.gpu_interpolation, fonts::font
 	);
 
 	if (settings.ffmpeg_override.empty()) {
-		ui::add_checkbox("gpu rendering checkbox", container, "gpu rendering", settings.gpu_rendering, fonts::font);
+		ui::add_checkbox("gpu encoding checkbox", container, "gpu encoding", settings.gpu_encoding, fonts::font);
 
-		if (settings.gpu_rendering) {
+		if (settings.gpu_encoding) {
 			ui::add_dropdown(
-				"gpu rendering dropdown",
+				"gpu encoding type dropdown",
 				container,
-				"gpu rendering - gpu type",
+				"gpu encoding - gpu type",
 				{ "nvidia", "amd", "intel" },
 				settings.gpu_type,
 				fonts::font
@@ -380,9 +382,9 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	}
 	else {
 		ui::add_text(
-			"ffmpeg override gpu rendering warning",
+			"ffmpeg override gpu encoding warning",
 			container,
-			"gpu rendering overridden by custom ffmpeg filters",
+			"gpu encoding overridden by custom ffmpeg filters",
 			gfx::rgba(252, 186, 3, 150),
 			fonts::font
 		);
@@ -962,8 +964,8 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 
 		// Advanced rendering
 		// { "gpu interpolation checkbox", { "Uses GPU for interpolation", }, },
-		// { "gpu rendering checkbox", { "Uses GPU for rendering", }, },
-		// { "gpu rendering dropdown", { "Select GPU type", }, },
+		// { "gpu encoding checkbox", { "Uses GPU for rendering", }, },
+		// { "gpu encoding type dropdown", { "Select GPU type", }, },
 		{
 			"video container text input",
 			{

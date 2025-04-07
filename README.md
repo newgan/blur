@@ -99,15 +99,16 @@ Blur supports rendering from frameservers. This means you can avoid having to ru
 
 ### rendering
 
-- quality - [crf](https://trac.ffmpeg.org/wiki/Encode/H.264#crf) of the output video (qp if using GPU rendering)
+- quality - [crf](https://trac.ffmpeg.org/wiki/Encode/H.264#crf) of the output video (qp if using GPU encoding)
 - deduplicate - removes duplicate frames and generates new interpolated frames to take their place
 - preview - opens a render preview window
 - detailed filenames - adds blur settings to generated filenames
 
 ### gpu acceleration
 
+- gpu decoding - uses gpu when decoding
 - gpu interpolation - uses gpu when interpolating
-- gpu rendering - uses gpu when rendering
+- gpu encoding - uses gpu when rendering
 - gpu type (nvidia/amd/intel) - your gpu type
 
 ### timescale
