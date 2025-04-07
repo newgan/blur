@@ -454,8 +454,60 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	*/
 	section_component("rendering");
 
+	std::vector<std::string> available_codecs;
+	if (settings.gpu_encoding) {
+		std::string gpu_type = u::to_lower(settings.gpu_type);
+
+		available_codecs.emplace_back("h264");
+
+		if (gpu_type == "nvidia") {
+			available_codecs.emplace_back("h265");
+			available_codecs.emplace_back("av1");
+		}
+		else if (gpu_type == "amd") {
+			available_codecs.emplace_back("h265");
+			available_codecs.emplace_back("av1");
+		}
+		else if (gpu_type == "intel") {
+			available_codecs.emplace_back("h265");
+			available_codecs.emplace_back("av1");
+		}
+		else if (gpu_type == "mac") {
+			available_codecs.emplace_back("h265");
+			available_codecs.emplace_back("prores");
+			available_codecs.emplace_back("av1");
+		}
+	}
+	else {
+		available_codecs = { "h264", "h265", "av1", "vp9" };
+	}
+
+	// if the current selected codec isn't in available_codecs, default to h264
+	if (!u::contains(available_codecs, settings.codec)) {
+		settings.codec = "h264";
+	}
+
+	ui::add_dropdown("codec dropdown", container, "codec", available_codecs, settings.codec, fonts::font);
+
 	if (settings.advanced.ffmpeg_override.empty()) {
-		ui::add_slider("quality", container, 0, 51, &settings.quality, "quality: {}", fonts::font, {}, 0.f);
+		int min_quality = 0;
+		int max_quality = 51;
+		std::string quality_label = "quality: {}";
+
+		if (settings.codec == "prores" && settings.gpu_type == "mac") {
+			min_quality = 0; // proxy
+			max_quality = 3; // hq
+			quality_label = "quality: {} (0:proxy, 1:lt, 2:standard, 3:hq)";
+		}
+		else if (settings.codec == "av1") {
+			max_quality = 63;
+		}
+
+		settings.quality = std::clamp(settings.quality, min_quality, max_quality);
+
+		ui::add_slider(
+			"quality", container, min_quality, max_quality, &settings.quality, quality_label, fonts::font, {}, 0.f
+		);
 	}
 	else {
 		ui::add_text(
@@ -494,7 +546,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 				"gpu encoding type dropdown",
 				container,
 				"gpu encoding - gpu type",
-				{ "nvidia", "amd", "intel" },
+				{ "nvidia", "amd", "intel", "mac" },
 				settings.gpu_type,
 				fonts::font
 			);
@@ -1056,7 +1108,7 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 		{
 			"quality",
 			{
-				"Quality setting for output video",
+				"Quality setting for output video. Depends on the codec",
 				"(0 = lossless quality, 51 = really bad)",
 			},
 		},

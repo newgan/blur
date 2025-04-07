@@ -63,6 +63,7 @@ struct BlurSettings {
 	float saturation = 1.f;
 	float contrast = 1.f;
 
+	std::string codec = "h264";
 	int quality = 16;
 
 	bool deduplicate = true;
@@ -92,11 +93,12 @@ public:
 		       input_timescale == other.input_timescale && output_timescale == other.output_timescale &&
 		       output_timescale_audio_pitch == other.output_timescale_audio_pitch && filters == other.filters &&
 		       brightness == other.brightness && saturation == other.saturation && contrast == other.contrast &&
-		       deduplicate == other.deduplicate && deduplicate_method == other.deduplicate_method &&
-		       quality == other.quality && preview == other.preview && detailed_filenames == other.detailed_filenames &&
-		       copy_dates == other.copy_dates && gpu_decoding == other.gpu_decoding &&
-		       gpu_interpolation == other.gpu_interpolation && gpu_encoding == other.gpu_encoding &&
-		       gpu_type == other.gpu_type && override_advanced == other.override_advanced && advanced == other.advanced;
+		       codec == other.codec && deduplicate == other.deduplicate &&
+		       deduplicate_method == other.deduplicate_method && quality == other.quality && preview == other.preview &&
+		       detailed_filenames == other.detailed_filenames && copy_dates == other.copy_dates &&
+		       gpu_decoding == other.gpu_decoding && gpu_interpolation == other.gpu_interpolation &&
+		       gpu_encoding == other.gpu_encoding && gpu_type == other.gpu_type &&
+		       override_advanced == other.override_advanced && advanced == other.advanced;
 	}
 
 	struct ToJsonResult {

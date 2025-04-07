@@ -34,6 +34,7 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 
 	output << "\n";
 	output << "- rendering" << "\n";
+	output << "codec: " << current_settings.codec << "\n";
 	output << "quality: " << current_settings.quality << "\n";
 	output << "preview: " << (current_settings.preview ? "true" : "false") << "\n";
 	output << "detailed filenames: " << (current_settings.detailed_filenames ? "true" : "false") << "\n";
@@ -119,9 +120,11 @@ config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config
 	}
 
 	if (!u::contains(SVP_INTERPOLATION_ALGORITHMS, config.advanced.svp_interpolation_algorithm)) {
-		errors.insert(std::format(
-			"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
-		));
+		errors.insert(
+			std::format(
+				"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
+			)
+		);
 
 		if (fix)
 			config.advanced.svp_interpolation_algorithm = DEFAULT_CONFIG.advanced.svp_interpolation_algorithm;
@@ -165,6 +168,7 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 	config_base::extract_config_value(config_map, "deduplicate", settings.deduplicate);
 	config_base::extract_config_value(config_map, "deduplicate method", settings.deduplicate_method);
 
+	config_base::extract_config_value(config_map, "codec", settings.codec);
 	config_base::extract_config_value(config_map, "quality", settings.quality);
 	config_base::extract_config_value(config_map, "preview", settings.preview);
 	config_base::extract_config_value(config_map, "detailed filenames", settings.detailed_filenames);
@@ -301,6 +305,12 @@ BlurSettings::ToJsonResult BlurSettings::to_json() const {
 	j["output_timescale"] = this->output_timescale;
 	j["output_timescale_audio_pitch"] = this->output_timescale_audio_pitch;
 
+	j["filters"] = this->filters;
+	j["brightness"] = this->brightness;
+	j["saturation"] = this->saturation;
+	j["contrast"] = this->contrast;
+
+	j["codec"] = this->codec;
 	j["quality"] = this->quality;
 	j["preview"] = this->preview;
 	j["detailed_filenames"] = this->detailed_filenames;
