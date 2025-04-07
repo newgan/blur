@@ -63,9 +63,15 @@ jobs:
           cd ci
           bash build-dependencies-macos.sh
 
+      - name: Collect dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd ci
+          pwsh build-dependencies-windows.ps1
+
       - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v2
         if: runner.os != 'Windows' && runner.os != 'Linux' # Skip on Windows and Linux
+        uses: KyleMayes/install-llvm-action@v2
         with:
           env: true
           version: 17
@@ -179,6 +185,29 @@ jobs:
           echo "gui_path=$gui_path" >> $GITHUB_OUTPUT
           echo "configuration=$configuration" >> $GITHUB_OUTPUT
 
+      - name: Copy installer requirements (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          cp -r ci/out/* installer/dependencies/lib
+
+          curl -L https://aka.ms/vs/17/release/vc_redist.x64.exe -o installer/redist/vc_redist.x64.exe
+
+          cp ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.gui_path }} installer/resources/blur.exe
+          cp ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.cli_path }} installer/resources/blur-cli.exe
+
+      - name: Build installer (Windows)
+        if: runner.os == 'Windows'
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: installer/setup.iss
+          options: /O+
+      
+      - name: Rename Installer (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          mv installer/output/blur-installer.exe installer/output/blur-Windows-Installer-x64.exe
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -186,6 +215,7 @@ jobs:
           path: |
             ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.cli_path }}
             ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.gui_path }}
+            ${{ runner.os == 'Windows' && 'installer/output/blur-Windows-Installer-x64.exe' || '' }}
 
       - name: Release
         uses: softprops/action-gh-release@v2
@@ -194,3 +224,5 @@ jobs:
           files: |
             ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.cli_path }}
             ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.gui_path }}
+            ${{ runner.os == 'Windows' && 'installer/output/blur-Windows-Installer-x64.exe' || '' }}
+
