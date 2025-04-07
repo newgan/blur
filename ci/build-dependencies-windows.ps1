@@ -90,9 +90,9 @@ $plugins = @(
         FilePatterns = @("akarin.dll");
     },
     @{
-        Name = "BestSource";
-        Url = "https://github.com/vapoursynth/bestsource/releases/download/R11/BestSource-R11.7z";
-        FilePatterns = @("BestSource.dll");
+        Name = "LSmashSource";
+        Url = "https://github.com/HomeOfAviSynthPlusEvolution/L-SMASH-Works/releases/download/1194.0.0.0/L-SMASH-Works-r1194.0.0.0.7z";
+        FilePatterns = @("x64/LSMASHSource.dll");
     },
     @{
         Name = "MVTools";
