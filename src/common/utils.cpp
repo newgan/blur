@@ -243,3 +243,53 @@ std::filesystem::path u::get_settings_path() {
 
 	return settings_path;
 }
+
+bool u::is_video_file(const std::filesystem::path& path) {
+	namespace bp = boost::process;
+
+	std::wstring ffmpeg_path;
+
+	if (blur.used_installer) {
+#if defined(_WIN32)
+		ffmpeg_path = (blur.resources_path / "lib\\ffmpeg\\ffmpeg.exe").wstring();
+#elif defined(__linux__)
+		// todo
+#elif defined(__APPLE__)
+		ffmpeg_path = (blur.resources_path / "ffmpeg/ffmpeg").wstring();
+#endif
+	}
+	else {
+		ffmpeg_path = blur.ffmpeg_path.wstring();
+	}
+
+	std::stringstream output;
+	std::stringstream error;
+
+	bp::ipstream pipe_stream;
+	bp::child c(
+		ffmpeg_path,
+		"-i",
+		path.wstring(),
+		bp::std_out > bp::null,
+		bp::std_err > pipe_stream
+#ifdef _WIN32
+		,
+		bp::windows::create_no_window
+#endif
+	);
+
+	std::string line;
+	bool has_video_stream = false;
+
+	while (pipe_stream && std::getline(pipe_stream, line)) {
+		boost::algorithm::to_lower(line);
+		if (line.find("video:") != std::string::npos) {
+			has_video_stream = true;
+			break;
+		}
+	}
+
+	c.wait(); // wait for ffmpeg to finish
+
+	return has_video_stream;
+}

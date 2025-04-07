@@ -53,7 +53,12 @@ bool cli::run(
 		if (!std::filesystem::exists(input_path)) {
 			// TODO: test with unicode
 			u::log(L"Video '{}' was not found (wrong path?)", input_path.wstring());
-			return false;
+			continue;
+		}
+
+		if (!u::is_video_file(input_path)) {
+			u::log(L"Video '{}' is not a valid video or is unreadable", input_path.wstring());
+			continue;
 		}
 
 		std::optional<std::filesystem::path> output_path;

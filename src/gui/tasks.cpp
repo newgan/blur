@@ -101,15 +101,24 @@ void tasks::add_files(const std::vector<std::wstring>& path_strs) {
 		if (path.empty() || !std::filesystem::exists(path))
 			continue;
 
+		if (!u::is_video_file(path)) {
+			gui::renderer::add_notification(
+				std::format("File is not a valid video or is unreadable: {}", base::to_utf8(path.wstring())),
+				ui::NotificationType::NOTIF_ERROR
+			);
+			continue;
+		}
+
 		u::log(L"queueing {}", path.wstring());
 
 		Render render(path);
 
-		if (gui::renderer::screen != gui::renderer::Screens::MAIN)
+		if (gui::renderer::screen != gui::renderer::Screens::MAIN) {
 			gui::renderer::add_notification(
 				std::format("Queued '{}' for rendering", base::to_utf8(render.get_video_name())),
 				ui::NotificationType::INFO
 			);
+		}
 
 		rendering.queue_render(std::move(render));
 	}
