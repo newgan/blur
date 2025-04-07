@@ -164,8 +164,7 @@ updates::UpdateCheckRes updates::is_latest_version(bool include_beta) {
 			// get most recent release (needs to have an installer, might make a release without one temporarily - don't
 			// want anyone updating until i have)
 			for (const auto& release : releases) {
-				if (!latest_tag.empty())
-					break;
+				std::string release_tag = release["tag_name"];
 
 				for (const auto& asset : release["assets"]) {
 #if defined(_WIN32)
@@ -176,8 +175,10 @@ updates::UpdateCheckRes updates::is_latest_version(bool include_beta) {
 #elif defined(__APPLE__)
 					if (asset["name"] == MACOS_INSTALLER_NAME) {
 #endif
-						latest_tag = release["tag_name"];
-						break;
+						if (latest_tag.empty() || is_version_newer(latest_tag, release_tag)) {
+							latest_tag = release_tag;
+							break;
+						}
 					}
 				}
 			}
