@@ -35,6 +35,10 @@ RenderCommands FrameRender::build_render_commands(
 		                L"video_path=" + path_string,
 		                L"-a",
 		                L"settings=" + u::towstring(settings.to_json().dump()),
+#if defined(__APPLE__)
+		                L"-a",
+		                std::format(L"macos_bundled={}", blur.used_installer ? L"true" : L"false"),
+#endif
 		                blur_script_path,
 		                L"-" };
 
