@@ -172,4 +172,4 @@ These options are not visible by default, add them to your config and they will 
 
 ---
 
-*in the future I might buy a dev cert, but $99 a year atm doesn't seem worth it
+*in the future I might buy a dev cert, but $99 a year atm doesn't seem worth it 😅
