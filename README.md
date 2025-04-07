@@ -1,6 +1,21 @@
 # Blur
 
-Blur is a program made for easily and efficiently adding motion blur to videos through frame blending.
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/adc158b9-8ec4-4e5a-b372-ed1fad9d8d61" width="30%" />
+  <img src="https://github.com/user-attachments/assets/eebbac0d-6fa1-42ed-beeb-e85ea93838b6" width="30%" />
+  <img src="https://github.com/user-attachments/assets/e8b749dc-9232-4e45-93b4-8df2e3854ffb" width="30%" />
+</p>
+
+Blur is a native desktop application made for easily and efficiently adding motion blur to videos through frame blending, with the ability to add frame interpolation and more.
+
+[YouTube showcase](https://www.youtube.com/watch?v=HicPaXNxtUw)
+
+## Download
+- [Windows installer](https://github.com/f0e/blur/releases/latest/download/blur-Windows-Installer-x64.exe)
+- [macOS installer](https://github.com/f0e/blur/releases/latest/download/blur-macOS-Release-arm64.dmg)
+- [Linux (requires manual installation of dependencies)](https://github.com/f0e/blur/releases/latest)
+
+> macOS note: After opening on Mac for the first time you'll get a 'Blur is damaged and can't be opened.' error. To fix this, run `xattr -dr com.apple.quarantine /Applications/blur.app` to unquarantine it. In the future I might buy a dev cert, but $99 a year atm doesn't seem worth it
 
 ## Features
 
@@ -10,17 +25,13 @@ The amount of motion blur is easily configurable, and there are additional optio
 
 ### 600fps footage, blurred with 0.6 blur amount
 
-![](https://i.imgur.com/Hk0XIPe.jpg)
+![600fps footage, blurred with 0.6 blur amount](https://i.imgur.com/Hk0XIPe.jpg)
 
 ### 60fps footage, interpolated to 600fps, blurred with 0.6 blur amount
 
-![](https://i.imgur.com/I4QFWGc.jpg)
+![60fps footage, interpolated to 600fps, blurred with 0.6 blur amount](https://i.imgur.com/I4QFWGc.jpg)
 
 As visible from these images, the interpolated 60fps footage produces motion blur that is comparable to actual 600fps footage.
-
-## Installation
-
-[Download](https://github.com/f0e/blur/releases/latest)
 
 ---
 
