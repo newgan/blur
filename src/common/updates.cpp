@@ -223,12 +223,15 @@ bool updates::update_to_tag(
 	try {
 		u::log("Beginning update to tag: {}", tag);
 
+		std::string installer_filename;
+		std::filesystem::path installer_path;
+
 #ifdef _WIN32
-		std::string installer_filename = WINDOWS_INSTALLER_NAME;
-		std::filesystem::path installer_path = std::filesystem::temp_directory_path() / installer_filename;
+		installer_filename = WINDOWS_INSTALLER_NAME;
+		installer_path = std::filesystem::temp_directory_path() / installer_filename;
 #elif defined(__APPLE__)
-		std::string installer_filename = MACOS_INSTALLER_NAME;
-		std::filesystem::path installer_path = std::filesystem::temp_directory_path() / installer_filename;
+		installer_filename = MACOS_INSTALLER_NAME;
+		installer_path = std::filesystem::temp_directory_path() / installer_filename;
 #else
 		u::log("Unsupported platform for automatic updates");
 		return false;
