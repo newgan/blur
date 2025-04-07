@@ -534,8 +534,8 @@ RenderResult Render::render() {
 
 		if (m_settings.copy_dates) {
 			try {
-				auto inputTime = std::filesystem::last_write_time(m_video_path);
-				std::filesystem::last_write_time(m_output_path, inputTime);
+				auto input_time = std::filesystem::last_write_time(m_video_path);
+				std::filesystem::last_write_time(m_output_path, input_time);
 
 				if (m_settings.debug) {
 					u::log(L"Set output file modified time to match input file");
