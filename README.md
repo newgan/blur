@@ -15,7 +15,7 @@ Blur is a native desktop application made for easily and efficiently adding moti
 - [macOS installer](https://github.com/f0e/blur/releases/latest/download/blur-macOS-Release-arm64.dmg)
 - [Linux (requires manual installation of dependencies)](https://github.com/f0e/blur/releases/latest)
 
-> macOS note: After opening on Mac for the first time you'll get a 'Blur is damaged and can't be opened.' error. To fix this, run `xattr -dr com.apple.quarantine /Applications/blur.app` to unquarantine it. In the future I might buy a dev cert, but $99 a year atm doesn't seem worth it
+> macOS note*: After opening on Mac for the first time you'll get a 'Blur is damaged and can't be opened.' error. To fix this, run `xattr -dr com.apple.quarantine /Applications/blur.app` to unquarantine it.
 
 ## Features
 
@@ -169,3 +169,7 @@ You can customise the SVP interpolation settings even further by manually defini
 - smooth string: json string used as input in [SVSmoothFps](https://www.svp-team.com/wiki/Manual:SVPflow#SVSmoothFps.28source.2C_super.2C_vectors.2C_params_string.2C_.5Bsar.5D:_float.2C_.5Bmt.5D:_integer.29)
 
 These options are not visible by default, add them to your config and they will be used.
+
+---
+
+*in the future I might buy a dev cert, but $99 a year atm doesn't seem worth it
