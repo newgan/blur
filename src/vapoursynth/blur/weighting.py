@@ -17,6 +17,8 @@ def scale_weights(frames):
 # returns a list of values like below:
 # [0, 1, 2, 3, ..., frames] -> [a, ..., b]
 def scale_range(frames, a, b):
+    if frames <= 1:
+        return [a] * frames
     return [(x * (b - a) / (frames - 1)) + a for x in range(0, frames)]
 
 
