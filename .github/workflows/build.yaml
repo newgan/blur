@@ -62,8 +62,6 @@ jobs:
           brew install python3 ffmpeg libass zimg imagemagick autoconf automake libtool pkg-config gcc ffmpeg llvm@12 meson xxhash vapoursynth fftw dylibbundler
           cd ci
           bash build-dependencies-macos.sh
-          ls -la
-          ls -la out
 
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v2
