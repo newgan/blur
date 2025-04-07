@@ -1,5 +1,11 @@
 #include "tasks.h"
 
+#if defined(WIN32) || defined(__APPLE__)
+// dont need launcher
+#else
+#	include "base/launcher.h"
+#endif
+
 #include <common/rendering.h>
 #include "gui.h"
 #include "gui/renderer.h"
