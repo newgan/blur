@@ -146,11 +146,11 @@ def fill_drops(
     clip,
     threshold: float = 0.1,
     max_frames: int | None = None,
-    svp_preset="default",
-    svp_algorithm=13,
-    svp_blocksize=8,
-    svp_masking=50,
-    svp_gpu=True,
+    svp_preset=blur.interpolate.DEFAULT_PRESET,
+    svp_algorithm=blur.interpolate.DEFAULT_ALGORITHM,
+    svp_blocksize=blur.interpolate.DEFAULT_BLOCKSIZE,
+    svp_masking=blur.interpolate.DEFAULT_MASKING,
+    svp_gpu=blur.interpolate.DEFAULT_GPU,
     debug=False,
 ):
     if not isinstance(clip, vs.VideoNode):

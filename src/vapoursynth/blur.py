@@ -29,10 +29,28 @@ import blur.deduplicate
 import blur.interpolate
 import blur.weighting
 import blur.adjust
+import blur.utils as u
+
 
 video_path = Path(vars().get("video_path"))
 
 settings = json.loads(vars().get("settings"))
+
+# validate some settings
+interpolation_algorithm = u.coalesce(
+    u.safe_int(settings["interpolation_algorithm"]),
+    blur.interpolate.DEFAULT_ALGORITHM,
+)
+
+interpolation_blocksize = u.coalesce(
+    u.safe_int(settings["interpolation_blocksize"]),
+    blur.interpolate.DEFAULT_BLOCKSIZE,
+)
+
+interpolation_mask_area = u.coalesce(
+    u.safe_int(settings["interpolation_mask_area"]),
+    blur.interpolate.DEFAULT_MASKING,
+)
 
 if vars().get("macos_bundled") == "true":
     video = core.bs.VideoSource(source=video_path, cachemode=0)
@@ -57,9 +75,9 @@ if settings["deduplicate"] and settings["deduplicate_range"] != 0:
         max_frames=deduplicate_range,
         debug=settings["debug"],
         svp_preset=settings["interpolation_preset"],
-        svp_algorithm=int(settings["interpolation_algorithm"]),
-        svp_blocksize=int(settings["interpolation_blocksize"]),
-        svp_masking=int(settings["interpolation_mask_area"]),
+        svp_algorithm=interpolation_algorithm,
+        svp_blocksize=interpolation_blocksize,
+        svp_masking=interpolation_mask_area,
         svp_gpu=settings["gpu_interpolation"],
     )
 
@@ -138,10 +156,10 @@ if settings["interpolate"]:
                     video,
                     new_fps=interpolated_fps,
                     preset=settings["interpolation_preset"],
-                    algorithm=int(settings["interpolation_algorithm"]),
-                    blocksize=int(settings["interpolation_blocksize"]),
+                    algorithm=interpolation_algorithm,
+                    blocksize=interpolation_blocksize,
                     overlap=0,
-                    masking=int(settings["interpolation_mask_area"]),
+                    masking=interpolation_mask_area,
                     gpu=settings["gpu_interpolation"],
                 )
 

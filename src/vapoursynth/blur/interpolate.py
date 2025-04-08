@@ -9,16 +9,24 @@ import math
 LEGACY_PRESETS = ["weak", "film", "smooth", "animation"]
 NEW_PRESETS = ["default", "test"]
 
+DEFAULT_PRESET = "weak"
+DEFAULT_ALGORITHM = 13
+DEFAULT_BLOCKSIZE = 8
+DEFAULT_OVERLAP = 2
+DEFAULT_SPEED = "medium"
+DEFAULT_MASKING = 50
+DEFAULT_GPU = True
+
 
 def generate_svp_strings(
     new_fps,
-    preset="weak",
-    algorithm=13,
-    blocksize=8,
-    overlap=2,
-    speed="medium",
-    masking=50,
-    gpu=True,
+    preset=DEFAULT_PRESET,
+    algorithm=DEFAULT_ALGORITHM,
+    blocksize=DEFAULT_BLOCKSIZE,
+    overlap=DEFAULT_OVERLAP,
+    speed=DEFAULT_SPEED,
+    masking=DEFAULT_MASKING,
+    gpu=DEFAULT_GPU,
     from_dedupe=False,
 ):
     # build super json
@@ -76,13 +84,13 @@ def generate_svp_strings(
 def interpolate_svp(
     video,
     new_fps,
-    preset="weak",
-    algorithm=13,
-    blocksize=8,
-    overlap=2,
-    speed="medium",
-    masking=50,
-    gpu=True,
+    preset=DEFAULT_PRESET,
+    algorithm=DEFAULT_ALGORITHM,
+    blocksize=DEFAULT_BLOCKSIZE,
+    overlap=DEFAULT_OVERLAP,
+    speed=DEFAULT_SPEED,
+    masking=DEFAULT_MASKING,
+    gpu=DEFAULT_GPU,
 ):
     if not isinstance(video, vs.VideoNode):
         raise vs.Error("interpolate: input not a video")
