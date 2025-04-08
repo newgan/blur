@@ -741,34 +741,10 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 					fonts::font,
 					os::TextAlign::Center
 				);
-
-				auto validation_res = config_blur::validate(settings, false);
-				if (!validation_res.success) {
-					ui::add_text(
-						"config validation error/s",
-						container,
-						validation_res.error,
-						gfx::rgba(255, 50, 50, 255),
-						fonts::font,
-						os::TextAlign::Center,
-						ui::TextStyle::OUTLINE
-					);
-
-					ui::add_button(
-						"fix config button",
-						container,
-						"Reset invalid config options to defaults",
-						fonts::font,
-						[&] {
-							config_blur::validate(settings, true);
-						}
-					);
-				}
 			}
 		}
 		else {
 			ui::add_text(
-
 				"sample video does not exist text",
 				container,
 				"No preview video found.",
@@ -798,7 +774,24 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 		}
 	}
 
-	ui::add_separator("config folder separator", container, ui::SeparatorStyle::FADE_BOTH);
+	ui::add_separator("config preview separator", container, ui::SeparatorStyle::FADE_BOTH);
+
+	auto validation_res = config_blur::validate(settings, false);
+	if (!validation_res.success) {
+		ui::add_text(
+			"config validation error/s",
+			container,
+			validation_res.error,
+			gfx::rgba(255, 50, 50, 255),
+			fonts::font,
+			os::TextAlign::Center,
+			ui::TextStyle::OUTLINE
+		);
+
+		ui::add_button("fix config button", container, "Reset invalid config options to defaults", fonts::font, [&] {
+			config_blur::validate(settings, true);
+		});
+	}
 
 	ui::add_button("open config folder", container, "Open config folder", fonts::font, [] {
 		base::launcher::open_folder(blur.settings_path.string());
