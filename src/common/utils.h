@@ -119,8 +119,13 @@ namespace u {
 	}
 
 	template<std::ranges::range Container, typename T>
+	requires(!std::same_as<std::remove_cvref_t<Container>, std::string>)
 	bool contains(const Container& container, const T& value) {
 		return std::ranges::find(container, value) != std::ranges::end(container);
+	}
+
+	inline bool contains(const std::string& str, std::string_view value) {
+		return str.find(value) != std::string::npos;
 	}
 
 	std::string trim(std::string_view str);
