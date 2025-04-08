@@ -50,66 +50,71 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 
 	output << "\n";
 	output << "[advanced options]" << "\n";
-	output << "advanced: " << (current_settings.advanced ? "true" : "false") << "\n";
+	output << "advanced: " << (current_settings.override_advanced ? "true" : "false") << "\n";
 
-	output << "\n";
-	output << "- advanced rendering" << "\n";
-	output << "video container: " << current_settings.video_container << "\n";
-	output << "deduplicate range: " << current_settings.deduplicate_range << "\n";
-	output << "deduplicate threshold: " << current_settings.deduplicate_threshold << "\n";
-	output << "custom ffmpeg filters: " << current_settings.ffmpeg_override << "\n";
-	output << "debug: " << (current_settings.debug ? "true" : "false") << "\n";
-
-	output << "\n";
-	output << "- advanced blur" << "\n";
-	output << "blur weighting gaussian std dev: " << current_settings.blur_weighting_gaussian_std_dev << "\n";
-	output << "blur weighting triangle reverse: "
-		   << (current_settings.blur_weighting_triangle_reverse ? "true" : "false") << "\n";
-	output << "blur weighting bound: " << current_settings.blur_weighting_bound << "\n";
-
-	output << "\n";
-	output << "- advanced interpolation" << "\n";
-	output << "interpolation preset: " << current_settings.interpolation_preset << "\n";
-	output << "interpolation algorithm: " << current_settings.interpolation_algorithm << "\n";
-	output << "interpolation block size: " << current_settings.interpolation_blocksize << "\n";
-	output << "interpolation mask area: " << current_settings.interpolation_mask_area << "\n";
-
-	if (current_settings.manual_svp) {
+	if (current_settings.override_advanced) {
 		output << "\n";
-		output << "- manual svp override" << "\n";
-		output << "manual svp: " << (current_settings.manual_svp ? "true" : "false") << "\n";
-		output << "super string: " << current_settings.super_string << "\n";
-		output << "vectors string: " << current_settings.vectors_string << "\n";
-		output << "smooth string: " << current_settings.smooth_string << "\n";
+		output << "- advanced rendering" << "\n";
+		output << "video container: " << current_settings.advanced.video_container << "\n";
+		output << "deduplicate range: " << current_settings.advanced.deduplicate_range << "\n";
+		output << "deduplicate threshold: " << current_settings.advanced.deduplicate_threshold << "\n";
+		output << "custom ffmpeg filters: " << current_settings.advanced.ffmpeg_override << "\n";
+		output << "debug: " << (current_settings.advanced.debug ? "true" : "false") << "\n";
+
+		output << "\n";
+		output << "- advanced blur" << "\n";
+		output << "blur weighting gaussian std dev: " << current_settings.advanced.blur_weighting_gaussian_std_dev
+			   << "\n";
+		output << "blur weighting triangle reverse: "
+			   << (current_settings.advanced.blur_weighting_triangle_reverse ? "true" : "false") << "\n";
+		output << "blur weighting bound: " << current_settings.advanced.blur_weighting_bound << "\n";
+
+		output << "\n";
+		output << "- advanced interpolation" << "\n";
+		output << "interpolation preset: " << current_settings.advanced.interpolation_preset << "\n";
+		output << "interpolation algorithm: " << current_settings.advanced.interpolation_algorithm << "\n";
+		output << "interpolation block size: " << current_settings.advanced.interpolation_blocksize << "\n";
+		output << "interpolation mask area: " << current_settings.advanced.interpolation_mask_area << "\n";
+
+		if (current_settings.advanced.manual_svp) {
+			output << "\n";
+			output << "- manual svp override" << "\n";
+			output << "manual svp: " << (current_settings.advanced.manual_svp ? "true" : "false") << "\n";
+			output << "super string: " << current_settings.advanced.super_string << "\n";
+			output << "vectors string: " << current_settings.advanced.vectors_string << "\n";
+			output << "smooth string: " << current_settings.advanced.smooth_string << "\n";
+		}
 	}
 }
 
 config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config, bool fix) {
 	std::set<std::string> errors;
 
-	BlurSettings default_config;
-
-	if (!u::contains(INTERPOLATION_PRESETS, config.interpolation_preset)) {
-		errors.insert(std::format("Interpolation preset ({}) is not a valid option", config.interpolation_preset));
-
-		if (fix)
-			config.interpolation_preset = default_config.interpolation_preset;
-	}
-
-	if (!u::contains(INTERPOLATION_ALGORITHMS, config.interpolation_algorithm)) {
-		errors.insert(std::format("Interpolation algorithm ({}) is not a valid option", config.interpolation_algorithm)
+	if (!u::contains(INTERPOLATION_PRESETS, config.advanced.interpolation_preset)) {
+		errors.insert(
+			std::format("Interpolation preset ({}) is not a valid option", config.advanced.interpolation_preset)
 		);
 
 		if (fix)
-			config.interpolation_algorithm = default_config.interpolation_algorithm;
+			config.advanced.interpolation_preset = DEFAULT_CONFIG.advanced.interpolation_preset;
 	}
 
-	if (!u::contains(INTERPOLATION_BLOCK_SIZES, config.interpolation_blocksize)) {
-		errors.insert(std::format("Interpolation block size ({}) is not a valid option", config.interpolation_blocksize)
+	if (!u::contains(INTERPOLATION_ALGORITHMS, config.advanced.interpolation_algorithm)) {
+		errors.insert(
+			std::format("Interpolation algorithm ({}) is not a valid option", config.advanced.interpolation_algorithm)
 		);
 
 		if (fix)
-			config.interpolation_blocksize = default_config.interpolation_blocksize;
+			config.advanced.interpolation_algorithm = DEFAULT_CONFIG.advanced.interpolation_algorithm;
+	}
+
+	if (!u::contains(INTERPOLATION_BLOCK_SIZES, config.advanced.interpolation_blocksize)) {
+		errors.insert(
+			std::format("Interpolation block size ({}) is not a valid option", config.advanced.interpolation_blocksize)
+		);
+
+		if (fix)
+			config.advanced.interpolation_blocksize = DEFAULT_CONFIG.advanced.interpolation_blocksize;
 	}
 
 	return ConfigValidationResponse{
@@ -154,31 +159,41 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 		config_map, "adjust timescaled audio pitch", settings.output_timescale_audio_pitch
 	);
 
-	config_base::extract_config_value(config_map, "advanced", settings.advanced);
+	config_base::extract_config_value(config_map, "advanced", settings.override_advanced);
 
-	config_base::extract_config_value(config_map, "video container", settings.video_container);
-	config_base::extract_config_value(config_map, "deduplicate range", settings.deduplicate_range);
-	config_base::extract_config_string(config_map, "deduplicate threshold", settings.deduplicate_threshold);
-	config_base::extract_config_string(config_map, "custom ffmpeg filters", settings.ffmpeg_override);
-	config_base::extract_config_value(config_map, "debug", settings.debug);
+	if (settings.override_advanced) {
+		config_base::extract_config_value(config_map, "video container", settings.advanced.video_container);
+		config_base::extract_config_value(config_map, "deduplicate range", settings.advanced.deduplicate_range);
+		config_base::extract_config_string(
+			config_map, "deduplicate threshold", settings.advanced.deduplicate_threshold
+		);
+		config_base::extract_config_string(config_map, "custom ffmpeg filters", settings.advanced.ffmpeg_override);
+		config_base::extract_config_value(config_map, "debug", settings.advanced.debug);
 
-	config_base::extract_config_value(
-		config_map, "blur weighting gaussian std dev", settings.blur_weighting_gaussian_std_dev
-	);
-	config_base::extract_config_value(
-		config_map, "blur weighting triangle reverse", settings.blur_weighting_triangle_reverse
-	);
-	config_base::extract_config_string(config_map, "blur weighting bound", settings.blur_weighting_bound);
+		config_base::extract_config_value(
+			config_map, "blur weighting gaussian std dev", settings.advanced.blur_weighting_gaussian_std_dev
+		);
+		config_base::extract_config_value(
+			config_map, "blur weighting triangle reverse", settings.advanced.blur_weighting_triangle_reverse
+		);
+		config_base::extract_config_string(config_map, "blur weighting bound", settings.advanced.blur_weighting_bound);
 
-	config_base::extract_config_string(config_map, "interpolation preset", settings.interpolation_preset);
-	config_base::extract_config_string(config_map, "interpolation algorithm", settings.interpolation_algorithm);
-	config_base::extract_config_string(config_map, "interpolation block size", settings.interpolation_blocksize);
-	config_base::extract_config_value(config_map, "interpolation mask area", settings.interpolation_mask_area);
+		config_base::extract_config_string(config_map, "interpolation preset", settings.advanced.interpolation_preset);
+		config_base::extract_config_string(
+			config_map, "interpolation algorithm", settings.advanced.interpolation_algorithm
+		);
+		config_base::extract_config_string(
+			config_map, "interpolation block size", settings.advanced.interpolation_blocksize
+		);
+		config_base::extract_config_value(
+			config_map, "interpolation mask area", settings.advanced.interpolation_mask_area
+		);
 
-	config_base::extract_config_value(config_map, "manual svp", settings.manual_svp);
-	config_base::extract_config_string(config_map, "super string", settings.super_string);
-	config_base::extract_config_string(config_map, "vectors string", settings.vectors_string);
-	config_base::extract_config_string(config_map, "smooth string", settings.smooth_string);
+		config_base::extract_config_value(config_map, "manual svp", settings.advanced.manual_svp);
+		config_base::extract_config_string(config_map, "super string", settings.advanced.super_string);
+		config_base::extract_config_string(config_map, "vectors string", settings.advanced.vectors_string);
+		config_base::extract_config_string(config_map, "smooth string", settings.advanced.smooth_string);
+	}
 
 	// recreate the config file using the parsed values (keeps nice formatting)
 	create(config_filepath, settings);
@@ -260,26 +275,27 @@ nlohmann::json BlurSettings::to_json() const {
 	j["gpu_interpolation"] = this->gpu_interpolation;
 	j["gpu_encoding"] = this->gpu_encoding;
 	j["gpu_type"] = this->gpu_type;
-	// j["video_container"] = this->video_container;
-	j["deduplicate_range"] = this->deduplicate_range;
-	j["deduplicate_threshold"] = this->deduplicate_threshold;
-	// j["ffmpeg_override"] = this->ffmpeg_override;
-	j["debug"] = this->debug;
 
-	j["blur_weighting_gaussian_std_dev"] = this->blur_weighting_gaussian_std_dev;
-	j["blur_weighting_triangle_reverse"] = this->blur_weighting_triangle_reverse;
-	j["blur_weighting_bound"] = this->blur_weighting_bound;
+	// advanced
+	// j["video_container"] = this->advanced.video_container;
+	j["deduplicate_range"] = this->advanced.deduplicate_range;
+	j["deduplicate_threshold"] = this->advanced.deduplicate_threshold;
+	// j["ffmpeg_override"] = this->advanced.ffmpeg_override;
+	j["debug"] = this->advanced.debug;
 
-	j["interpolation_program"] = this->interpolation_program;
-	j["interpolation_preset"] = this->interpolation_preset;
-	j["interpolation_algorithm"] = this->interpolation_algorithm;
-	j["interpolation_blocksize"] = this->interpolation_blocksize;
-	j["interpolation_mask_area"] = this->interpolation_mask_area;
+	j["blur_weighting_gaussian_std_dev"] = this->advanced.blur_weighting_gaussian_std_dev;
+	j["blur_weighting_triangle_reverse"] = this->advanced.blur_weighting_triangle_reverse;
+	j["blur_weighting_bound"] = this->advanced.blur_weighting_bound;
 
-	j["manual_svp"] = this->manual_svp;
-	j["super_string"] = this->super_string;
-	j["vectors_string"] = this->vectors_string;
-	j["smooth_string"] = this->smooth_string;
+	j["interpolation_preset"] = this->advanced.interpolation_preset;
+	j["interpolation_algorithm"] = this->advanced.interpolation_algorithm;
+	j["interpolation_blocksize"] = this->advanced.interpolation_blocksize;
+	j["interpolation_mask_area"] = this->advanced.interpolation_mask_area;
+
+	j["manual_svp"] = this->advanced.manual_svp;
+	j["super_string"] = this->advanced.super_string;
+	j["vectors_string"] = this->advanced.vectors_string;
+	j["smooth_string"] = this->advanced.smooth_string;
 
 	return j;
 }

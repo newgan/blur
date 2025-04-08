@@ -86,7 +86,7 @@ void Render::build_output_filename() {
 		if (num > 1)
 			output_filename += std::format(L" ({})", num);
 
-		output_filename += L"." + u::towstring(this->m_settings.video_container);
+		output_filename += L"." + u::towstring(this->m_settings.advanced.video_container);
 
 		this->m_output_path = this->m_video_folder / output_filename;
 
@@ -208,9 +208,9 @@ RenderCommands Render::build_render_commands() {
 		);
 	}
 
-	if (!m_settings.ffmpeg_override.empty()) {
+	if (!m_settings.advanced.ffmpeg_override.empty()) {
 		// Split override string into individual arguments
-		std::wistringstream iss(u::towstring(m_settings.ffmpeg_override));
+		std::wistringstream iss(u::towstring(m_settings.advanced.ffmpeg_override));
 		std::wstring token;
 		while (iss >> token) {
 			commands.ffmpeg.push_back(token);
@@ -334,7 +334,7 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 		bp::pipe vspipe_stdout;
 		bp::ipstream vspipe_stderr;
 
-		if (m_settings.debug) {
+		if (m_settings.advanced.debug) {
 			u::log(L"VSPipe command: {} {}", blur.vspipe_path.wstring(), u::join(render_commands.vspipe, L" "));
 			u::log(L"FFmpeg command: {} {}", blur.ffmpeg_path.wstring(), u::join(render_commands.ffmpeg, L" "));
 		}
@@ -436,7 +436,7 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 		if (progress_thread.joinable())
 			progress_thread.join();
 
-		if (m_settings.debug)
+		if (m_settings.advanced.debug)
 			u::log(
 				"vspipe exit code: {}, ffmpeg exit code: {}", vspipe_process.exit_code(), ffmpeg_process.exit_code()
 			);
@@ -523,7 +523,7 @@ RenderResult Render::render() {
 				auto input_time = std::filesystem::last_write_time(m_video_path);
 				std::filesystem::last_write_time(m_output_path, input_time);
 
-				if (m_settings.debug) {
+				if (m_settings.advanced.debug) {
 					u::log(L"Set output file modified time to match input file");
 				}
 			}
@@ -535,7 +535,7 @@ RenderResult Render::render() {
 	else {
 		u::log(L"Failed to render '{}'", m_video_name);
 
-		if (blur.verbose || m_settings.debug) {
+		if (blur.verbose || m_settings.advanced.debug) {
 			u::log(render_res.error_message);
 		}
 	}

@@ -57,7 +57,7 @@ FrameRender::DoRenderResult FrameRender::do_render(RenderCommands render_command
 		bp::pipe vspipe_stdout;
 		bp::ipstream vspipe_stderr;
 
-		if (settings.debug) {
+		if (settings.advanced.debug) {
 			u::log(L"VSPipe command: {} {}", blur.vspipe_path.wstring(), u::join(render_commands.vspipe, L" "));
 			u::log(L"FFmpeg command: {} {}", blur.ffmpeg_path.wstring(), u::join(render_commands.ffmpeg, L" "));
 		}
@@ -123,7 +123,7 @@ FrameRender::DoRenderResult FrameRender::do_render(RenderCommands render_command
 			vspipe_stderr_thread.join();
 		}
 
-		if (settings.debug)
+		if (settings.advanced.debug)
 			u::log(
 				"vspipe exit code: {}, ffmpeg exit code: {}", vspipe_process.exit_code(), ffmpeg_process.exit_code()
 			);

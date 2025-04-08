@@ -103,68 +103,50 @@ if settings["interpolate"]:
         # no x, is an fps (e.g. 600)
         interpolated_fps = int(interpolated_fps)
 
-    match settings["interpolation_program"].lower():
-        case "rife":
-            pass  # TODO
-            # video = core.resize.Bicubic(video, format=vs.RGBS)
+        # TODO: rife
 
-            # while video.fps < interpolated_fps:
-            #     video = RIFE(video)
+        orig_format = video.format
+        needs_conversion = (
+            orig_format.id != vs.YUV420P8
+        )  # svp only accepts yv12 (SVSuper: Clip must be YV12)
 
-            # video = core.resize.Bicubic(video, format=vs.YUV420P8, matrix_s="709")
+        if needs_conversion:
+            video = core.resize.Bicubic(video, format=vs.YUV420P8)
 
-        case "rife-ncnn":
-            pass  # TODO
-            # video = core.resize.Bicubic(video, format=vs.RGBS)
+        if settings["manual_svp"]:
+            super = core.svp1.Super(video, settings["super_string"])
+            vectors = core.svp1.Analyse(
+                super["clip"], super["data"], video, settings["vectors_string"]
+            )
 
-            # while video.fps < interpolated_fps:
-            #     video = core.rife.RIFE(video)
+            # insert interpolated fps
+            smooth_json = json.loads(settings["smooth_string"])
+            if "rate" not in smooth_json:
+                smooth_json["rate"] = {"num": interpolated_fps, "abs": True}
+            smooth_str = json.dumps(smooth_json)
 
-            # video = core.resize.Bicubic(video, format=vs.YUV420P8, matrix_s="709")
+            video = core.svp2.SmoothFps(
+                video,
+                super["clip"],
+                super["data"],
+                vectors["clip"],
+                vectors["data"],
+                smooth_str,
+            )
+        else:
+            video = blur.interpolate.interpolate_svp(
+                video,
+                new_fps=interpolated_fps,
+                preset=settings["interpolation_preset"],
+                algorithm=interpolation_algorithm,
+                blocksize=interpolation_blocksize,
+                overlap=0,
+                masking=interpolation_mask_area,
+                gpu=settings["gpu_interpolation"],
+            )
 
-        case _:
-            orig_format = video.format
-            needs_conversion = (
-                orig_format.id != vs.YUV420P8
-            )  # svp only accepts yv12 (SVSuper: Clip must be YV12)
-
-            if needs_conversion:
-                video = core.resize.Bicubic(video, format=vs.YUV420P8)
-
-            if settings["manual_svp"]:
-                super = core.svp1.Super(video, settings["super_string"])
-                vectors = core.svp1.Analyse(
-                    super["clip"], super["data"], video, settings["vectors_string"]
-                )
-
-                # insert interpolated fps
-                smooth_json = json.loads(settings["smooth_string"])
-                if "rate" not in smooth_json:
-                    smooth_json["rate"] = {"num": interpolated_fps, "abs": True}
-                smooth_str = json.dumps(smooth_json)
-
-                video = core.svp2.SmoothFps(
-                    video,
-                    super["clip"],
-                    super["data"],
-                    vectors["clip"],
-                    vectors["data"],
-                    smooth_str,
-                )
-            else:
-                video = blur.interpolate.interpolate_svp(
-                    video,
-                    new_fps=interpolated_fps,
-                    preset=settings["interpolation_preset"],
-                    algorithm=interpolation_algorithm,
-                    blocksize=interpolation_blocksize,
-                    overlap=0,
-                    masking=interpolation_mask_area,
-                    gpu=settings["gpu_interpolation"],
-                )
-
-            if needs_conversion:
-                video = core.resize.Bicubic(video, format=orig_format.id)
+        if needs_conversion:
+            video = core.resize.Bicubic(video, format=orig_format.id)
 
 # output timescale
 if settings["timescale"]:

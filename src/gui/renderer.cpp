@@ -252,20 +252,31 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	static const gfx::Color section_color = gfx::rgba(155, 155, 155, 255);
 
 	bool first_section = true;
-	auto section_component = [&](std::string label, bool* setting = nullptr) {
+	auto section_component = [&](std::string label, bool* setting = nullptr, bool forced_on = false) {
 		if (!first_section) {
 			ui::add_separator(std::format("section {} separator", label), container, ui::SeparatorStyle::FADE_RIGHT);
 		}
 		else
 			first_section = false;
 
-		if (setting) {
+		if (!setting)
+			return;
+
+		if (!forced_on) {
 			ui::add_checkbox(std::format("section {} checkbox", label), container, label, *setting, fonts::font);
 		}
 		else {
-			// ui::add_text(
-			// 	std::format("section {}", label), container, label, gfx::rgba(255, 255, 255, 255), fonts::font
-			// );
+			ui::add_text(
+				std::format("section {}", label), container, label, gfx::rgba(255, 255, 255, 255), fonts::font
+			);
+
+			ui::add_text(
+				std::format("section {} forced", label),
+				container,
+				"forced on as settings in this section have been modified",
+				gfx::rgba(255, 255, 255, 175),
+				fonts::font
+			);
 		}
 	};
 
@@ -340,7 +351,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	*/
 	section_component("rendering");
 
-	if (settings.ffmpeg_override.empty()) {
+	if (settings.advanced.ffmpeg_override.empty()) {
 		ui::add_slider("quality", container, 0, 51, &settings.quality, "quality: {}", fonts::font, {}, 0.f);
 	}
 	else {
@@ -374,7 +385,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		"gpu interpolation checkbox", container, "gpu interpolation", settings.gpu_interpolation, fonts::font
 	);
 
-	if (settings.ffmpeg_override.empty()) {
+	if (settings.advanced.ffmpeg_override.empty()) {
 		ui::add_checkbox("gpu encoding checkbox", container, "gpu encoding", settings.gpu_encoding, fonts::font);
 
 		if (settings.gpu_encoding) {
@@ -452,16 +463,18 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		ui::add_slider("contrast", container, 0.f, 2.f, &settings.contrast, "contrast: {:.2f}", fonts::font, {}, 0.01f);
 	}
 
-	section_component("advanced", &settings.advanced);
+	bool modified_advanced = settings.advanced != config_blur::DEFAULT_CONFIG.advanced;
 
-	if (settings.advanced) {
+	section_component("advanced", &settings.override_advanced, modified_advanced);
+
+	if (settings.override_advanced) {
 		/*
 		    Advanced Rendering
 		*/
 		section_component("advanced rendering");
 
 		ui::add_text_input(
-			"video container text input", container, settings.video_container, "video container", fonts::font
+			"video container text input", container, settings.advanced.video_container, "video container", fonts::font
 		);
 
 		ui::add_slider(
@@ -469,7 +482,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			container,
 			-1,
 			10,
-			&settings.deduplicate_range,
+			&settings.advanced.deduplicate_range,
 			"deduplicate range: {}",
 			fonts::font,
 			{},
@@ -477,7 +490,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"-1 = infinite"
 		);
 
-		std::istringstream iss(settings.deduplicate_threshold);
+		std::istringstream iss(settings.advanced.deduplicate_threshold);
 		float f = NAN;
 		iss >> std::noskipws >> f; // try to read as float
 		bool is_float = iss.eof() && !iss.fail();
@@ -488,7 +501,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		ui::add_text_input(
 			"deduplicate threshold input",
 			container,
-			settings.deduplicate_threshold,
+			settings.advanced.deduplicate_threshold,
 			"deduplicate threshold",
 			fonts::font
 		);
@@ -505,14 +518,15 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			);
 		}
 
-		bool bad_audio = settings.timescale && settings.ffmpeg_override.find("-c:a copy") != std::string::npos;
+		bool bad_audio = settings.timescale && (u::contains(settings.advanced.ffmpeg_override, "-c:a copy") ||
+		                                        u::contains(settings.advanced.ffmpeg_override, "-codec:a copy"));
 		if (bad_audio)
 			container.push_element_gap(2);
 
 		ui::add_text_input(
 			"custom ffmpeg filters text input",
 			container,
-			settings.ffmpeg_override,
+			settings.advanced.ffmpeg_override,
 			"custom ffmpeg filters",
 			fonts::font
 		);
@@ -529,7 +543,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			);
 		}
 
-		ui::add_checkbox("debug checkbox", container, "debug", settings.debug, fonts::font);
+		ui::add_checkbox("debug checkbox", container, "debug", settings.advanced.debug, fonts::font);
 
 		/*
 		    Advanced Interpolation
@@ -541,7 +555,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			container,
 			"interpolation preset",
 			config_blur::INTERPOLATION_PRESETS,
-			settings.interpolation_preset,
+			settings.advanced.interpolation_preset,
 			fonts::font
 		);
 
@@ -550,7 +564,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			container,
 			"interpolation algorithm",
 			config_blur::INTERPOLATION_ALGORITHMS,
-			settings.interpolation_algorithm,
+			settings.advanced.interpolation_algorithm,
 			fonts::font
 		);
 
@@ -559,7 +573,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			container,
 			"interpolation block size",
 			config_blur::INTERPOLATION_BLOCK_SIZES,
-			settings.interpolation_blocksize,
+			settings.advanced.interpolation_blocksize,
 			fonts::font
 		);
 
@@ -568,7 +582,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			container,
 			0,
 			500,
-			&settings.interpolation_mask_area,
+			&settings.advanced.interpolation_mask_area,
 			"interpolation mask area: {}",
 			fonts::font
 		);
@@ -583,7 +597,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			container,
 			0.f,
 			10.f,
-			&settings.blur_weighting_gaussian_std_dev,
+			&settings.advanced.blur_weighting_gaussian_std_dev,
 			"blur weighting gaussian std dev: {:.2f}",
 			fonts::font
 		);
@@ -591,12 +605,20 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"blur weighting triangle reverse checkbox",
 			container,
 			"blur weighting triangle reverse",
-			settings.blur_weighting_triangle_reverse,
+			settings.advanced.blur_weighting_triangle_reverse,
 			fonts::font
 		);
 		ui::add_text_input(
-			"blur weighting bound input", container, settings.blur_weighting_bound, "blur weighting bound", fonts::font
+			"blur weighting bound input",
+			container,
+			settings.advanced.blur_weighting_bound,
+			"blur weighting bound",
+			fonts::font
 		);
+	}
+	else {
+		// make sure theres no funny business (TODO: is this needed, are there edge cases?)
+		settings.advanced = config_blur::DEFAULT_CONFIG.advanced;
 	}
 }
 
