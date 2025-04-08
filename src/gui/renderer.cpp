@@ -361,6 +361,8 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		"detailed filenames checkbox", container, "detailed filenames", settings.detailed_filenames, fonts::font
 	);
 
+	ui::add_checkbox("copy dates checkbox", container, "copy dates", settings.copy_dates, fonts::font);
+
 	/*
 	    GPU Acceleration
 	*/
@@ -528,8 +530,6 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		}
 
 		ui::add_checkbox("debug checkbox", container, "debug", settings.debug, fonts::font);
-
-		ui::add_checkbox("copy dates checkbox", container, "copy dates", settings.copy_dates, fonts::font);
 
 		/*
 		    Advanced Interpolation
