@@ -53,13 +53,13 @@ void render::rect_filled_gradient(
 	std::vector<SkPoint> skia_points;
 	skia_points.reserve(gradient_direction.size());
 	for (const auto& point : gradient_direction)
-		skia_points.push_back(SkPoint(point.x, point.y));
+		skia_points.emplace_back(SkPoint(SkIntToScalar(point.x), SkIntToScalar(point.y)));
 
 	// Convert gfx::Color to SkColor using os::to_skia
 	std::vector<SkColor> skia_colors;
 	skia_colors.reserve(colors.size());
 	for (const auto& color : colors)
-		skia_colors.push_back(os::to_skia(color));
+		skia_colors.emplace_back(os::to_skia(color));
 
 	// Create gradient shader using the converted vectors
 	SkMatrix matrix = SkMatrix::I();
