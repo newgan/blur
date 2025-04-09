@@ -53,7 +53,7 @@ void render::rect_filled_gradient(
 	std::vector<SkPoint> skia_points;
 	skia_points.reserve(gradient_direction.size());
 	for (const auto& point : gradient_direction)
-		skia_points.emplace_back(SkPoint(SkIntToScalar(point.x), SkIntToScalar(point.y)));
+		skia_points.emplace_back(SkPoint::Make(SkIntToScalar(point.x), SkIntToScalar(point.y)));
 
 	// Convert gfx::Color to SkColor using os::to_skia
 	std::vector<SkColor> skia_colors;
@@ -74,7 +74,7 @@ void render::rect_filled_gradient(
 	SkRect skia_rect = os::to_skia(gfx::RectF(rect));
 
 	// Draw the rectangle on the surface's canvas
-	auto* canvas = &static_cast<os::SkiaSurface*>(surface)->canvas();
+	auto* canvas = &dynamic_cast<os::SkiaSurface*>(surface)->canvas();
 	canvas->drawRect(skia_rect, paint);
 }
 
