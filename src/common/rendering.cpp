@@ -155,9 +155,13 @@ RenderCommands Render::build_render_commands() {
 		                L"video_path=" + path_string,
 		                L"-a",
 		                L"settings=" + u::towstring(m_settings.to_json().dump()),
-#if defined(__APPLE__)
+#ifdef __APPLE__
 		                L"-a",
 		                std::format(L"macos_bundled={}", blur.used_installer ? L"true" : L"false"),
+#endif
+#ifdef WIN32
+		                L"-a",
+		                L"lsmash=true",
 #endif
 		                blur_script_path,
 		                L"-" };
@@ -346,6 +350,9 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 			env["PYTHONHOME"] = (blur.resources_path / "python").string();
 			env["PYTHONPATH"] = (blur.resources_path / "python/lib/python3.12/site-packages").string();
 		}
+#elif defined(__linux__)
+		env["LD_LIBRARY_PATH"] = "/home/me/Desktop/blur/ci/out/vapoursynth-plugins";
+		env["PYTHONPATH"] = "/home/me/Desktop/blur/ci/out/python/lib/python3.12/site-packages";
 #endif
 
 		// Launch vspipe process
