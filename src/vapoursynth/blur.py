@@ -21,6 +21,17 @@ if vars().get("macos_bundled") == "true":
             print("loading", dylib.name)
             core.std.LoadPlugin(path=str(dylib))
 
+# temp wip
+plugin_dir = Path("/home/me/Desktop/blur/ci/out/vapoursynth-plugins")
+ignored = {
+    "libbestsource.so",
+}
+
+for plugin in plugin_dir.glob("*.so"):
+    if plugin.name not in ignored:
+        print("loading", plugin.name)
+        core.std.LoadPlugin(path=str(plugin))
+
 # add blur.py folder to path so it can reference scripts
 sys.path.insert(1, str(Path(__file__).parent))
 
@@ -52,12 +63,12 @@ interpolation_mask_area = u.coalesce(
     blur.interpolate.DEFAULT_MASKING,
 )
 
-if vars().get("macos_bundled") == "true":
-    video = core.bs.VideoSource(source=video_path, cachemode=0)
-else:
+if vars().get("lsmash") == "true":
     video = core.lsmas.LibavSMASHSource(
         source=video_path, prefer_hw=3 if settings["gpu_decoding"] else 0
     )
+else:
+    video = core.bs.VideoSource(source=video_path, cachemode=0)
 
 if settings["deduplicate"] and settings["deduplicate_range"] != 0:
     deduplicate_range: int | None = int(settings["deduplicate_range"])
