@@ -170,6 +170,8 @@ RenderCommands Render::build_render_commands() {
 		                L"-y",
 		                L"-i",
 		                L"-", // piped output from video script
+		                L"-fflags",
+		                L"+genpts",
 		                L"-i",
 		                m_video_path.wstring(), // original video (for audio)
 		                L"-map",
@@ -196,16 +198,14 @@ RenderCommands Render::build_render_commands() {
 
 	if (!audio_filters.empty()) {
 		commands.ffmpeg.emplace_back(L"-af");
-		commands.ffmpeg.push_back(
-			std::accumulate(
-				std::next(audio_filters.begin()),
-				audio_filters.end(),
-				audio_filters[0],
-				[](const std::wstring& a, const std::wstring& b) {
-					return a + L"," + b;
-				}
-			)
-		);
+		commands.ffmpeg.push_back(std::accumulate(
+			std::next(audio_filters.begin()),
+			audio_filters.end(),
+			audio_filters[0],
+			[](const std::wstring& a, const std::wstring& b) {
+				return a + L"," + b;
+			}
+		));
 	}
 
 	if (!m_settings.advanced.ffmpeg_override.empty()) {
