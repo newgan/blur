@@ -33,6 +33,11 @@ def get_interp(
             len(clip) - 1
         )  # for clarity (this shit always trips me up)
 
+        if max_frames:
+            max_permitted = duplicate_index + max_frames
+            if last_possible_index > max_permitted:
+                last_possible_index = max_permitted
+
         while index <= last_possible_index:
             test_frame = clip[index]
             diffclip = core.std.PlaneStats(test_frame, duped_frame)
@@ -43,20 +48,19 @@ def get_interp(
 
             index += 1
 
-        return last_possible_index
+        return None
 
     dupe_last_good_idx = duplicate_index - 1
 
     # find the next non-duplicate frame
     dupe_next_good_idx = find_next_good_frame()
 
-    duped_frames = dupe_next_good_idx - duplicate_index
+    if not dupe_next_good_idx:
+        # don't dedupe
+        cur_interp = None
+        return
 
-    if max_frames is not None:
-        if duped_frames > max_frames:
-            # don't dedupe
-            cur_interp = None
-            return
+    duped_frames = dupe_next_good_idx - duplicate_index
 
     # generate fake clip which includes the two good frames. this will be used to interpolate between them.
     # todo: possibly including more frames will result in better results?
@@ -142,7 +146,7 @@ def interpolate_dupes(
     return core.std.AssumeFPS(joined, src=clip)
 
 
-def fill_drops(
+def fill_drops_multiple(
     clip,
     threshold: float = 0.1,
     max_frames: int | None = None,
@@ -220,13 +224,12 @@ def fill_drops_old(clip, threshold=0.1, debug=False):
 
 def fill_drops_svp(
     video,
-    preset,
-    algorithm,
-    blocksize,
-    overlap,
-    masking,
-    gpu,
-    threshold=0.1,
+    threshold: float = 0.1,
+    svp_preset="default",
+    svp_algorithm=13,
+    svp_blocksize=8,
+    svp_masking=50,
+    svp_gpu=True,
     debug=False,
 ):
     if not isinstance(video, vs.VideoNode):
@@ -238,12 +241,11 @@ def fill_drops_svp(
         blur.interpolate.generate_svp_strings(
             video.fps,
             from_dedupe=True,
-            preset=preset,
-            algorithm=algorithm,
-            blocksize=blocksize,
-            overlap=overlap,
-            masking=masking,
-            gpu=gpu,
+            preset=svp_preset,
+            algorithm=svp_algorithm,
+            blocksize=svp_blocksize,
+            masking=svp_masking,
+            gpu=svp_gpu,
         )
     )
 
