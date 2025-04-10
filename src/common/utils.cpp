@@ -249,6 +249,14 @@ bool u::is_video_file(const std::filesystem::path& path) {
 
 	std::stringstream output;
 	std::stringstream error;
+	
+	bp::environment env = boost::this_process::environment();
+
+	if (blur.used_installer) {
+#ifdef __linux__
+		env["LD_LIBRARY_PATH"] = (blur.resources_path / "../lib").string();
+#endif
+	}
 
 	bp::ipstream pipe_stream;
 	bp::child c(
@@ -256,7 +264,8 @@ bool u::is_video_file(const std::filesystem::path& path) {
 		"-i",
 		path.wstring(),
 		bp::std_out > bp::null,
-		bp::std_err > pipe_stream
+		bp::std_err > pipe_stream,
+		env
 #ifdef _WIN32
 		,
 		bp::windows::create_no_window
