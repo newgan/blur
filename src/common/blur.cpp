@@ -34,7 +34,8 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 		vspipe_path = (blur.resources_path / "lib\\vapoursynth\\vspipe.exe").wstring();
 		ffmpeg_path = (blur.resources_path / "lib\\ffmpeg\\ffmpeg.exe").wstring();
 #elif defined(__linux__)
-		// todo
+		vspipe_path = (blur.resources_path / "vapoursynth/vspipe").wstring();
+		ffmpeg_path = (blur.resources_path / "ffmpeg/ffmpeg").wstring();
 #elif defined(__APPLE__)
 		vspipe_path = (blur.resources_path / "vapoursynth/vspipe").wstring();
 		ffmpeg_path = (blur.resources_path / "ffmpeg/ffmpeg").wstring();
