@@ -477,18 +477,20 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"video container text input", container, settings.advanced.video_container, "video container", fonts::font
 		);
 
-		ui::add_slider(
-			"deduplicate range",
-			container,
-			-1,
-			10,
-			&settings.advanced.deduplicate_range,
-			"deduplicate range: {}",
-			fonts::font,
-			{},
-			0.f,
-			"-1 = infinite"
-		);
+		if (settings.advanced.deduplicate_method == "default") {
+			ui::add_slider(
+				"deduplicate range",
+				container,
+				-1,
+				10,
+				&settings.advanced.deduplicate_range,
+				"deduplicate range: {}",
+				fonts::font,
+				{},
+				0.f,
+				"-1 = infinite"
+			);
+		}
 
 		std::istringstream iss(settings.advanced.deduplicate_threshold);
 		float f = NAN;
@@ -503,6 +505,15 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			container,
 			settings.advanced.deduplicate_threshold,
 			"deduplicate threshold",
+			fonts::font
+		);
+
+		ui::add_dropdown(
+			"deduplicate method dropdown",
+			container,
+			"deduplicate method",
+			{ "default", "old" },
+			settings.advanced.deduplicate_method,
 			fonts::font
 		);
 
@@ -937,6 +948,12 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 			{
 				"Threshold of movement that triggers deduplication",
 				"Turn on debug in advanced and render a video to embed text showing the movement in each frame",
+			},
+		},
+		{
+			"deduplicate method dropdown",
+			{
+				"Old is faster, but less accurate (will result in more artifacting)",
 			},
 		},
 		{

@@ -225,22 +225,19 @@ def fill_drops_old(clip, threshold=0.1, debug=False):
 def fill_drops_svp(
     video,
     threshold: float = 0.1,
-    svp_preset="default",
-    svp_algorithm=13,
-    svp_blocksize=8,
-    svp_masking=50,
-    svp_gpu=True,
+    svp_preset=blur.interpolate.DEFAULT_PRESET,
+    svp_algorithm=blur.interpolate.DEFAULT_ALGORITHM,
+    svp_blocksize=blur.interpolate.DEFAULT_BLOCKSIZE,
+    svp_masking=blur.interpolate.DEFAULT_MASKING,
+    svp_gpu=blur.interpolate.DEFAULT_GPU,
     debug=False,
 ):
     if not isinstance(video, vs.VideoNode):
         raise ValueError("This is not a video")
 
-    differences = core.std.PlaneStats(video, video[0] + video)
-
     [super_string, vectors_string, smooth_string] = (
         blur.interpolate.generate_svp_strings(
-            video.fps,
-            from_dedupe=True,
+            new_fps=video.fps,
             preset=svp_preset,
             algorithm=svp_algorithm,
             blocksize=svp_blocksize,
@@ -263,18 +260,64 @@ def fill_drops_svp(
     )
 
     def selectFunc(n, f):
-        if f.props["PlaneStatsDiff"] < threshold:
-            if debug:
-                return core.text.Text(
-                    filldrops,
-                    f"interpolated, diff: {f.props['PlaneStatsDiff']:.3f}",
-                    alignment=8,
-                )
-
-            return filldrops
-        else:
+        if f.props["PlaneStatsDiff"] >= threshold or n == 0:
             return video
 
+        clip_1fps = core.std.AssumeFPS(video, fpsnum=1, fpsden=1)
+
+        good_frames = clip_1fps[n - 1] + clip_1fps[n + 1]
+
+        [super_string, vectors_string, smooth_string] = (
+            blur.interpolate.generate_svp_strings(
+                new_fps=3,
+                preset=svp_preset,
+                algorithm=svp_algorithm,
+                blocksize=svp_blocksize,
+                # overlap=2,
+                # speed="medium",
+                masking=svp_masking,
+                gpu=svp_gpu,
+            )
+        )
+
+        super = core.svp1.Super(good_frames, super_string)
+        vectors = core.svp1.Analyse(
+            super["clip"], super["data"], good_frames, vectors_string
+        )
+
+        cur_interp = core.svp2.SmoothFps(
+            good_frames,
+            super["clip"],
+            super["data"],
+            vectors["clip"],
+            vectors["data"],
+            smooth_string,
+            src=good_frames,
+            fps=good_frames.fps,
+        )
+
+        # trim edges (they're just the input frames)
+        cur_interp = cur_interp[1:-1]
+
+        # combine the good frames with the interpolated ones so that vapoursynth can use them by indexing
+        # (i hate how you have to do this, there might be nicer way idk)
+        good_before = core.std.Trim(clip_1fps, first=0, last=n - 1)
+        good_after = core.std.Trim(clip_1fps, first=n + 1)
+
+        joined = good_before + cur_interp + good_after
+
+        out_video = core.std.AssumeFPS(joined, src=video)
+
+        if debug:
+            return core.text.Text(
+                out_video,
+                f"interpolated, diff: {f.props['PlaneStatsDiff']:.3f}",
+                alignment=8,
+            )
+
+        return out_video
+
+    differences = core.std.PlaneStats(video, video[0] + video)
     return core.std.FrameEval(video, selectFunc, prop_src=differences)
 
 

@@ -58,6 +58,7 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 		output << "video container: " << current_settings.advanced.video_container << "\n";
 		output << "deduplicate range: " << current_settings.advanced.deduplicate_range << "\n";
 		output << "deduplicate threshold: " << current_settings.advanced.deduplicate_threshold << "\n";
+		output << "deduplicate method: " << current_settings.advanced.deduplicate_method << "\n";
 		output << "custom ffmpeg filters: " << current_settings.advanced.ffmpeg_override << "\n";
 		output << "debug: " << (current_settings.advanced.debug ? "true" : "false") << "\n";
 
@@ -167,6 +168,7 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 		config_base::extract_config_string(
 			config_map, "deduplicate threshold", settings.advanced.deduplicate_threshold
 		);
+		config_base::extract_config_value(config_map, "deduplicate method", settings.advanced.deduplicate_method);
 		config_base::extract_config_string(config_map, "custom ffmpeg filters", settings.advanced.ffmpeg_override);
 		config_base::extract_config_value(config_map, "debug", settings.advanced.debug);
 
@@ -280,6 +282,7 @@ nlohmann::json BlurSettings::to_json() const {
 	// j["video_container"] = this->advanced.video_container;
 	j["deduplicate_range"] = this->advanced.deduplicate_range;
 	j["deduplicate_threshold"] = this->advanced.deduplicate_threshold;
+	j["deduplicate_method"] = this->advanced.deduplicate_method;
 	// j["ffmpeg_override"] = this->advanced.ffmpeg_override;
 	j["debug"] = this->advanced.debug;
 

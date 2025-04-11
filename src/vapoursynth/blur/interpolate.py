@@ -27,7 +27,7 @@ def generate_svp_strings(
     speed=DEFAULT_SPEED,
     masking=DEFAULT_MASKING,
     gpu=DEFAULT_GPU,
-    from_dedupe=False,
+    scene_detect=False,
 ):
     # build super json
     super_json = {
@@ -70,7 +70,7 @@ def generate_svp_strings(
         },
     }
 
-    if not from_dedupe:
+    if not scene_detect:
         # dont want any scene detection stuff when normally blurring (i think?)
         smooth_json["scene"] = {
             "blend": False,

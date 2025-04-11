@@ -69,32 +69,26 @@ if settings["deduplicate"] and settings["deduplicate_range"] != 0:
     except (ValueError, TypeError, KeyError):
         deduplicate_threshold = 0.001
 
-    if deduplicate_range == 1:
-        video = blur.deduplicate.fill_drops_svp(
-            video,
-            threshold=deduplicate_threshold,
-            debug=settings["debug"],
-            svp_preset=settings["interpolation_preset"],
-            svp_algorithm=interpolation_algorithm,
-            svp_blocksize=interpolation_blocksize,
-            svp_masking=interpolation_mask_area,
-            svp_gpu=settings["gpu_interpolation"],
-        )
-    else:
-        video = blur.deduplicate.fill_drops_multiple(
-            video,
-            threshold=deduplicate_threshold,
-            max_frames=deduplicate_range,
-            debug=settings["debug"],
-            svp_preset=settings["interpolation_preset"],
-            svp_algorithm=interpolation_algorithm,
-            svp_blocksize=interpolation_blocksize,
-            svp_masking=interpolation_mask_area,
-            svp_gpu=settings["gpu_interpolation"],
-        )
+    match settings["deduplicate_method"]:
+        case "old":
+            video = blur.deduplicate.fill_drops_old(
+                video,
+                threshold=deduplicate_threshold,
+                debug=settings["debug"],
+            )
 
-# if settings["deduplicate"]:
-#     video = blur.deduplicate.fill_drops_old(video, debug=True)
+        case _:
+            video = blur.deduplicate.fill_drops_multiple(
+                video,
+                threshold=deduplicate_threshold,
+                max_frames=deduplicate_range,
+                debug=settings["debug"],
+                svp_preset=settings["interpolation_preset"],
+                svp_algorithm=interpolation_algorithm,
+                svp_blocksize=interpolation_blocksize,
+                svp_masking=interpolation_mask_area,
+                svp_gpu=settings["gpu_interpolation"],
+            )
 
 # input timescale
 if settings["timescale"]:

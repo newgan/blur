@@ -4,6 +4,7 @@ struct AdvancedSettings {
 	std::string video_container = "mp4";
 	int deduplicate_range = 1;
 	std::string deduplicate_threshold = "0.001";
+	std::string deduplicate_method = "default";
 	std::string ffmpeg_override;
 	bool debug = false;
 
@@ -25,8 +26,9 @@ struct AdvancedSettings {
 		// reflection would be nice c++ -_-
 		// todo: boost? i mean, im already using it partially
 		return video_container == other.video_container && deduplicate_range == other.deduplicate_range &&
-		       deduplicate_threshold == other.deduplicate_threshold && ffmpeg_override == other.ffmpeg_override &&
-		       debug == other.debug && blur_weighting_gaussian_std_dev == other.blur_weighting_gaussian_std_dev &&
+		       deduplicate_threshold == other.deduplicate_threshold && deduplicate_method == other.deduplicate_method &&
+		       ffmpeg_override == other.ffmpeg_override && debug == other.debug &&
+		       blur_weighting_gaussian_std_dev == other.blur_weighting_gaussian_std_dev &&
 		       blur_weighting_triangle_reverse == other.blur_weighting_triangle_reverse &&
 		       blur_weighting_bound == other.blur_weighting_bound &&
 		       interpolation_preset == other.interpolation_preset &&
