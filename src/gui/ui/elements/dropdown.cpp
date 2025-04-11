@@ -180,6 +180,10 @@ bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
 	}
 
 	if (!activated && active) {
+		if (pos.options_rect.contains(keys::mouse_pos)) {
+			set_cursor(os::NativeCursor::Link);
+		}
+
 		// clicking options
 		if (keys::is_mouse_down()) {
 			if (pos.options_rect.contains(keys::mouse_pos)) {
