@@ -344,6 +344,15 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 				}
 			);
 		}
+
+		// ui::add_dropdown(
+		// 	"interpolation method dropdown",
+		// 	container,
+		// 	"interpolation method",
+		// 	{ "svp", "mvtools" },
+		// 	settings.interpolation_method,
+		// 	fonts::font
+		// );
 	}
 
 	/*
@@ -561,23 +570,25 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		*/
 		section_component("advanced interpolation");
 
-		ui::add_dropdown(
-			"interpolation preset dropdown",
-			container,
-			"interpolation preset",
-			config_blur::INTERPOLATION_PRESETS,
-			settings.advanced.interpolation_preset,
-			fonts::font
-		);
+		if (settings.interpolation_method == "svp") {
+			ui::add_dropdown(
+				"SVP interpolation preset dropdown",
+				container,
+				"SVP interpolation preset",
+				config_blur::SVP_INTERPOLATION_PRESETS,
+				settings.advanced.svp_interpolation_preset,
+				fonts::font
+			);
 
-		ui::add_dropdown(
-			"interpolation algorithm dropdown",
-			container,
-			"interpolation algorithm",
-			config_blur::INTERPOLATION_ALGORITHMS,
-			settings.advanced.interpolation_algorithm,
-			fonts::font
-		);
+			ui::add_dropdown(
+				"SVP interpolation algorithm dropdown",
+				container,
+				"SVP interpolation algorithm",
+				config_blur::SVP_INTERPOLATION_ALGORITHMS,
+				settings.advanced.svp_interpolation_algorithm,
+				fonts::font
+			);
+		}
 
 		ui::add_dropdown(
 			"interpolation block size dropdown",
@@ -893,13 +904,22 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 			},
 		},
 		{
-			"interpolation preset dropdown",
+			"interpolation method dropdown",
+			{
+#ifdef __APPLE__
+				"SVP is faster, but requires SVP Manager to be open or a red border will appear",
+#endif
+			},
+		},
+
+		{
+			"SVP interpolation preset dropdown",
 			{
 				"Check the blur GitHub for more information",
 			},
 		},
 		{
-			"interpolation algorithm dropdown",
+			"SVP interpolation algorithm dropdown",
 			{
 				"Check the blur GitHub for more information",
 			},
@@ -1027,18 +1047,18 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 		},
 	};
 
-	ui::AnimatedElement* hovered = ui::get_hovered_element();
+	std::string hovered = ui::get_hovered_id();
 
-	if (!hovered || !hovered->element)
+	if (hovered.empty())
 		return;
 
-	if (!option_explanations.contains(hovered->element->id))
+	if (!option_explanations.contains(hovered))
 		return;
 
 	ui::add_text(
 		"hovered option info",
 		container,
-		option_explanations.at(hovered->element->id),
+		option_explanations.at(hovered),
 		gfx::rgba(255, 255, 255, 255),
 		fonts::font,
 		os::TextAlign::Center,

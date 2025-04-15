@@ -486,7 +486,7 @@ namespace ui {
 	void set_cursor(os::NativeCursor cursor);
 
 	bool set_hovered_element(AnimatedElement& element);
-	AnimatedElement* get_hovered_element();
+	std::string get_hovered_id();
 
 	bool update_container_input(Container& container);
 	void on_update_input_start();

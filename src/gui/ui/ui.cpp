@@ -11,7 +11,7 @@ namespace {
 	os::NativeCursor desired_cursor = os::NativeCursor::Arrow;
 
 	ui::AnimatedElement* hovered_element_internal = nullptr;
-	ui::AnimatedElement* hovered_element_render = nullptr; // updated at start of each frame
+	std::string hovered_id;
 
 	int get_content_height(const ui::Container& container) {
 		int total_height = container.current_position.y - container.get_usable_rect().y;
@@ -262,8 +262,8 @@ bool ui::set_hovered_element(AnimatedElement& element) {
 	return true;
 }
 
-ui::AnimatedElement* ui::get_hovered_element() {
-	return hovered_element_render;
+std::string ui::get_hovered_id() {
+	return hovered_id;
 }
 
 bool ui::update_container_input(Container& container) {
@@ -287,7 +287,7 @@ bool ui::update_container_input(Container& container) {
 			updated |= (*element.element->update_fn)(container, element);
 	}
 
-	hovered_element_render = hovered_element_internal;
+	hovered_id = hovered_element_internal ? hovered_element_internal->element->id : "";
 
 	// scroll
 	if (keys::scroll_delta != 0.f || keys::scroll_delta_precise != 0.f) {
