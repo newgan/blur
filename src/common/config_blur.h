@@ -12,8 +12,8 @@ struct AdvancedSettings {
 	bool blur_weighting_triangle_reverse = false;
 	std::string blur_weighting_bound = "[0, 2]";
 
-	std::string interpolation_preset = "weak";
-	std::string interpolation_algorithm = "13";
+	std::string svp_interpolation_preset = "weak";
+	std::string svp_interpolation_algorithm = "13";
 	std::string interpolation_blocksize = "8";
 	int interpolation_mask_area = 0;
 
@@ -31,8 +31,8 @@ struct AdvancedSettings {
 		       blur_weighting_gaussian_std_dev == other.blur_weighting_gaussian_std_dev &&
 		       blur_weighting_triangle_reverse == other.blur_weighting_triangle_reverse &&
 		       blur_weighting_bound == other.blur_weighting_bound &&
-		       interpolation_preset == other.interpolation_preset &&
-		       interpolation_algorithm == other.interpolation_algorithm &&
+		       svp_interpolation_preset == other.svp_interpolation_preset &&
+		       svp_interpolation_algorithm == other.svp_interpolation_algorithm &&
 		       interpolation_blocksize == other.interpolation_blocksize &&
 		       interpolation_mask_area == other.interpolation_mask_area && manual_svp == other.manual_svp &&
 		       super_string == other.super_string && vectors_string == other.vectors_string &&
@@ -48,6 +48,7 @@ struct BlurSettings {
 
 	bool interpolate = true;
 	std::string interpolated_fps = "5x";
+	std::string interpolation_method = "svp";
 
 	bool timescale = false;
 	float input_timescale = 1.f;
@@ -79,8 +80,9 @@ public:
 		// todo: boost? i mean, im already using it partially
 		return blur == other.blur && blur_amount == other.blur_amount && blur_output_fps == other.blur_output_fps &&
 		       blur_weighting == other.blur_weighting && interpolate == other.interpolate &&
-		       interpolated_fps == other.interpolated_fps && timescale == other.timescale &&
-		       input_timescale == other.input_timescale && output_timescale == other.output_timescale &&
+		       interpolated_fps == other.interpolated_fps && interpolation_method == other.interpolation_method &&
+		       timescale == other.timescale && input_timescale == other.input_timescale &&
+		       output_timescale == other.output_timescale &&
 		       output_timescale_audio_pitch == other.output_timescale_audio_pitch && filters == other.filters &&
 		       brightness == other.brightness && saturation == other.saturation && contrast == other.contrast &&
 		       quality == other.quality && deduplicate == other.deduplicate && preview == other.preview &&
@@ -96,11 +98,11 @@ public:
 namespace config_blur {
 	inline const BlurSettings DEFAULT_CONFIG;
 
-	inline const std::vector<std::string> INTERPOLATION_PRESETS = {
+	inline const std::vector<std::string> SVP_INTERPOLATION_PRESETS = {
 		"weak", "film", "smooth", "animation", "default", "test",
 	};
 
-	inline const std::vector<std::string> INTERPOLATION_ALGORITHMS = {
+	inline const std::vector<std::string> SVP_INTERPOLATION_ALGORITHMS = {
 		"1", "2", "11", "13", "21", "23",
 	};
 

@@ -140,30 +140,24 @@ def change_fps(clip, fpsnum, fpsden=1):  # this is just directly from havsfunc
 
 def interpolate_mvtools(
     clip,
-    fps=None,
+    new_fps,
+    blocksize=DEFAULT_BLOCKSIZE,
+    masking=100,
     pel=1,
     sharp=0,
-    blksize=4,
-    overlap=2,
+    overlap=DEFAULT_OVERLAP,
     search=5,
     searchparam=3,
     pelsearch=1,
     dct=3,
     blend=False,
-    ml=200,
 ):
-    if not isinstance(clip, vs.VideoNode) or clip.format.color_family not in [
-        vs.GRAY,
-        vs.YUV,
-    ]:
-        raise TypeError("JohnFPS: This is not a GRAY or YUV clip!")
-
     super = core.mv.Super(
-        clip, hpad=blksize, vpad=blksize, pel=pel, rfilter=1, sharp=sharp
+        clip, hpad=blocksize, vpad=blocksize, pel=pel, rfilter=1, sharp=sharp
     )
 
     analyse_args = dict(
-        blksize=blksize,
+        blksize=blocksize,
         overlap=overlap,
         search=search,
         searchparam=searchparam,
@@ -174,117 +168,6 @@ def interpolate_mvtools(
     bv = core.mv.Analyse(super, isb=True, **analyse_args)
     fv = core.mv.Analyse(super, isb=False, **analyse_args)
 
-    return core.mv.FlowFPS(clip, super, bv, fv, num=fps, den=1, blend=blend, ml=ml)
-
-
-def JohnBlur(
-    clip,
-    num=None,
-    den=None,
-    pre=None,
-    pel=None,
-    sharp=2,
-    blksize=16,
-    overlap=8,
-    blend=False,
-    ml=200,
-    analyse_args=None,
-    recalculate_args=None,
-):
-    """
-    From: https://forum.doom9.org/showthread.php?p=1847109.
-    Motion Protected FPS converter script by johnmeyer.
-    Slightly modified interface by Manolito, and a smidgen more by ssS.
-    Args:
-        num     (int) - Output framerate numerator.
-        den     (int) - Output framerate denominator.
-        pre    (clip) - pre-filtered clip used in motion vectors calculation.
-        pel     (int) - accuracy of the motion estimation.
-        sharp   (int) - subpixel interpolation method for pel > 1. (sharp = 3 → nnedi3)
-        blksize (int) - blksize used in motion vectors calculation.
-        overlap (int) - overlap used in motion vectors calculation.
-        blend  (bool) - Whether to blend frames at scene change.
-        ml      (int) - mask scale parameter. Greater values correspond to more weak occlusion mask.
-    """
-
-    isFLOAT = clip.format.sample_type == vs.FLOAT
-    fn_RemoveGrain = core.rgsf.RemoveGrain if isFLOAT else core.rgvs.RemoveGrain
-    fn_Analyse = core.mvsf.Analyse if isFLOAT else core.mv.Analyse
-    fn_Super = core.mvsf.Super if isFLOAT else core.mv.Super
-    fn_Recalculate = core.mvsf.Recalculate if isFLOAT else core.mv.Recalculate
-    fn_FlowFPS = core.mvsf.FlowBlur if isFLOAT else core.mv.FlowBlur
-    enum = clip.fps.numerator
-    eden = clip.fps.denominator
-    w = clip.width
-    h = clip.height
-
-    if not isinstance(clip, vs.VideoNode) or clip.format.color_family not in [
-        vs.GRAY,
-        vs.YUV,
-    ]:
-        raise TypeError("JohnFPS: This is not a GRAY or YUV clip!")
-
-    if isinstance(num, float) or isinstance(den, float):
-        raise ValueError("JohnFPS: Please use exact fraction instead of float.")
-
-    if num is None and den is None:
-        enum *= 2
-    elif num is not None and den is None:
-        enum = num
-        eden = 1
-    elif num is None and den is not None:
-        raise ValueError("JohnFPS: denominator must be used with numerator.")
-    else:
-        enum = num
-        eden = den
-
-    if analyse_args is None:
-        analyse_args = dict(
-            blksize=blksize, overlap=overlap, search=5, searchparam=3, dct=5
-        )
-
-    if recalculate_args is None:
-        recalculate_args = dict(
-            blksize=blksize // 2, overlap=overlap // 2, search=5, dct=5, thsad=100
-        )
-
-    if pre is None:
-        pre = fn_RemoveGrain(clip, [22])
-
-    if pel is None:
-        pel = 1 if w > 960 else 2
-
-    if pel < 2:
-        sharp = min(sharp, 2)
-
-    ppp = pel > 1 and sharp > 2
-    pre = DitherLumaRebuild(pre, 1)
-
-    if ppp:
-        cshift = 0.25 if pel == 2 else 0.375
-        pclip = nnrs.nnedi3_resample(pre, w * pel, h * pel, cshift, cshift, nns=4)
-        pclip2 = nnrs.nnedi3_resample(clip, w * pel, h * pel, cshift, cshift, nns=4)
-        supero = fn_Super(
-            clip,
-            hpad=blksize,
-            vpad=blksize,
-            pel=pel,
-            pelclip=pclip2,
-            rfilter=1,
-            levels=1,
-        )
-        superb = fn_Super(
-            pre, hpad=blksize, vpad=blksize, pel=pel, pelclip=pclip, rfilter=4
-        )
-    else:
-        supero = fn_Super(
-            clip, hpad=blksize, vpad=blksize, pel=pel, rfilter=1, sharp=sharp, levels=1
-        )
-        superb = fn_Super(pre, hpad=blksize, vpad=blksize, pel=pel, rfilter=4, sharp=1)
-
-    bv = fn_Analyse(superb, isb=True, **analyse_args)
-    fv = fn_Analyse(superb, isb=False, **analyse_args)
-    bv = fn_Recalculate(superb, bv, **recalculate_args)
-    fv = fn_Recalculate(superb, fv, **recalculate_args)
-
-    return fn_FlowFPS(clip, supero, bv, fv, 100, 1)
+    return core.mv.FlowFPS(
+        clip, super, bv, fv, num=new_fps, den=1, blend=blend, ml=max(masking, 1)
+    )

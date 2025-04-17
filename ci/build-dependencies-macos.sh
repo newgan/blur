@@ -42,6 +42,31 @@ download_zip() {
   cd ../..
 }
 
+download_library() {
+  local url="$1"
+  local filename="$2"
+  local out_path="$3"
+  local dir_name="${filename%.*}" # Remove file extension to get dir name
+
+  mkdir -p download/$dir_name
+  cd download/$dir_name
+
+  if [ ! -f "$filename" ]; then
+    echo "Downloading $filename..."
+    wget -q "$url" -O "$filename"
+  else
+    echo "$filename already exists. Skipping download."
+  fi
+
+  # copy to output directory
+  dest_path="../../$out_dir/$out_path"
+  mkdir -p "$dest_path"
+  echo "Copying $filename to $dest_path"
+  cp "$filename" "$dest_path"
+
+  cd ../..
+}
+
 build() {
   local repo="$1"
   local pull_args="$2"
@@ -97,22 +122,22 @@ download_zip \
 
 ## svpflow
 echo "Downloading SVPFlow libraries..."
-mkdir -p download/svpflow
-cd download/svpflow
+download_library \
+  "https://github.com/Spritzerland/svpflow-arm64/raw/4922e4bcfeb0ee80d80555ac54b4f0e92e4d6316/libsvpflow1_arm.dylib" \
+  "libsvpflow1_arm.dylib" \
+  "vapoursynth-plugins"
 
-if [ ! -f "libsvpflow1_arm.dylib" ] || [ ! -f "libsvpflow2_arm.dylib" ]; then
-  echo "Downloading SVPFlow libraries from GitHub..."
-  wget -q https://github.com/Spritzerland/svpflow-arm64/raw/4922e4bcfeb0ee80d80555ac54b4f0e92e4d6316/libsvpflow1_arm.dylib
-  wget -q https://github.com/Spritzerland/svpflow-arm64/raw/4922e4bcfeb0ee80d80555ac54b4f0e92e4d6316/libsvpflow2_arm.dylib
-fi
+download_library \
+  "https://github.com/Spritzerland/svpflow-arm64/raw/4922e4bcfeb0ee80d80555ac54b4f0e92e4d6316/libsvpflow2_arm.dylib" \
+  "libsvpflow2_arm.dylib" \
+  "vapoursynth-plugins"
 
-### copy libraries to output directory
-dest_path="../../$out_dir/vapoursynth-plugins"
-mkdir -p "$dest_path"
-cp libsvpflow1_arm.dylib "$dest_path"
-cp libsvpflow2_arm.dylib "$dest_path"
-
-cd ../..
+## RIFE ncnn Vulkan library
+echo "Downloading RIFE ncnn Vulkan library..."
+download_library \
+  "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/releases/download/r9_mod_v32/librife_macos_arm64.dylib" \
+  "librife_macos_arm64.dylib" \
+  "vapoursynth-plugins"
 
 ## python for vapoursynth
 mkdir -p download/python
@@ -145,7 +170,7 @@ $out_dir/python/bin/pip install cython
 PATH="$PWD/$out_dir/python/bin:$PATH"
 PYTHON_PREFIX="$PWD/$out_dir/python"
 
-build "https://github.com/vapoursynth/vapoursynth.git" "" "vapoursynth" "
+build "https://github.com/vapoursynth/vapoursynth.git" "--depth 1 --single-branch" "vapoursynth" "
 ./autogen.sh
 PYTHON3_LIBS=\"-L$PYTHON_PREFIX/lib/python3.12 -L$PYTHON_PREFIX/lib -lpython3.12\" \
   PYTHON3_CFLAGS=\"-I$PYTHON_PREFIX/include/python3.12\" \
@@ -158,13 +183,13 @@ sudo make install
 cp build/vapoursynth/.libs/vspipe $out_dir/vapoursynth
 
 ## bestsource
-build "https://github.com/vapoursynth/bestsource.git" "--depth 1 --recurse-submodules --shallow-submodules --remote-submodules" "bestsource" "
+build "https://github.com/vapoursynth/bestsource.git" "--depth 1 --single-branch --recurse-submodules --shallow-submodules --remote-submodules" "bestsource" "
 meson setup build
 ninja -C build
 " "build" "vapoursynth-plugins"
 
 ## mvtools
-build "https://github.com/dubhater/vapoursynth-mvtools.git" "" "mvtools" "
+build "https://github.com/dubhater/vapoursynth-mvtools.git" "--depth 1 --single-branch" "mvtools" "
 meson setup build
 ninja -C build
 " "build" "vapoursynth-plugins"
@@ -172,10 +197,17 @@ ninja -C build
 PATH="/opt/homebrew/opt/llvm@12/bin:$PATH"
 
 ## akarin
-build "https://github.com/AkarinVS/vapoursynth-plugin" "" "akarin" "
+build "https://github.com/AkarinVS/vapoursynth-plugin.git" "--depth 1 --single-branch" "akarin" "
 meson build
 ninja -C build
 " "build" "vapoursynth-plugins"
+
+# ## rife ncnn vulkan
+# build "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan.git" "--depth 1 --single-branch" "rife-ncnn-vulkan" "
+# git submodule update --init --recursive --depth 1
+# meson build
+# ninja -C build
+# " "build" "vapoursynth-plugins"
 
 echo "done"
 

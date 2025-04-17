@@ -37,8 +37,8 @@ video_path = Path(vars().get("video_path"))
 settings = json.loads(vars().get("settings"))
 
 # validate some settings
-interpolation_algorithm = u.coalesce(
-    u.safe_int(settings["interpolation_algorithm"]),
+svp_interpolation_algorithm = u.coalesce(
+    u.safe_int(settings["svp_interpolation_algorithm"]),
     blur.interpolate.DEFAULT_ALGORITHM,
 )
 
@@ -83,8 +83,8 @@ if settings["deduplicate"] and settings["deduplicate_range"] != 0:
                 threshold=deduplicate_threshold,
                 max_frames=deduplicate_range,
                 debug=settings["debug"],
-                svp_preset=settings["interpolation_preset"],
-                svp_algorithm=interpolation_algorithm,
+                svp_preset=settings["svp_interpolation_preset"],
+                svp_algorithm=svp_interpolation_algorithm,
                 svp_blocksize=interpolation_blocksize,
                 svp_masking=interpolation_mask_area,
                 svp_gpu=settings["gpu_interpolation"],
@@ -109,50 +109,66 @@ if settings["interpolate"]:
         # no x, is an fps (e.g. 600)
         interpolated_fps = int(interpolated_fps)
 
-    # TODO: rife
+    match settings["interpolation_method"]:
+        case "rife":
+            video = core.rife.RIFE(
+                video,
+                model=72,
+                fps_num=interpolated_fps,
+                fps_den=1,
+            )
 
-    orig_format = video.format
-    needs_conversion = (
-        orig_format.id != vs.YUV420P8
-    )  # svp only accepts yv12 (SVSuper: Clip must be YV12)
+        # case "mvtools":
+        #     video = blur.interpolate.interpolate_mvtools(
+        #         video,
+        #         interpolated_fps,
+        #         blocksize=int(settings["interpolation_blocksize"]),
+        #         masking=int(settings["interpolation_mask_area"]),
+        #     )
 
-    if needs_conversion:
-        video = core.resize.Bicubic(video, format=vs.YUV420P8)
+        case _:  # svp
+            orig_format = video.format
+            needs_conversion = (
+                orig_format.id != vs.YUV420P8
+            )  # svp only accepts yv12 (SVSuper: Clip must be YV12)
 
-    if settings["manual_svp"]:
-        super = core.svp1.Super(video, settings["super_string"])
-        vectors = core.svp1.Analyse(
-            super["clip"], super["data"], video, settings["vectors_string"]
-        )
+            if needs_conversion:
+                video = core.resize.Bicubic(video, format=vs.YUV420P8)
 
-        # insert interpolated fps
-        smooth_json = json.loads(settings["smooth_string"])
-        if "rate" not in smooth_json:
-            smooth_json["rate"] = {"num": interpolated_fps, "abs": True}
-        smooth_str = json.dumps(smooth_json)
+            if settings["manual_svp"]:
+                super = core.svp1.Super(video, settings["super_string"])
+                vectors = core.svp1.Analyse(
+                    super["clip"], super["data"], video, settings["vectors_string"]
+                )
 
-        video = core.svp2.SmoothFps(
-            video,
-            super["clip"],
-            super["data"],
-            vectors["clip"],
-            vectors["data"],
-            smooth_str,
-        )
-    else:
-        video = blur.interpolate.interpolate_svp(
-            video,
-            new_fps=interpolated_fps,
-            preset=settings["interpolation_preset"],
-            algorithm=interpolation_algorithm,
-            blocksize=interpolation_blocksize,
-            overlap=0,
-            masking=interpolation_mask_area,
-            gpu=settings["gpu_interpolation"],
-        )
+                # insert interpolated fps
+                smooth_json = json.loads(settings["smooth_string"])
+                if "rate" not in smooth_json:
+                    smooth_json["rate"] = {"num": interpolated_fps, "abs": True}
+                smooth_str = json.dumps(smooth_json)
 
-    if needs_conversion:
-        video = core.resize.Bicubic(video, format=orig_format.id)
+                video = core.svp2.SmoothFps(
+                    video,
+                    super["clip"],
+                    super["data"],
+                    vectors["clip"],
+                    vectors["data"],
+                    smooth_str,
+                )
+            else:
+                video = blur.interpolate.interpolate_svp(
+                    video,
+                    new_fps=interpolated_fps,
+                    preset=settings["svp_interpolation_preset"],
+                    algorithm=svp_interpolation_algorithm,
+                    blocksize=interpolation_blocksize,
+                    overlap=0,
+                    masking=interpolation_mask_area,
+                    gpu=settings["gpu_interpolation"],
+                )
+
+            if needs_conversion:
+                video = core.resize.Bicubic(video, format=orig_format.id)
 
 # output timescale
 if settings["timescale"]:

@@ -17,6 +17,7 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 	output << "- interpolation" << "\n";
 	output << "interpolate: " << (current_settings.interpolate ? "true" : "false") << "\n";
 	output << "interpolated fps: " << current_settings.interpolated_fps << "\n";
+	output << "interpolation method: " << current_settings.interpolation_method << "\n";
 
 	output << "\n";
 	output << "- rendering" << "\n";
@@ -72,8 +73,8 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 
 		output << "\n";
 		output << "- advanced interpolation" << "\n";
-		output << "interpolation preset: " << current_settings.advanced.interpolation_preset << "\n";
-		output << "interpolation algorithm: " << current_settings.advanced.interpolation_algorithm << "\n";
+		output << "svp interpolation preset: " << current_settings.advanced.svp_interpolation_preset << "\n";
+		output << "svp interpolation algorithm: " << current_settings.advanced.svp_interpolation_algorithm << "\n";
 		output << "interpolation block size: " << current_settings.advanced.interpolation_blocksize << "\n";
 		output << "interpolation mask area: " << current_settings.advanced.interpolation_mask_area << "\n";
 
@@ -91,22 +92,22 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config, bool fix) {
 	std::set<std::string> errors;
 
-	if (!u::contains(INTERPOLATION_PRESETS, config.advanced.interpolation_preset)) {
+	if (!u::contains(SVP_INTERPOLATION_PRESETS, config.advanced.svp_interpolation_preset)) {
 		errors.insert(
-			std::format("Interpolation preset ({}) is not a valid option", config.advanced.interpolation_preset)
+			std::format("SVP interpolation preset ({}) is not a valid option", config.advanced.svp_interpolation_preset)
 		);
 
 		if (fix)
-			config.advanced.interpolation_preset = DEFAULT_CONFIG.advanced.interpolation_preset;
+			config.advanced.svp_interpolation_preset = DEFAULT_CONFIG.advanced.svp_interpolation_preset;
 	}
 
-	if (!u::contains(INTERPOLATION_ALGORITHMS, config.advanced.interpolation_algorithm)) {
-		errors.insert(
-			std::format("Interpolation algorithm ({}) is not a valid option", config.advanced.interpolation_algorithm)
-		);
+	if (!u::contains(SVP_INTERPOLATION_ALGORITHMS, config.advanced.svp_interpolation_algorithm)) {
+		errors.insert(std::format(
+			"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
+		));
 
 		if (fix)
-			config.advanced.interpolation_algorithm = DEFAULT_CONFIG.advanced.interpolation_algorithm;
+			config.advanced.svp_interpolation_algorithm = DEFAULT_CONFIG.advanced.svp_interpolation_algorithm;
 	}
 
 	if (!u::contains(INTERPOLATION_BLOCK_SIZES, config.advanced.interpolation_blocksize)) {
@@ -136,6 +137,7 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 
 	config_base::extract_config_value(config_map, "interpolate", settings.interpolate);
 	config_base::extract_config_string(config_map, "interpolated fps", settings.interpolated_fps);
+	config_base::extract_config_string(config_map, "interpolation method", settings.interpolation_method);
 
 	config_base::extract_config_value(config_map, "filters", settings.filters);
 	config_base::extract_config_value(config_map, "brightness", settings.brightness);
@@ -180,9 +182,11 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 		);
 		config_base::extract_config_string(config_map, "blur weighting bound", settings.advanced.blur_weighting_bound);
 
-		config_base::extract_config_string(config_map, "interpolation preset", settings.advanced.interpolation_preset);
 		config_base::extract_config_string(
-			config_map, "interpolation algorithm", settings.advanced.interpolation_algorithm
+			config_map, "svp interpolation preset", settings.advanced.svp_interpolation_preset
+		);
+		config_base::extract_config_string(
+			config_map, "svp interpolation algorithm", settings.advanced.svp_interpolation_algorithm
 		);
 		config_base::extract_config_string(
 			config_map, "interpolation block size", settings.advanced.interpolation_blocksize
@@ -256,6 +260,7 @@ nlohmann::json BlurSettings::to_json() const {
 
 	j["interpolate"] = this->interpolate;
 	j["interpolated_fps"] = this->interpolated_fps;
+	j["interpolation_method"] = this->interpolation_method;
 
 	j["timescale"] = this->timescale;
 	j["input_timescale"] = this->input_timescale;
@@ -290,8 +295,8 @@ nlohmann::json BlurSettings::to_json() const {
 	j["blur_weighting_triangle_reverse"] = this->advanced.blur_weighting_triangle_reverse;
 	j["blur_weighting_bound"] = this->advanced.blur_weighting_bound;
 
-	j["interpolation_preset"] = this->advanced.interpolation_preset;
-	j["interpolation_algorithm"] = this->advanced.interpolation_algorithm;
+	j["svp_interpolation_preset"] = this->advanced.svp_interpolation_preset;
+	j["svp_interpolation_algorithm"] = this->advanced.svp_interpolation_algorithm;
 	j["interpolation_blocksize"] = this->advanced.interpolation_blocksize;
 	j["interpolation_mask_area"] = this->advanced.interpolation_mask_area;
 

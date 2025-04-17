@@ -345,14 +345,14 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			);
 		}
 
-		// ui::add_dropdown(
-		// 	"interpolation method dropdown",
-		// 	container,
-		// 	"interpolation method",
-		// 	{ "svp", "mvtools" },
-		// 	settings.interpolation_method,
-		// 	fonts::font
-		// );
+		ui::add_dropdown(
+			"interpolation method dropdown",
+			container,
+			"interpolation method",
+			{ "svp", "rife" },
+			settings.interpolation_method,
+			fonts::font
+		);
 	}
 
 	/*

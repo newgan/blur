@@ -142,12 +142,12 @@ Blur supports rendering from frameservers. This means you can avoid having to ru
 
 ### advanced interpolation
 
-- interpolation preset - preset used for framerate interpolation, one of:
+- SVP interpolation preset - preset used for framerate interpolation when using SVP, one of:
   - weak (default) - _[explained further here](https://www.spirton.com/uploads/InterFrame/InterFrame2.html)_
   - film - _[explained further here](https://www.spirton.com/uploads/InterFrame/InterFrame2.html)_
   - smooth - _[explained further here](https://www.spirton.com/uploads/InterFrame/InterFrame2.html)_
   - default _(default svp settings)_
-- interpolation algorithm - algorithm used for framerate interpolation, one of:
+- SVP interpolation algorithm - algorithm used for framerate interpolation when using SVP, one of:
 
   - 13 - best overall quality and smoothness (default) - _[explained further here](https://www.spirton.com/uploads/InterFrame/InterFrame2.html)_
   - 23 - sometimes smoother than 13, but can result in smearing - _[explained further here](https://www.spirton.com/uploads/InterFrame/InterFrame2.html)_
