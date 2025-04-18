@@ -11,11 +11,16 @@ Blur is a native desktop application made for easily and efficiently adding moti
 [YouTube showcase](https://www.youtube.com/watch?v=HicPaXNxtUw)
 
 ## Download
+
 - [Windows installer](https://github.com/f0e/blur/releases/latest/download/blur-Windows-Installer-x64.exe)
 - [macOS installer](https://github.com/f0e/blur/releases/latest/download/blur-macOS-Release-arm64.dmg)
 - [Linux (requires manual installation of dependencies)](https://github.com/f0e/blur/releases/latest)
 
-> macOS note*: After opening on Mac for the first time you'll get a 'Blur is damaged and can't be opened.' error. To fix this, run `xattr -dr com.apple.quarantine /Applications/blur.app` to unquarantine it.
+### macOS notes
+
+> After opening on Mac for the first time you'll get a 'Blur is damaged and can't be opened.' error. To fix this, run `xattr -dr com.apple.quarantine /Applications/blur.app` to unquarantine it.\*
+
+> Using SVP for interpolation requires that [SVP Manager](https://www.svp-team.com/get/) be running, or you'll get a red border around videos. This is because the older, free version of SVPflow (the interpolation plugin) that's used on Windows and Linux doesn't have an ARM build unfortunately.
 
 ## Features
 
@@ -173,4 +178,4 @@ These options are not visible by default, add them to your config and they will 
 
 ---
 
-*in the future I might buy a dev cert, but $99 a year atm doesn't seem worth it 😅
+\*in the future I might buy a dev cert, but $99 a year atm doesn't seem worth it 😅
