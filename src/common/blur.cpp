@@ -33,13 +33,13 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 #if defined(_WIN32)
 		vspipe_path = (blur.resources_path / "lib\\vapoursynth\\vspipe.exe").wstring();
 		ffmpeg_path = (blur.resources_path / "lib\\ffmpeg\\ffmpeg.exe").wstring();
-		ffprobe_path = (blur.resources_path / "lib\\ffprobe\\ffprobe.exe").wstring();
+		ffprobe_path = (blur.resources_path / "lib\\ffmpeg\\ffprobe.exe").wstring();
 #elif defined(__linux__)
 		// todo
 #elif defined(__APPLE__)
 		vspipe_path = (blur.resources_path / "vapoursynth/vspipe").wstring();
 		ffmpeg_path = (blur.resources_path / "ffmpeg/ffmpeg").wstring();
-		ffprobe_path = (blur.resources_path / "ffprobe/ffprobe").wstring();
+		ffprobe_path = (blur.resources_path / "ffmpeg/ffprobe").wstring();
 #endif
 	}
 	else {
