@@ -1,13 +1,18 @@
 # Create necessary directories
 $outDir = Join-Path $PWD "out"
+
+Remove-Item -Path $outDir -Recurse -Force
+
 $vapoursynthDir = Join-Path $outDir "vapoursynth"
 $ffmpegDir = Join-Path $outDir "ffmpeg"
 $pluginsDir = Join-Path $vapoursynthDir "vs-plugins"
+$modelsBaseDir = Join-Path $outDir "models"
 
 # Create directories if they don't exist
 New-Item -ItemType Directory -Force -Path $vapoursynthDir | Out-Null
 New-Item -ItemType Directory -Force -Path $ffmpegDir | Out-Null
 New-Item -ItemType Directory -Force -Path $pluginsDir | Out-Null
+New-Item -ItemType Directory -Force -Path $modelsBaseDir | Out-Null
 
 # Function to download file
 function Download-File {
@@ -64,6 +69,32 @@ function Extract-Files {
     }
 }
 
+# Function to download model files from GitHub
+function Download-ModelFiles {
+    param (
+        [string]$BaseUrl,
+        [string]$ModelName,
+        [string[]]$FileList
+    )
+    
+    Write-Host "Downloading model: $ModelName"
+    $modelDir = Join-Path $modelsBaseDir $ModelName
+    
+    # Create model directory if it doesn't exist
+    if (-not (Test-Path $modelDir)) {
+        New-Item -ItemType Directory -Force -Path $modelDir | Out-Null
+        Write-Host "Created directory: $modelDir"
+    }
+    
+    foreach ($file in $FileList) {
+        $fileUrl = "$BaseUrl/$file"
+        $outputPath = Join-Path $modelDir $file
+        Download-File -Url $fileUrl -OutFile $outputPath
+    }
+    
+    Write-Host "Model $ModelName download completed"
+}
+
 # Download and install VapourSynth
 $vapoursynthInstallerUrl = "https://github.com/vapoursynth/vapoursynth/releases/download/R70/Install-Portable-VapourSynth-R70.ps1"
 $vapoursynthInstallerPath = Join-Path $vapoursynthDir "Install-Portable-VapourSynth-R70.ps1"
@@ -100,6 +131,11 @@ $plugins = @(
         FilePatterns = @("libmvtools.dll");
     },
     @{
+        Name = "VapourSynth-RIFE-ncnn-Vulkan";
+        Url = "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/releases/download/r9_mod_v32/librife_windows_x86-64.dll";
+        IsDirectDll = $true;
+    },
+    @{
         Name = "SVPFlow";
         Url = "https://web.archive.org/web/20190322064557if_/http://www.svp-team.com/files/gpl/svpflow-4.2.0.142.zip";
         FilePatterns = @(
@@ -111,9 +147,21 @@ $plugins = @(
 
 foreach ($plugin in $plugins) {
     Write-Host "Processing $($plugin.Name) plugin..."
-    $archivePath = Join-Path $vapoursynthDir "$($plugin.Name.ToLower())$(if ($plugin.Name -eq 'SVPFlow') {'.zip'} else {'.7z'})"
-    Download-File -Url $plugin.Url -OutFile $archivePath
-    Extract-Files -ArchivePath $archivePath -FilePatterns $plugin.FilePatterns -DestinationPath $pluginsDir
+    
+    # Determine if it's a direct DLL download by checking if IsDirectDll is true
+    $isDirectDll = $plugin.ContainsKey('IsDirectDll') -and $plugin.IsDirectDll
+    
+    if ($isDirectDll) {
+        # Direct DLL download (no extraction needed)
+        $dllPath = Join-Path $pluginsDir "$($plugin.Name.ToLower()).dll"
+        Download-File -Url $plugin.Url -OutFile $dllPath
+    } else {
+        # Archive download that needs extraction
+        $archiveExt = if ($plugin.Url.EndsWith('.zip')) {'.zip'} else {'.7z'}
+        $archivePath = Join-Path $vapoursynthDir "$($plugin.Name.ToLower())$archiveExt"
+        Download-File -Url $plugin.Url -OutFile $archivePath
+        Extract-Files -ArchivePath $archivePath -FilePatterns $plugin.FilePatterns -DestinationPath $pluginsDir
+    }
 }
 
 # Download and process FFmpeg
@@ -124,5 +172,19 @@ Extract-Files -ArchivePath $ffmpegArchive -FilePatterns @(
     "ffmpeg-2025-04-14-git-3b2a9410ef-essentials_build\bin\ffmpeg.exe",
     "ffmpeg-2025-04-14-git-3b2a9410ef-essentials_build\bin\ffprobe.exe"
 ) -DestinationPath $ffmpegDir
+
+# Define model downloads
+$modelDownloads = @(
+    @{
+        BaseUrl = "https://raw.githubusercontent.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/a2579e656dac7909a66e7da84578a2f80ccba41c/models/rife-v4.26_ensembleFalse";
+        ModelName = "rife-v4.26_ensembleFalse";
+        FileList = @("flownet.bin", "flownet.param");
+    }
+)
+
+# Download all models
+foreach ($model in $modelDownloads) {
+    Download-ModelFiles -BaseUrl $model.BaseUrl -ModelName $model.ModelName -FileList $model.FileList
+}
 
 Write-Host "Done"

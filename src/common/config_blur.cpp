@@ -17,11 +17,24 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 	output << "- interpolation" << "\n";
 	output << "interpolate: " << (current_settings.interpolate ? "true" : "false") << "\n";
 	output << "interpolated fps: " << current_settings.interpolated_fps << "\n";
+#ifndef __APPLE__ // rife dont worky on mac (see renderer.cpp)
+	output << "interpolation method: " << current_settings.interpolation_method << "\n";
+
+	output << "\n";
+	output << "- pre-interpolation" << "\n";
+	output << "pre-interpolate: " << (current_settings.pre_interpolate ? "true" : "false") << "\n";
+	output << "pre-interpolated fps: " << current_settings.pre_interpolated_fps << "\n";
+	output << "pre-interpolation method: " << current_settings.pre_interpolation_method << "\n";
+#endif
+
+	output << "\n";
+	output << "- deduplication" << "\n";
+	output << "deduplicate: " << (current_settings.deduplicate ? "true" : "false") << "\n";
+	output << "deduplicate method: " << current_settings.deduplicate_method << "\n";
 
 	output << "\n";
 	output << "- rendering" << "\n";
 	output << "quality: " << current_settings.quality << "\n";
-	output << "deduplicate: " << (current_settings.deduplicate ? "true" : "false") << "\n";
 	output << "preview: " << (current_settings.preview ? "true" : "false") << "\n";
 	output << "detailed filenames: " << (current_settings.detailed_filenames ? "true" : "false") << "\n";
 	output << "copy dates: " << (current_settings.copy_dates ? "true" : "false") << "\n";
@@ -54,11 +67,13 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 
 	if (current_settings.override_advanced) {
 		output << "\n";
-		output << "- advanced rendering" << "\n";
-		output << "video container: " << current_settings.advanced.video_container << "\n";
+		output << "- advanced deduplication" << "\n";
 		output << "deduplicate range: " << current_settings.advanced.deduplicate_range << "\n";
 		output << "deduplicate threshold: " << current_settings.advanced.deduplicate_threshold << "\n";
-		output << "deduplicate method: " << current_settings.advanced.deduplicate_method << "\n";
+
+		output << "\n";
+		output << "- advanced rendering" << "\n";
+		output << "video container: " << current_settings.advanced.video_container << "\n";
 		output << "custom ffmpeg filters: " << current_settings.advanced.ffmpeg_override << "\n";
 		output << "debug: " << (current_settings.advanced.debug ? "true" : "false") << "\n";
 
@@ -72,10 +87,13 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 
 		output << "\n";
 		output << "- advanced interpolation" << "\n";
-		output << "interpolation preset: " << current_settings.advanced.interpolation_preset << "\n";
-		output << "interpolation algorithm: " << current_settings.advanced.interpolation_algorithm << "\n";
+		output << "svp interpolation preset: " << current_settings.advanced.svp_interpolation_preset << "\n";
+		output << "svp interpolation algorithm: " << current_settings.advanced.svp_interpolation_algorithm << "\n";
 		output << "interpolation block size: " << current_settings.advanced.interpolation_blocksize << "\n";
 		output << "interpolation mask area: " << current_settings.advanced.interpolation_mask_area << "\n";
+#ifndef __APPLE__ // rife issue again
+		output << "rife model: " << current_settings.advanced.rife_model << "\n";
+#endif
 
 		if (current_settings.advanced.manual_svp) {
 			output << "\n";
@@ -91,22 +109,22 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config, bool fix) {
 	std::set<std::string> errors;
 
-	if (!u::contains(INTERPOLATION_PRESETS, config.advanced.interpolation_preset)) {
+	if (!u::contains(SVP_INTERPOLATION_PRESETS, config.advanced.svp_interpolation_preset)) {
 		errors.insert(
-			std::format("Interpolation preset ({}) is not a valid option", config.advanced.interpolation_preset)
+			std::format("SVP interpolation preset ({}) is not a valid option", config.advanced.svp_interpolation_preset)
 		);
 
 		if (fix)
-			config.advanced.interpolation_preset = DEFAULT_CONFIG.advanced.interpolation_preset;
+			config.advanced.svp_interpolation_preset = DEFAULT_CONFIG.advanced.svp_interpolation_preset;
 	}
 
-	if (!u::contains(INTERPOLATION_ALGORITHMS, config.advanced.interpolation_algorithm)) {
-		errors.insert(
-			std::format("Interpolation algorithm ({}) is not a valid option", config.advanced.interpolation_algorithm)
-		);
+	if (!u::contains(SVP_INTERPOLATION_ALGORITHMS, config.advanced.svp_interpolation_algorithm)) {
+		errors.insert(std::format(
+			"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
+		));
 
 		if (fix)
-			config.advanced.interpolation_algorithm = DEFAULT_CONFIG.advanced.interpolation_algorithm;
+			config.advanced.svp_interpolation_algorithm = DEFAULT_CONFIG.advanced.svp_interpolation_algorithm;
 	}
 
 	if (!u::contains(INTERPOLATION_BLOCK_SIZES, config.advanced.interpolation_blocksize)) {
@@ -136,14 +154,18 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 
 	config_base::extract_config_value(config_map, "interpolate", settings.interpolate);
 	config_base::extract_config_string(config_map, "interpolated fps", settings.interpolated_fps);
+#ifndef __APPLE__ // rife dont worky on mac (see renderer.cpp)
+	config_base::extract_config_string(config_map, "interpolation method", settings.interpolation_method);
 
-	config_base::extract_config_value(config_map, "filters", settings.filters);
-	config_base::extract_config_value(config_map, "brightness", settings.brightness);
-	config_base::extract_config_value(config_map, "saturation", settings.saturation);
-	config_base::extract_config_value(config_map, "contrast", settings.contrast);
+	config_base::extract_config_value(config_map, "pre-interpolate", settings.pre_interpolate);
+	config_base::extract_config_string(config_map, "pre-interpolated fps", settings.pre_interpolated_fps);
+	config_base::extract_config_string(config_map, "pre-interpolation method", settings.pre_interpolation_method);
+#endif
+
+	config_base::extract_config_value(config_map, "deduplicate", settings.deduplicate);
+	config_base::extract_config_value(config_map, "deduplicate method", settings.deduplicate_method);
 
 	config_base::extract_config_value(config_map, "quality", settings.quality);
-	config_base::extract_config_value(config_map, "deduplicate", settings.deduplicate);
 	config_base::extract_config_value(config_map, "preview", settings.preview);
 	config_base::extract_config_value(config_map, "detailed filenames", settings.detailed_filenames);
 	config_base::extract_config_value(config_map, "copy dates", settings.copy_dates);
@@ -160,15 +182,20 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 		config_map, "adjust timescaled audio pitch", settings.output_timescale_audio_pitch
 	);
 
+	config_base::extract_config_value(config_map, "filters", settings.filters);
+	config_base::extract_config_value(config_map, "brightness", settings.brightness);
+	config_base::extract_config_value(config_map, "saturation", settings.saturation);
+	config_base::extract_config_value(config_map, "contrast", settings.contrast);
+
 	config_base::extract_config_value(config_map, "advanced", settings.override_advanced);
 
 	if (settings.override_advanced) {
-		config_base::extract_config_value(config_map, "video container", settings.advanced.video_container);
 		config_base::extract_config_value(config_map, "deduplicate range", settings.advanced.deduplicate_range);
 		config_base::extract_config_string(
 			config_map, "deduplicate threshold", settings.advanced.deduplicate_threshold
 		);
-		config_base::extract_config_value(config_map, "deduplicate method", settings.advanced.deduplicate_method);
+
+		config_base::extract_config_value(config_map, "video container", settings.advanced.video_container);
 		config_base::extract_config_string(config_map, "custom ffmpeg filters", settings.advanced.ffmpeg_override);
 		config_base::extract_config_value(config_map, "debug", settings.advanced.debug);
 
@@ -180,9 +207,11 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 		);
 		config_base::extract_config_string(config_map, "blur weighting bound", settings.advanced.blur_weighting_bound);
 
-		config_base::extract_config_string(config_map, "interpolation preset", settings.advanced.interpolation_preset);
 		config_base::extract_config_string(
-			config_map, "interpolation algorithm", settings.advanced.interpolation_algorithm
+			config_map, "svp interpolation preset", settings.advanced.svp_interpolation_preset
+		);
+		config_base::extract_config_string(
+			config_map, "svp interpolation algorithm", settings.advanced.svp_interpolation_algorithm
 		);
 		config_base::extract_config_string(
 			config_map, "interpolation block size", settings.advanced.interpolation_blocksize
@@ -190,7 +219,9 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 		config_base::extract_config_value(
 			config_map, "interpolation mask area", settings.advanced.interpolation_mask_area
 		);
-
+#ifndef __APPLE__ // rife issue again
+		config_base::extract_config_string(config_map, "rife model", settings.advanced.rife_model);
+#endif
 		config_base::extract_config_value(config_map, "manual svp", settings.advanced.manual_svp);
 		config_base::extract_config_string(config_map, "super string", settings.advanced.super_string);
 		config_base::extract_config_string(config_map, "vectors string", settings.advanced.vectors_string);
@@ -246,7 +277,7 @@ BlurSettings config_blur::get_config(const std::filesystem::path& config_filepat
 	return parse(cfg_path);
 }
 
-nlohmann::json BlurSettings::to_json() const {
+BlurSettings::ToJsonResult BlurSettings::to_json() const {
 	nlohmann::json j;
 
 	j["blur"] = this->blur;
@@ -256,19 +287,21 @@ nlohmann::json BlurSettings::to_json() const {
 
 	j["interpolate"] = this->interpolate;
 	j["interpolated_fps"] = this->interpolated_fps;
+	j["interpolation_method"] = this->interpolation_method;
+
+	j["pre_interpolate"] = this->pre_interpolate;
+	j["pre_interpolated_fps"] = this->pre_interpolated_fps;
+	j["pre_interpolation_method"] = this->pre_interpolation_method;
+
+	j["deduplicate"] = this->deduplicate;
+	j["deduplicate_method"] = this->deduplicate_method;
 
 	j["timescale"] = this->timescale;
 	j["input_timescale"] = this->input_timescale;
 	j["output_timescale"] = this->output_timescale;
 	j["output_timescale_audio_pitch"] = this->output_timescale_audio_pitch;
 
-	j["filters"] = this->filters;
-	j["brightness"] = this->brightness;
-	j["saturation"] = this->saturation;
-	j["contrast"] = this->contrast;
-
 	j["quality"] = this->quality;
-	j["deduplicate"] = this->deduplicate;
 	j["preview"] = this->preview;
 	j["detailed_filenames"] = this->detailed_filenames;
 	// j["copy_dates"] = this->copy_dates;
@@ -278,11 +311,16 @@ nlohmann::json BlurSettings::to_json() const {
 	j["gpu_encoding"] = this->gpu_encoding;
 	j["gpu_type"] = this->gpu_type;
 
+	j["filters"] = this->filters;
+	j["brightness"] = this->brightness;
+	j["saturation"] = this->saturation;
+	j["contrast"] = this->contrast;
+
 	// advanced
-	// j["video_container"] = this->advanced.video_container;
 	j["deduplicate_range"] = this->advanced.deduplicate_range;
 	j["deduplicate_threshold"] = this->advanced.deduplicate_threshold;
-	j["deduplicate_method"] = this->advanced.deduplicate_method;
+
+	// j["video_container"] = this->advanced.video_container;
 	// j["ffmpeg_override"] = this->advanced.ffmpeg_override;
 	j["debug"] = this->advanced.debug;
 
@@ -290,15 +328,37 @@ nlohmann::json BlurSettings::to_json() const {
 	j["blur_weighting_triangle_reverse"] = this->advanced.blur_weighting_triangle_reverse;
 	j["blur_weighting_bound"] = this->advanced.blur_weighting_bound;
 
-	j["interpolation_preset"] = this->advanced.interpolation_preset;
-	j["interpolation_algorithm"] = this->advanced.interpolation_algorithm;
+	j["svp_interpolation_preset"] = this->advanced.svp_interpolation_preset;
+	j["svp_interpolation_algorithm"] = this->advanced.svp_interpolation_algorithm;
 	j["interpolation_blocksize"] = this->advanced.interpolation_blocksize;
 	j["interpolation_mask_area"] = this->advanced.interpolation_mask_area;
+
+#ifndef __APPLE__ // rife issue again
+	std::filesystem::path rife_model_path;
+#	if defined(_WIN32)
+	rife_model_path = u::get_resources_path() / "lib/models" / this->advanced.rife_model;
+#	elif defined(__linux__)
+	// todo
+#	elif defined(__APPLE__)
+	rife_model_path = u::get_resources_path() / "models" / this->advanced.rife_model;
+#	endif
+
+	if (!std::filesystem::exists(rife_model_path))
+		return {
+			.success = false,
+			.error_message = std::format("RIFE model '{}' could not be found", this->advanced.rife_model),
+		};
+
+	j["rife_model"] = rife_model_path;
+#endif
 
 	j["manual_svp"] = this->advanced.manual_svp;
 	j["super_string"] = this->advanced.super_string;
 	j["vectors_string"] = this->advanced.vectors_string;
 	j["smooth_string"] = this->advanced.smooth_string;
 
-	return j;
+	return {
+		.success = true,
+		.json = j,
+	};
 }

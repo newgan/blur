@@ -33,14 +33,38 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 #if defined(_WIN32)
 		vspipe_path = (blur.resources_path / "lib\\vapoursynth\\vspipe.exe").wstring();
 		ffmpeg_path = (blur.resources_path / "lib\\ffmpeg\\ffmpeg.exe").wstring();
-		ffprobe_path = (blur.resources_path / "lib\\ffprobe\\ffprobe.exe").wstring();
+		ffprobe_path = (blur.resources_path / "lib\\ffmpeg\\ffprobe.exe").wstring();
 #elif defined(__linux__)
 		// todo
 #elif defined(__APPLE__)
 		vspipe_path = (blur.resources_path / "vapoursynth/vspipe").wstring();
 		ffmpeg_path = (blur.resources_path / "ffmpeg/ffmpeg").wstring();
-		ffprobe_path = (blur.resources_path / "ffprobe/ffprobe").wstring();
+		ffprobe_path = (blur.resources_path / "ffmpeg/ffprobe").wstring();
 #endif
+
+		const static std::string manual_troubleshooting_info = "Try redownloading the latest installer.";
+
+		// didn't use installer, check if dependencies are installed
+		if (!std::filesystem::exists(ffmpeg_path)) {
+			return {
+				.success = false,
+				.error_message = "FFmpeg could not be found. " + manual_troubleshooting_info,
+			};
+		}
+
+		if (!std::filesystem::exists(ffprobe_path)) {
+			return {
+				.success = false,
+				.error_message = "FFprobe could not be found. " + manual_troubleshooting_info,
+			};
+		}
+
+		if (!std::filesystem::exists(vspipe_path)) {
+			return {
+				.success = false,
+				.error_message = "VapourSynth could not be found. " + manual_troubleshooting_info,
+			};
+		}
 	}
 	else {
 		const static std::string manual_troubleshooting_info =

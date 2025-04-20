@@ -2,9 +2,8 @@
 
 struct AdvancedSettings {
 	std::string video_container = "mp4";
-	int deduplicate_range = 1;
+	int deduplicate_range = 2;
 	std::string deduplicate_threshold = "0.001";
-	std::string deduplicate_method = "default";
 	std::string ffmpeg_override;
 	bool debug = false;
 
@@ -12,10 +11,11 @@ struct AdvancedSettings {
 	bool blur_weighting_triangle_reverse = false;
 	std::string blur_weighting_bound = "[0, 2]";
 
-	std::string interpolation_preset = "weak";
-	std::string interpolation_algorithm = "13";
+	std::string svp_interpolation_preset = "weak";
+	std::string svp_interpolation_algorithm = "13";
 	std::string interpolation_blocksize = "8";
 	int interpolation_mask_area = 0;
+	std::string rife_model = "rife-v4.26_ensembleFalse";
 
 	bool manual_svp = false;
 	std::string super_string;
@@ -26,17 +26,16 @@ struct AdvancedSettings {
 		// reflection would be nice c++ -_-
 		// todo: boost? i mean, im already using it partially
 		return video_container == other.video_container && deduplicate_range == other.deduplicate_range &&
-		       deduplicate_threshold == other.deduplicate_threshold && deduplicate_method == other.deduplicate_method &&
-		       ffmpeg_override == other.ffmpeg_override && debug == other.debug &&
-		       blur_weighting_gaussian_std_dev == other.blur_weighting_gaussian_std_dev &&
+		       deduplicate_threshold == other.deduplicate_threshold && ffmpeg_override == other.ffmpeg_override &&
+		       debug == other.debug && blur_weighting_gaussian_std_dev == other.blur_weighting_gaussian_std_dev &&
 		       blur_weighting_triangle_reverse == other.blur_weighting_triangle_reverse &&
 		       blur_weighting_bound == other.blur_weighting_bound &&
-		       interpolation_preset == other.interpolation_preset &&
-		       interpolation_algorithm == other.interpolation_algorithm &&
+		       svp_interpolation_preset == other.svp_interpolation_preset &&
+		       svp_interpolation_algorithm == other.svp_interpolation_algorithm &&
 		       interpolation_blocksize == other.interpolation_blocksize &&
-		       interpolation_mask_area == other.interpolation_mask_area && manual_svp == other.manual_svp &&
-		       super_string == other.super_string && vectors_string == other.vectors_string &&
-		       smooth_string == other.smooth_string;
+		       interpolation_mask_area == other.interpolation_mask_area && rife_model == other.rife_model &&
+		       manual_svp == other.manual_svp && super_string == other.super_string &&
+		       vectors_string == other.vectors_string && smooth_string == other.smooth_string;
 	}
 };
 
@@ -48,6 +47,11 @@ struct BlurSettings {
 
 	bool interpolate = true;
 	std::string interpolated_fps = "5x";
+	std::string interpolation_method = "svp";
+
+	bool pre_interpolate = false;
+	std::string pre_interpolated_fps = "360";
+	std::string pre_interpolation_method = "rife";
 
 	bool timescale = false;
 	float input_timescale = 1.f;
@@ -60,7 +64,10 @@ struct BlurSettings {
 	float contrast = 1.f;
 
 	int quality = 16;
+
 	bool deduplicate = true;
+	std::string deduplicate_method = "svp";
+
 	bool preview = true;
 	bool detailed_filenames = false;
 	bool copy_dates = false;
@@ -79,28 +86,36 @@ public:
 		// todo: boost? i mean, im already using it partially
 		return blur == other.blur && blur_amount == other.blur_amount && blur_output_fps == other.blur_output_fps &&
 		       blur_weighting == other.blur_weighting && interpolate == other.interpolate &&
-		       interpolated_fps == other.interpolated_fps && timescale == other.timescale &&
+		       interpolated_fps == other.interpolated_fps && interpolation_method == other.interpolation_method &&
+		       pre_interpolate == other.pre_interpolate && pre_interpolated_fps == other.pre_interpolated_fps &&
+		       pre_interpolation_method == other.pre_interpolation_method && timescale == other.timescale &&
 		       input_timescale == other.input_timescale && output_timescale == other.output_timescale &&
 		       output_timescale_audio_pitch == other.output_timescale_audio_pitch && filters == other.filters &&
 		       brightness == other.brightness && saturation == other.saturation && contrast == other.contrast &&
-		       quality == other.quality && deduplicate == other.deduplicate && preview == other.preview &&
-		       detailed_filenames == other.detailed_filenames && copy_dates == other.copy_dates &&
-		       gpu_decoding == other.gpu_decoding && gpu_interpolation == other.gpu_interpolation &&
-		       gpu_encoding == other.gpu_encoding && gpu_type == other.gpu_type &&
-		       override_advanced == other.override_advanced && advanced == other.advanced;
+		       deduplicate == other.deduplicate && deduplicate_method == other.deduplicate_method &&
+		       quality == other.quality && preview == other.preview && detailed_filenames == other.detailed_filenames &&
+		       copy_dates == other.copy_dates && gpu_decoding == other.gpu_decoding &&
+		       gpu_interpolation == other.gpu_interpolation && gpu_encoding == other.gpu_encoding &&
+		       gpu_type == other.gpu_type && override_advanced == other.override_advanced && advanced == other.advanced;
 	}
 
-	[[nodiscard]] nlohmann::json to_json() const;
+	struct ToJsonResult {
+		bool success;
+		std::optional<nlohmann::json> json;
+		std::string error_message;
+	};
+
+	[[nodiscard]] ToJsonResult to_json() const;
 };
 
 namespace config_blur {
 	inline const BlurSettings DEFAULT_CONFIG;
 
-	inline const std::vector<std::string> INTERPOLATION_PRESETS = {
+	inline const std::vector<std::string> SVP_INTERPOLATION_PRESETS = {
 		"weak", "film", "smooth", "animation", "default", "test",
 	};
 
-	inline const std::vector<std::string> INTERPOLATION_ALGORITHMS = {
+	inline const std::vector<std::string> SVP_INTERPOLATION_ALGORITHMS = {
 		"1", "2", "11", "13", "21", "23",
 	};
 

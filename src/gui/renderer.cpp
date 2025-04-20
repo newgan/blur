@@ -242,10 +242,27 @@ void gui::renderer::components::main_screen(ui::Container& container, float delt
 }
 
 void gui::renderer::components::configs::set_interpolated_fps() {
-	if (interpolate_scale)
+	if (interpolate_scale) {
 		settings.interpolated_fps = std::format("{}x", interpolated_fps_mult);
-	else
+	}
+	else {
 		settings.interpolated_fps = std::to_string(interpolated_fps);
+	}
+
+	if (pre_interpolate_scale) {
+		if (interpolate_scale)
+			pre_interpolated_fps_mult =
+				std::min(pre_interpolated_fps_mult, interpolated_fps_mult); // can't preinterpolate more than interp
+
+		settings.pre_interpolated_fps = std::format("{}x", pre_interpolated_fps_mult);
+	}
+	else {
+		if (!interpolate_scale)
+			pre_interpolated_fps =
+				std::min(pre_interpolated_fps, interpolated_fps); // can't preinterpolate more than interp
+
+		settings.pre_interpolated_fps = std::to_string(pre_interpolated_fps);
+	}
 }
 
 void gui::renderer::components::configs::options(ui::Container& container, BlurSettings& settings) {
@@ -345,15 +362,92 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			);
 		}
 
-		// ui::add_dropdown(
-		// 	"interpolation method dropdown",
-		// 	container,
-		// 	"interpolation method",
-		// 	{ "svp", "mvtools" },
-		// 	settings.interpolation_method,
-		// 	fonts::font
-		// );
+#ifndef __APPLE__ // see comment
+		ui::add_dropdown(
+			"interpolation method dropdown",
+			container,
+			"interpolation method",
+			{
+				"svp",
+				"rife", // plugins broken on mac rn idk why todo: fix when its fixed
+			},
+			settings.interpolation_method,
+			fonts::font
+		);
+#endif
 	}
+
+#ifndef __APPLE__ // see above
+	/*
+	    Pre-interpolation
+	*/
+	if (settings.interpolate && settings.interpolation_method != "rife") {
+		section_component("pre-interpolation", &settings.pre_interpolate);
+
+		if (settings.pre_interpolate) {
+			ui::add_checkbox(
+				"pre-interpolate scale checkbox",
+				container,
+				"pre-interpolate by scaling fps",
+				pre_interpolate_scale,
+				fonts::font,
+				[&](bool new_value) {
+					set_interpolated_fps();
+				}
+			);
+
+			if (pre_interpolate_scale) {
+				ui::add_slider(
+					"pre-interpolated fps mult",
+					container,
+					1.f,
+					interpolate_scale ? interpolated_fps_mult : 10.f,
+					&pre_interpolated_fps_mult,
+					"pre-interpolated fps: {:.1f}x",
+					fonts::font,
+					[&](std::variant<int*, float*> value) {
+						set_interpolated_fps();
+					},
+					0.1f
+				);
+			}
+			else {
+				ui::add_slider(
+					"pre-interpolated fps",
+					container,
+					1,
+					!interpolate_scale ? interpolated_fps : 2400,
+					&pre_interpolated_fps,
+					"pre-interpolated fps: {} fps",
+					fonts::font,
+					[&](std::variant<int*, float*> value) {
+						set_interpolated_fps();
+					}
+				);
+			}
+		}
+	}
+#endif
+
+	/*
+	    Deduplication
+	*/
+	section_component("deduplication");
+
+	ui::add_checkbox("deduplicate checkbox", container, "deduplicate", settings.deduplicate, fonts::font);
+
+	ui::add_dropdown(
+		"deduplicate method dropdown",
+		container,
+		"deduplicate method",
+		{ "svp",
+#ifndef __APPLE__ // rife issue again
+	      "rife",
+#endif
+	      "old" },
+		settings.deduplicate_method,
+		fonts::font
+	);
 
 	/*
 	    Rendering
@@ -372,8 +466,6 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			fonts::font
 		);
 	}
-
-	ui::add_checkbox("deduplicate checkbox", container, "deduplicate", settings.deduplicate, fonts::font);
 
 	ui::add_checkbox("preview checkbox", container, "preview", settings.preview, fonts::font);
 
@@ -478,15 +570,11 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 
 	if (settings.override_advanced) {
 		/*
-		    Advanced Rendering
+		    Advanced Deduplication
 		*/
-		section_component("advanced rendering");
+		section_component("advanced deduplication");
 
-		ui::add_text_input(
-			"video container text input", container, settings.advanced.video_container, "video container", fonts::font
-		);
-
-		if (settings.advanced.deduplicate_method == "default") {
+		if (settings.deduplicate_method != "old") {
 			ui::add_slider(
 				"deduplicate range",
 				container,
@@ -517,15 +605,6 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			fonts::font
 		);
 
-		ui::add_dropdown(
-			"deduplicate method dropdown",
-			container,
-			"deduplicate method",
-			{ "default", "old" },
-			settings.advanced.deduplicate_method,
-			fonts::font
-		);
-
 		if (!is_float) {
 			container.pop_element_gap();
 
@@ -537,6 +616,15 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 				fonts::font
 			);
 		}
+
+		/*
+		    Advanced Rendering
+		*/
+		section_component("advanced rendering");
+
+		ui::add_text_input(
+			"video container text input", container, settings.advanced.video_container, "video container", fonts::font
+		);
 
 		bool bad_audio = settings.timescale && (u::contains(settings.advanced.ffmpeg_override, "-c:a copy") ||
 		                                        u::contains(settings.advanced.ffmpeg_override, "-codec:a copy"));
@@ -608,6 +696,10 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"interpolation mask area: {}",
 			fonts::font
 		);
+
+#ifndef __APPLE__ // rife issue again
+		ui::add_text_input("rife model", container, settings.advanced.rife_model, "rife model", fonts::font);
+#endif
 
 		/*
 		    Advanced Blur
@@ -906,12 +998,33 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 		{
 			"interpolation method dropdown",
 			{
+				"Quality: rife > svp",
+				"Speed: svp > rife",
 #ifdef __APPLE__
-				"SVP is faster, but requires SVP Manager to be open or a red border will appear",
+				"SVP is faster, but requires that SVP Manager be open or a red border will appear",
 #endif
 			},
 		},
-
+		// pre-interp settings
+		{
+			"section pre-interpolation checkbox",
+			{
+				"Enable pre-interpolation using a more accurate but slower AI model before main interpolation",
+			},
+		},
+		{
+			"pre-interpolated fps mult",
+			{
+				"Multiplier for FPS pre-interpolation",
+				"The input video will be interpolated to this FPS (before main interpolation and blurring)",
+			},
+		},
+		{
+			"pre-interpolated fps",
+			{
+				"FPS to pre-interpolate input video to (before blurring)",
+			},
+		},
 		{
 			"SVP interpolation preset dropdown",
 			{
@@ -951,7 +1064,7 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 			"deduplicate checkbox",
 			{
 				"Removes duplicate frames and replaces them with interpolated frames",
-				"(fixes 'unsmooth' looking output)",
+				"(fixes 'unsmooth' looking output caused by stuttering in recordings)",
 			},
 		},
 		{
@@ -973,7 +1086,8 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 		{
 			"deduplicate method dropdown",
 			{
-				"Old is faster, but less accurate (will result in more artifacting)",
+				"Quality: rife > svp",
+				"Speed: old > svp > rife",
 			},
 		},
 		{
@@ -1075,28 +1189,43 @@ void gui::renderer::components::configs::screen(
 	float delta_time
 ) {
 	auto parse_interp = [&] {
-		try {
-			auto split = u::split_string(settings.interpolated_fps, "x");
-			if (split.size() > 1) {
-				interpolated_fps_mult = std::stof(split[0]);
-				interpolate_scale = true;
-			}
-			else {
-				interpolated_fps = std::stof(settings.interpolated_fps);
-				interpolate_scale = false;
-			}
+		auto parse_fps_setting = [&](const std::string& fps_setting,
+		                             int& fps,
+		                             float& fps_mult,
+		                             bool& scale_mode,
+		                             std::function<void()> set_function,
+		                             const std::string& log_prefix = "") {
+			try {
+				auto split = u::split_string(fps_setting, "x");
+				if (split.size() > 1) {
+					fps_mult = std::stof(split[0]);
+					scale_mode = true;
+				}
+				else {
+					fps = std::stof(fps_setting);
+					scale_mode = false;
+				}
 
-			u::log(
-				"loaded interp, scale: {} (fps: {}, mult: {})",
-				interpolate_scale,
-				interpolated_fps,
-				interpolated_fps_mult
-			);
-		}
-		catch (std::exception& e) {
-			u::log("failed to parse interpolated fps, setting defaults cos user error");
-			set_interpolated_fps();
-		}
+				u::log("loaded {}interp, scale: {} (fps: {}, mult: {})", log_prefix, scale_mode, fps, fps_mult);
+			}
+			catch (std::exception& e) {
+				u::log("failed to parse {}interpolated fps, setting defaults cos user error", log_prefix);
+				set_function();
+			}
+		};
+
+		parse_fps_setting(
+			settings.interpolated_fps, interpolated_fps, interpolated_fps_mult, interpolate_scale, set_interpolated_fps
+		);
+
+		parse_fps_setting(
+			settings.pre_interpolated_fps,
+			pre_interpolated_fps,
+			pre_interpolated_fps_mult,
+			pre_interpolate_scale,
+			set_interpolated_fps,
+			"pre-"
+		);
 	};
 
 	auto on_load = [&] {

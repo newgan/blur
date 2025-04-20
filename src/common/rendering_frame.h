@@ -39,7 +39,7 @@ public:
 
 	RenderResponse render(const std::filesystem::path& input_path, const BlurSettings& settings);
 
-	static RenderCommands build_render_commands(
+	static RenderCommandsResult build_render_commands(
 		const std::filesystem::path& input_path, const std::filesystem::path& output_path, const BlurSettings& settings
 	);
 };

@@ -42,6 +42,53 @@ download_zip() {
   cd ../..
 }
 
+download_library() {
+  local url="$1"
+  local filename="$2"
+  local out_path="$3"
+  local dir_name="${filename%.*}" # Remove file extension to get dir name
+
+  mkdir -p download/$dir_name
+  cd download/$dir_name
+
+  if [ ! -f "$filename" ]; then
+    echo "Downloading $filename..."
+    wget -q "$url" -O "$filename"
+  else
+    echo "$filename already exists. Skipping download."
+  fi
+
+  # copy to output directory
+  dest_path="../../$out_dir/$out_path"
+  mkdir -p "$dest_path"
+  echo "Copying $filename to $dest_path"
+  cp "$filename" "$dest_path"
+
+  cd ../..
+}
+
+download_model_files() {
+  local base_url="$1"
+  local model_name="$2"
+  local file_list=("${@:3}")
+
+  echo "Downloading model: $model_name"
+  local model_dir="$out_dir/models/$model_name"
+
+  mkdir -p "$model_dir"
+  echo "Created directory: $model_dir"
+
+  for file in "${file_list[@]}"; do
+    local file_url="$base_url/$file"
+    local output_path="$model_dir/$file"
+
+    echo "Downloading $file_url to $output_path"
+    wget -q "$file_url" -O "$output_path"
+  done
+
+  echo "Model $model_name download completed"
+}
+
 build() {
   local repo="$1"
   local pull_args="$2"
@@ -93,26 +140,26 @@ download_zip \
 download_zip \
   "https://ffmpeg.martin-riedl.de/download/macos/arm64/1744739657_N-119265-g0040d7e608/ffprobe.zip" \
   "ffprobe" \
-  "ffprobe"
+  "ffmpeg"
 
 ## svpflow
 echo "Downloading SVPFlow libraries..."
-mkdir -p download/svpflow
-cd download/svpflow
+download_library \
+  "https://github.com/Spritzerland/svpflow-arm64/raw/4922e4bcfeb0ee80d80555ac54b4f0e92e4d6316/libsvpflow1_arm.dylib" \
+  "libsvpflow1_arm.dylib" \
+  "vapoursynth-plugins"
 
-if [ ! -f "libsvpflow1_arm.dylib" ] || [ ! -f "libsvpflow2_arm.dylib" ]; then
-  echo "Downloading SVPFlow libraries from GitHub..."
-  wget -q https://github.com/Spritzerland/svpflow-arm64/raw/4922e4bcfeb0ee80d80555ac54b4f0e92e4d6316/libsvpflow1_arm.dylib
-  wget -q https://github.com/Spritzerland/svpflow-arm64/raw/4922e4bcfeb0ee80d80555ac54b4f0e92e4d6316/libsvpflow2_arm.dylib
-fi
+download_library \
+  "https://github.com/Spritzerland/svpflow-arm64/raw/4922e4bcfeb0ee80d80555ac54b4f0e92e4d6316/libsvpflow2_arm.dylib" \
+  "libsvpflow2_arm.dylib" \
+  "vapoursynth-plugins"
 
-### copy libraries to output directory
-dest_path="../../$out_dir/vapoursynth-plugins"
-mkdir -p "$dest_path"
-cp libsvpflow1_arm.dylib "$dest_path"
-cp libsvpflow2_arm.dylib "$dest_path"
-
-cd ../..
+# ## RIFE ncnn Vulkan library
+# echo "Downloading RIFE ncnn Vulkan library..."
+# download_library \
+#   "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/releases/download/r9_mod_v32/librife_macos_arm64.dylib" \
+#   "librife_macos_arm64.dylib" \
+#   "vapoursynth-plugins"
 
 ## python for vapoursynth
 mkdir -p download/python
@@ -145,7 +192,7 @@ $out_dir/python/bin/pip install cython
 PATH="$PWD/$out_dir/python/bin:$PATH"
 PYTHON_PREFIX="$PWD/$out_dir/python"
 
-build "https://github.com/vapoursynth/vapoursynth.git" "" "vapoursynth" "
+build "https://github.com/vapoursynth/vapoursynth.git" "--depth 1 --single-branch" "vapoursynth" "
 ./autogen.sh
 PYTHON3_LIBS=\"-L$PYTHON_PREFIX/lib/python3.12 -L$PYTHON_PREFIX/lib -lpython3.12\" \
   PYTHON3_CFLAGS=\"-I$PYTHON_PREFIX/include/python3.12\" \
@@ -158,24 +205,42 @@ sudo make install
 cp build/vapoursynth/.libs/vspipe $out_dir/vapoursynth
 
 ## bestsource
-build "https://github.com/vapoursynth/bestsource.git" "--depth 1 --recurse-submodules --shallow-submodules --remote-submodules" "bestsource" "
+build "https://github.com/vapoursynth/bestsource.git" "--depth 1 --single-branch --recurse-submodules --shallow-submodules --remote-submodules" "bestsource" "
 meson setup build
 ninja -C build
 " "build" "vapoursynth-plugins"
 
 ## mvtools
-build "https://github.com/dubhater/vapoursynth-mvtools.git" "" "mvtools" "
+build "https://github.com/dubhater/vapoursynth-mvtools.git" "--depth 1 --single-branch" "mvtools" "
 meson setup build
+ninja -C build
+" "build" "vapoursynth-plugins"
+
+## rife ncnn vulkan
+build "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan.git" "--depth 1 --single-branch" "rife-ncnn-vulkan" "
+git submodule update --init --recursive --depth 1
+meson build
 ninja -C build
 " "build" "vapoursynth-plugins"
 
 PATH="/opt/homebrew/opt/llvm@12/bin:$PATH"
 
 ## akarin
-build "https://github.com/AkarinVS/vapoursynth-plugin" "" "akarin" "
+build "https://github.com/AkarinVS/vapoursynth-plugin.git" "--depth 1 --single-branch" "akarin" "
 meson build
 ninja -C build
 " "build" "vapoursynth-plugins"
+
+# Define model downloads
+echo "Starting model downloads..."
+
+# Download RIFE models
+download_model_files \
+  "https://raw.githubusercontent.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/a2579e656dac7909a66e7da84578a2f80ccba41c/models/rife-v4.26_ensembleFalse" \
+  "rife-v4.26_ensembleFalse" \
+  "flownet.bin" "flownet.param"
+
+echo "Model downloads completed"
 
 echo "done"
 

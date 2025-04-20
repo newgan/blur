@@ -75,10 +75,15 @@ namespace gui::renderer {
 			inline float interpolated_fps_mult = 5.f;
 			inline int interpolated_fps = 1200;
 
+			inline bool pre_interpolate_scale = true;
+			inline float pre_interpolated_fps_mult = 2.f;
+			inline int pre_interpolated_fps = 360;
+
 			inline std::vector<std::unique_ptr<FrameRender>> renders;
 			inline std::mutex render_mutex;
 
 			void set_interpolated_fps();
+			void set_pre_interpolated_fps();
 
 			void options(ui::Container& container, BlurSettings& settings);
 			void preview(ui::Container& container, BlurSettings& settings);
