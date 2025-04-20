@@ -514,13 +514,13 @@ std::vector<std::string> u::get_codecs(bool gpu_encoding, const std::string& gpu
 				available_codecs.emplace_back("av1");
 		}
 		else if (gpu_type == "mac") {
-			if (hw_encoders.contains("h264_video_toolbox"))
+			if (hw_encoders.contains("h264_videotoolbox"))
 				available_codecs.emplace_back("h264");
 			if (hw_encoders.contains("hevc_videotoolbox"))
 				available_codecs.emplace_back("h265");
-			if (hw_encoders.contains("prores_video_toolbox"))
+			if (hw_encoders.contains("prores_videotoolbox"))
 				available_codecs.emplace_back("prores");
-			if (hw_encoders.contains("av1_video_toolbox")) // is ts real
+			if (hw_encoders.contains("av1_videotoolbox"))
 				available_codecs.emplace_back("av1");
 		}
 	}
