@@ -205,14 +205,16 @@ RenderCommands Render::build_render_commands() {
 
 	if (!audio_filters.empty()) {
 		commands.ffmpeg.emplace_back(L"-af");
-		commands.ffmpeg.push_back(std::accumulate(
-			std::next(audio_filters.begin()),
-			audio_filters.end(),
-			audio_filters[0],
-			[](const std::wstring& a, const std::wstring& b) {
-				return a + L"," + b;
-			}
-		));
+		commands.ffmpeg.push_back(
+			std::accumulate(
+				std::next(audio_filters.begin()),
+				audio_filters.end(),
+				audio_filters[0],
+				[](const std::wstring& a, const std::wstring& b) {
+					return a + L"," + b;
+				}
+			)
+		);
 	}
 
 	if (!m_settings.advanced.ffmpeg_override.empty()) {
@@ -341,10 +343,14 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 		bp::pipe vspipe_stdout;
 		bp::ipstream vspipe_stderr;
 
+#ifndef _DEBUG
 		if (m_settings.advanced.debug) {
+#endif
 			u::log(L"VSPipe command: {} {}", blur.vspipe_path.wstring(), u::join(render_commands.vspipe, L" "));
 			u::log(L"FFmpeg command: {} {}", blur.ffmpeg_path.wstring(), u::join(render_commands.ffmpeg, L" "));
+#ifndef _DEBUG
 		}
+#endif
 
 		bp::environment env = boost::this_process::environment();
 

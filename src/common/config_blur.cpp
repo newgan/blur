@@ -20,9 +20,19 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 	output << "interpolation method: " << current_settings.interpolation_method << "\n";
 
 	output << "\n";
+	output << "- pre-interpolation" << "\n";
+	output << "pre-interpolate: " << (current_settings.pre_interpolate ? "true" : "false") << "\n";
+	output << "pre-interpolated fps: " << current_settings.pre_interpolated_fps << "\n";
+	output << "pre-interpolation method: " << current_settings.pre_interpolation_method << "\n";
+
+	output << "\n";
+	output << "- deduplication" << "\n";
+	output << "deduplicate: " << (current_settings.deduplicate ? "true" : "false") << "\n";
+	output << "deduplicate method: " << current_settings.deduplicate_method << "\n";
+
+	output << "\n";
 	output << "- rendering" << "\n";
 	output << "quality: " << current_settings.quality << "\n";
-	output << "deduplicate: " << (current_settings.deduplicate ? "true" : "false") << "\n";
 	output << "preview: " << (current_settings.preview ? "true" : "false") << "\n";
 	output << "detailed filenames: " << (current_settings.detailed_filenames ? "true" : "false") << "\n";
 	output << "copy dates: " << (current_settings.copy_dates ? "true" : "false") << "\n";
@@ -55,11 +65,13 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 
 	if (current_settings.override_advanced) {
 		output << "\n";
-		output << "- advanced rendering" << "\n";
-		output << "video container: " << current_settings.advanced.video_container << "\n";
+		output << "- advanced deduplication" << "\n";
 		output << "deduplicate range: " << current_settings.advanced.deduplicate_range << "\n";
 		output << "deduplicate threshold: " << current_settings.advanced.deduplicate_threshold << "\n";
-		output << "deduplicate method: " << current_settings.advanced.deduplicate_method << "\n";
+
+		output << "\n";
+		output << "- advanced rendering" << "\n";
+		output << "video container: " << current_settings.advanced.video_container << "\n";
 		output << "custom ffmpeg filters: " << current_settings.advanced.ffmpeg_override << "\n";
 		output << "debug: " << (current_settings.advanced.debug ? "true" : "false") << "\n";
 
@@ -77,6 +89,7 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 		output << "svp interpolation algorithm: " << current_settings.advanced.svp_interpolation_algorithm << "\n";
 		output << "interpolation block size: " << current_settings.advanced.interpolation_blocksize << "\n";
 		output << "interpolation mask area: " << current_settings.advanced.interpolation_mask_area << "\n";
+		output << "rife model: " << current_settings.advanced.rife_model << "\n";
 
 		if (current_settings.advanced.manual_svp) {
 			output << "\n";
@@ -102,9 +115,11 @@ config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config
 	}
 
 	if (!u::contains(SVP_INTERPOLATION_ALGORITHMS, config.advanced.svp_interpolation_algorithm)) {
-		errors.insert(std::format(
-			"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
-		));
+		errors.insert(
+			std::format(
+				"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
+			)
+		);
 
 		if (fix)
 			config.advanced.svp_interpolation_algorithm = DEFAULT_CONFIG.advanced.svp_interpolation_algorithm;
@@ -139,13 +154,14 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 	config_base::extract_config_string(config_map, "interpolated fps", settings.interpolated_fps);
 	config_base::extract_config_string(config_map, "interpolation method", settings.interpolation_method);
 
-	config_base::extract_config_value(config_map, "filters", settings.filters);
-	config_base::extract_config_value(config_map, "brightness", settings.brightness);
-	config_base::extract_config_value(config_map, "saturation", settings.saturation);
-	config_base::extract_config_value(config_map, "contrast", settings.contrast);
+	config_base::extract_config_value(config_map, "pre-interpolate", settings.pre_interpolate);
+	config_base::extract_config_string(config_map, "pre-interpolated fps", settings.pre_interpolated_fps);
+	config_base::extract_config_string(config_map, "pre-interpolation method", settings.pre_interpolation_method);
+
+	config_base::extract_config_value(config_map, "deduplicate", settings.deduplicate);
+	config_base::extract_config_value(config_map, "deduplicate method", settings.deduplicate_method);
 
 	config_base::extract_config_value(config_map, "quality", settings.quality);
-	config_base::extract_config_value(config_map, "deduplicate", settings.deduplicate);
 	config_base::extract_config_value(config_map, "preview", settings.preview);
 	config_base::extract_config_value(config_map, "detailed filenames", settings.detailed_filenames);
 	config_base::extract_config_value(config_map, "copy dates", settings.copy_dates);
@@ -162,15 +178,20 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 		config_map, "adjust timescaled audio pitch", settings.output_timescale_audio_pitch
 	);
 
+	config_base::extract_config_value(config_map, "filters", settings.filters);
+	config_base::extract_config_value(config_map, "brightness", settings.brightness);
+	config_base::extract_config_value(config_map, "saturation", settings.saturation);
+	config_base::extract_config_value(config_map, "contrast", settings.contrast);
+
 	config_base::extract_config_value(config_map, "advanced", settings.override_advanced);
 
 	if (settings.override_advanced) {
-		config_base::extract_config_value(config_map, "video container", settings.advanced.video_container);
 		config_base::extract_config_value(config_map, "deduplicate range", settings.advanced.deduplicate_range);
 		config_base::extract_config_string(
 			config_map, "deduplicate threshold", settings.advanced.deduplicate_threshold
 		);
-		config_base::extract_config_value(config_map, "deduplicate method", settings.advanced.deduplicate_method);
+
+		config_base::extract_config_value(config_map, "video container", settings.advanced.video_container);
 		config_base::extract_config_string(config_map, "custom ffmpeg filters", settings.advanced.ffmpeg_override);
 		config_base::extract_config_value(config_map, "debug", settings.advanced.debug);
 
@@ -194,6 +215,7 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 		config_base::extract_config_value(
 			config_map, "interpolation mask area", settings.advanced.interpolation_mask_area
 		);
+		config_base::extract_config_string(config_map, "rife model", settings.advanced.rife_model);
 
 		config_base::extract_config_value(config_map, "manual svp", settings.advanced.manual_svp);
 		config_base::extract_config_string(config_map, "super string", settings.advanced.super_string);
@@ -262,18 +284,19 @@ nlohmann::json BlurSettings::to_json() const {
 	j["interpolated_fps"] = this->interpolated_fps;
 	j["interpolation_method"] = this->interpolation_method;
 
+	j["pre_interpolate"] = this->pre_interpolate;
+	j["pre_interpolated_fps"] = this->pre_interpolated_fps;
+	j["pre_interpolation_method"] = this->pre_interpolation_method;
+
+	j["deduplicate"] = this->deduplicate;
+	j["deduplicate_method"] = this->deduplicate_method;
+
 	j["timescale"] = this->timescale;
 	j["input_timescale"] = this->input_timescale;
 	j["output_timescale"] = this->output_timescale;
 	j["output_timescale_audio_pitch"] = this->output_timescale_audio_pitch;
 
-	j["filters"] = this->filters;
-	j["brightness"] = this->brightness;
-	j["saturation"] = this->saturation;
-	j["contrast"] = this->contrast;
-
 	j["quality"] = this->quality;
-	j["deduplicate"] = this->deduplicate;
 	j["preview"] = this->preview;
 	j["detailed_filenames"] = this->detailed_filenames;
 	// j["copy_dates"] = this->copy_dates;
@@ -283,11 +306,16 @@ nlohmann::json BlurSettings::to_json() const {
 	j["gpu_encoding"] = this->gpu_encoding;
 	j["gpu_type"] = this->gpu_type;
 
+	j["filters"] = this->filters;
+	j["brightness"] = this->brightness;
+	j["saturation"] = this->saturation;
+	j["contrast"] = this->contrast;
+
 	// advanced
-	// j["video_container"] = this->advanced.video_container;
 	j["deduplicate_range"] = this->advanced.deduplicate_range;
 	j["deduplicate_threshold"] = this->advanced.deduplicate_threshold;
-	j["deduplicate_method"] = this->advanced.deduplicate_method;
+
+	// j["video_container"] = this->advanced.video_container;
 	// j["ffmpeg_override"] = this->advanced.ffmpeg_override;
 	j["debug"] = this->advanced.debug;
 
@@ -299,6 +327,7 @@ nlohmann::json BlurSettings::to_json() const {
 	j["svp_interpolation_algorithm"] = this->advanced.svp_interpolation_algorithm;
 	j["interpolation_blocksize"] = this->advanced.interpolation_blocksize;
 	j["interpolation_mask_area"] = this->advanced.interpolation_mask_area;
+	j["rife_model"] = this->advanced.rife_model;
 
 	j["manual_svp"] = this->advanced.manual_svp;
 	j["super_string"] = this->advanced.super_string;

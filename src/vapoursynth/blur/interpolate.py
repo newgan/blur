@@ -6,6 +6,8 @@ from vapoursynth import core
 import json
 import math
 
+import blur.utils as u
+
 LEGACY_PRESETS = ["weak", "film", "smooth", "animation"]
 NEW_PRESETS = ["default", "test"]
 
@@ -171,3 +173,34 @@ def interpolate_mvtools(
     return core.mv.FlowFPS(
         clip, super, bv, fv, num=new_fps, den=1, blend=blend, ml=max(masking, 1)
     )
+
+
+def interpolate_rife(video, new_fps: int, model_name: str):
+    model_path = u.get_model_path(model_name)
+
+    orig_format = video.format
+    needs_conversion = orig_format.id != vs.RGBS
+
+    if needs_conversion:
+        video = core.resize.Bicubic(
+            video,
+            format=vs.RGBS,
+            matrix_in_s="709" if orig_format.color_family == vs.YUV else None,
+        )
+
+    video = core.rife.RIFE(
+        video,
+        fps_num=new_fps,
+        fps_den=1,
+        model_path=model_path,
+        gpu_id=0,
+    )
+
+    if needs_conversion:
+        video = core.resize.Bicubic(
+            video,
+            format=orig_format.id,
+            matrix_s="709" if orig_format.color_family == vs.YUV else None,
+        )
+
+    return video

@@ -57,10 +57,14 @@ FrameRender::DoRenderResult FrameRender::do_render(RenderCommands render_command
 		bp::pipe vspipe_stdout;
 		bp::ipstream vspipe_stderr;
 
+#ifndef _DEBUG
 		if (settings.advanced.debug) {
+#endif
 			u::log(L"VSPipe command: {} {}", blur.vspipe_path.wstring(), u::join(render_commands.vspipe, L" "));
 			u::log(L"FFmpeg command: {} {}", blur.ffmpeg_path.wstring(), u::join(render_commands.ffmpeg, L" "));
+#ifndef _DEBUG
 		}
+#endif
 
 		bp::environment env = boost::this_process::environment();
 

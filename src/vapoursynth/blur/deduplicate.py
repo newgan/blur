@@ -147,7 +147,7 @@ def interpolate_dupes(
 
 
 def fill_drops_multiple(
-    clip,
+    video: vs.VideoNode,
     threshold: float = 0.1,
     max_frames: int | None = None,
     svp_preset=blur.interpolate.DEFAULT_PRESET,
@@ -157,19 +157,16 @@ def fill_drops_multiple(
     svp_gpu=blur.interpolate.DEFAULT_GPU,
     debug=False,
 ):
-    if not isinstance(clip, vs.VideoNode):
-        raise ValueError("This is not a clip")
-
     def handle_frames(n, f):
         global cur_interp
 
         if f.props["PlaneStatsDiff"] >= threshold or n == 0:
             cur_interp = None
-            return clip
+            return video
 
         # duplicate frame
         interp = interpolate_dupes(
-            clip,
+            video,
             n,
             threshold,
             max_frames,
@@ -189,8 +186,26 @@ def fill_drops_multiple(
 
         return interp
 
-    diffclip = core.std.PlaneStats(clip, clip[0] + clip)
-    return core.std.FrameEval(clip, handle_frames, prop_src=diffclip)
+    orig_format = video.format
+    needs_conversion = (
+        orig_format.id != vs.YUV420P8
+    )  # svp only accepts yv12 (SVSuper: Clip must be YV12)
+
+    if needs_conversion:
+        video = core.resize.Bicubic(video, format=vs.YUV420P8)
+
+    diffclip = core.std.PlaneStats(video, video[0] + video)
+    out = core.std.FrameEval(video, handle_frames, prop_src=diffclip)
+
+    if needs_conversion:
+        # Convert back to original format
+        out = core.resize.Bicubic(
+            out,
+            format=orig_format.id,
+            matrix_s="709" if orig_format.color_family == vs.YUV else None,
+        )
+
+    return out
 
 
 def fill_drops_old(clip, threshold=0.1, debug=False):
