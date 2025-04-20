@@ -362,16 +362,22 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			);
 		}
 
+#ifndef __APPLE__ // see comment
 		ui::add_dropdown(
 			"interpolation method dropdown",
 			container,
 			"interpolation method",
-			{ "svp", "rife" },
+			{
+				"svp",
+				"rife", // plugins broken on mac rn idk why todo: fix when its fixed
+			},
 			settings.interpolation_method,
 			fonts::font
 		);
+#endif
 	}
 
+#ifndef __APPLE__ // see above
 	/*
 	    Pre-interpolation
 	*/
@@ -421,6 +427,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			}
 		}
 	}
+#endif
 
 	/*
 	    Deduplication
@@ -433,7 +440,11 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		"deduplicate method dropdown",
 		container,
 		"deduplicate method",
-		{ "svp", "rife", "old" },
+		{ "svp",
+#ifndef __APPLE__ // rife issue again
+	      "rife",
+#endif
+	      "old" },
 		settings.deduplicate_method,
 		fonts::font
 	);
@@ -686,7 +697,9 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			fonts::font
 		);
 
+#ifndef __APPLE__ // rife issue again
 		ui::add_text_input("rife model", container, settings.advanced.rife_model, "rife model", fonts::font);
+#endif
 
 		/*
 		    Advanced Blur
@@ -988,7 +1001,7 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 				"Quality: rife > svp",
 				"Speed: svp > rife",
 #ifdef __APPLE__
-				"SVP is faster, but requires SVP Manager to be open or a red border will appear",
+				"SVP is faster, but requires that SVP Manager be open or a red border will appear",
 #endif
 			},
 		},

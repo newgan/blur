@@ -17,6 +17,7 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 	output << "- interpolation" << "\n";
 	output << "interpolate: " << (current_settings.interpolate ? "true" : "false") << "\n";
 	output << "interpolated fps: " << current_settings.interpolated_fps << "\n";
+#ifndef __APPLE__ // rife dont worky on mac (see renderer.cpp)
 	output << "interpolation method: " << current_settings.interpolation_method << "\n";
 
 	output << "\n";
@@ -24,6 +25,7 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 	output << "pre-interpolate: " << (current_settings.pre_interpolate ? "true" : "false") << "\n";
 	output << "pre-interpolated fps: " << current_settings.pre_interpolated_fps << "\n";
 	output << "pre-interpolation method: " << current_settings.pre_interpolation_method << "\n";
+#endif
 
 	output << "\n";
 	output << "- deduplication" << "\n";
@@ -89,7 +91,9 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 		output << "svp interpolation algorithm: " << current_settings.advanced.svp_interpolation_algorithm << "\n";
 		output << "interpolation block size: " << current_settings.advanced.interpolation_blocksize << "\n";
 		output << "interpolation mask area: " << current_settings.advanced.interpolation_mask_area << "\n";
+#ifndef __APPLE__ // rife issue again
 		output << "rife model: " << current_settings.advanced.rife_model << "\n";
+#endif
 
 		if (current_settings.advanced.manual_svp) {
 			output << "\n";
@@ -150,11 +154,13 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 
 	config_base::extract_config_value(config_map, "interpolate", settings.interpolate);
 	config_base::extract_config_string(config_map, "interpolated fps", settings.interpolated_fps);
+#ifndef __APPLE__ // rife dont worky on mac (see renderer.cpp)
 	config_base::extract_config_string(config_map, "interpolation method", settings.interpolation_method);
 
 	config_base::extract_config_value(config_map, "pre-interpolate", settings.pre_interpolate);
 	config_base::extract_config_string(config_map, "pre-interpolated fps", settings.pre_interpolated_fps);
 	config_base::extract_config_string(config_map, "pre-interpolation method", settings.pre_interpolation_method);
+#endif
 
 	config_base::extract_config_value(config_map, "deduplicate", settings.deduplicate);
 	config_base::extract_config_value(config_map, "deduplicate method", settings.deduplicate_method);
@@ -213,8 +219,9 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 		config_base::extract_config_value(
 			config_map, "interpolation mask area", settings.advanced.interpolation_mask_area
 		);
+#ifndef __APPLE__ // rife issue again
 		config_base::extract_config_string(config_map, "rife model", settings.advanced.rife_model);
-
+#endif
 		config_base::extract_config_value(config_map, "manual svp", settings.advanced.manual_svp);
 		config_base::extract_config_string(config_map, "super string", settings.advanced.super_string);
 		config_base::extract_config_string(config_map, "vectors string", settings.advanced.vectors_string);
@@ -326,14 +333,15 @@ BlurSettings::ToJsonResult BlurSettings::to_json() const {
 	j["interpolation_blocksize"] = this->advanced.interpolation_blocksize;
 	j["interpolation_mask_area"] = this->advanced.interpolation_mask_area;
 
+#ifndef __APPLE__ // rife issue again
 	std::filesystem::path rife_model_path;
-#if defined(_WIN32)
+#	if defined(_WIN32)
 	rife_model_path = u::get_resources_path() / "lib/models" / this->advanced.rife_model;
-#elif defined(__linux__)
+#	elif defined(__linux__)
 	// todo
-#elif defined(__APPLE__)
+#	elif defined(__APPLE__)
 	rife_model_path = u::get_resources_path() / "models" / this->advanced.rife_model;
-#endif
+#	endif
 
 	if (!std::filesystem::exists(rife_model_path))
 		return {
@@ -342,6 +350,8 @@ BlurSettings::ToJsonResult BlurSettings::to_json() const {
 		};
 
 	j["rife_model"] = rife_model_path;
+#endif
+
 	j["manual_svp"] = this->advanced.manual_svp;
 	j["super_string"] = this->advanced.super_string;
 	j["vectors_string"] = this->advanced.vectors_string;
