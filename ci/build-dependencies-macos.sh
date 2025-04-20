@@ -154,12 +154,12 @@ download_library \
   "libsvpflow2_arm.dylib" \
   "vapoursynth-plugins"
 
-## RIFE ncnn Vulkan library
-echo "Downloading RIFE ncnn Vulkan library..."
-download_library \
-  "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/releases/download/r9_mod_v32/librife_macos_arm64.dylib" \
-  "librife_macos_arm64.dylib" \
-  "vapoursynth-plugins"
+# ## RIFE ncnn Vulkan library
+# echo "Downloading RIFE ncnn Vulkan library..."
+# download_library \
+#   "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/releases/download/r9_mod_v32/librife_macos_arm64.dylib" \
+#   "librife_macos_arm64.dylib" \
+#   "vapoursynth-plugins"
 
 ## python for vapoursynth
 mkdir -p download/python
@@ -224,12 +224,12 @@ meson build
 ninja -C build
 " "build" "vapoursynth-plugins"
 
-# ## rife ncnn vulkan
-# build "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan.git" "--depth 1 --single-branch" "rife-ncnn-vulkan" "
-# git submodule update --init --recursive --depth 1
-# meson build
-# ninja -C build
-# " "build" "vapoursynth-plugins"
+## rife ncnn vulkan
+build "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan.git" "--depth 1 --single-branch" "rife-ncnn-vulkan" "
+git submodule update --init --recursive --depth 1
+meson build
+ninja -C build
+" "build" "vapoursynth-plugins"
 
 # Define model downloads
 echo "Starting model downloads..."
