@@ -216,17 +216,17 @@ meson setup build
 ninja -C build
 " "build" "vapoursynth-plugins"
 
-PATH="/opt/homebrew/opt/llvm@12/bin:$PATH"
-
-## akarin
-build "https://github.com/AkarinVS/vapoursynth-plugin.git" "--depth 1 --single-branch" "akarin" "
+## rife ncnn vulkan
+build "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan.git" "--depth 1 --single-branch" "rife-ncnn-vulkan" "
+git submodule update --init --recursive --depth 1
 meson build
 ninja -C build
 " "build" "vapoursynth-plugins"
 
-## rife ncnn vulkan
-build "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan.git" "--depth 1 --single-branch" "rife-ncnn-vulkan" "
-git submodule update --init --recursive --depth 1
+PATH="/opt/homebrew/opt/llvm@12/bin:$PATH"
+
+## akarin
+build "https://github.com/AkarinVS/vapoursynth-plugin.git" "--depth 1 --single-branch" "akarin" "
 meson build
 ninja -C build
 " "build" "vapoursynth-plugins"
