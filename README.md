@@ -100,14 +100,29 @@ Blur supports rendering from frameservers. This means you can avoid having to ru
 ### interpolation
 
 - interpolate - whether or not the input video file will be interpolated to a higher fps
-- interpolated fps - if interpolate is enabled, this is the fps that the input file will be interpolated to (before blending)
+- interpolated fps - if interpolate is enabled, this is the fps that the input file will be interpolated to (before blurring). can be a set fps number or a multiplier (append x to end e.g. `5x`)
+- interpolation method - method used for interpolation:
+  - Quality: rife > svp
+  - Speed: svp > rife
+  - Note: On macOS, SVP requires SVP Manager to be open or a red border will appear
+
+### pre-interpolation
+
+- pre-interpolation - enable pre-interpolation using a more accurate but slower AI model before main interpolation
+- pre-interpolated fps - FPS to pre-interpolate input video to (before blurring). can be a set fps number or a multiplier (append x to end e.g. `5x`)
 
 ### rendering
 
-- quality - [crf](https://trac.ffmpeg.org/wiki/Encode/H.264#crf) of the output video (qp if using GPU encoding)
-- deduplicate - removes duplicate frames and generates new interpolated frames to take their place
+- quality - [crf](https://trac.ffmpeg.org/wiki/Encode/H.264#crf) of the output video (qp if using GPU encoding) - (0 = lossless quality, 51 = really bad)
+- deduplicate - removes duplicate frames and generates new interpolated frames to take their place. fixes 'unsmooth' looking output caused by stuttering in recordings
+- deduplicate range - amount of frames beyond the current frame to look for unique frames when deduplicating. make it higher if your footage is at a lower FPS than it should be (e.g. choppy 120fps gameplay recorded at 240fps), lower it if your blurred footage starts blurring static elements such as menu screens
+- deduplicate threshold - threshold of movement that triggers deduplication. turn on debug in advanced and render a video to embed text showing the movement in each frame
+- deduplicate method - method used for deduplication:
+  - Quality: rife > svp
+  - Speed: old > svp > rife
 - preview - opens a render preview window
 - detailed filenames - adds blur settings to generated filenames
+- copy dates - copies over the modified date from the input file to the output file
 
 ### gpu acceleration
 
@@ -130,7 +145,7 @@ Blur supports rendering from frameservers. This means you can avoid having to ru
 
 ### advanced rendering
 
-- video container - the output video container
+- video container - the output video container format (e.g. `mp4`, `mkv`, `avi`)
 - custom ffmpeg filters - custom ffmpeg filters to be used when rendering (replaces gpu & quality options)
 - debug - shows debug window, prints commands used by blur
 
