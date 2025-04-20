@@ -41,6 +41,30 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 		ffmpeg_path = (blur.resources_path / "ffmpeg/ffmpeg").wstring();
 		ffprobe_path = (blur.resources_path / "ffmpeg/ffprobe").wstring();
 #endif
+
+		const static std::string manual_troubleshooting_info = "Try redownloading the latest installer.";
+
+		// didn't use installer, check if dependencies are installed
+		if (!std::filesystem::exists(ffmpeg_path)) {
+			return {
+				.success = false,
+				.error_message = "FFmpeg could not be found. " + manual_troubleshooting_info,
+			};
+		}
+
+		if (!std::filesystem::exists(ffprobe_path)) {
+			return {
+				.success = false,
+				.error_message = "FFprobe could not be found. " + manual_troubleshooting_info,
+			};
+		}
+
+		if (!std::filesystem::exists(vspipe_path)) {
+			return {
+				.success = false,
+				.error_message = "VapourSynth could not be found. " + manual_troubleshooting_info,
+			};
+		}
 	}
 	else {
 		const static std::string manual_troubleshooting_info =
