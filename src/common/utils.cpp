@@ -301,10 +301,233 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 	// 1. It must have a video stream
 	// 2. Either it has a non-zero duration or it's an animated format
 	// Static images will typically have duration=0 or N/A
-	bool is_animated_format =
-		codec_name.find("gif") != std::string::npos || codec_name.find("webp") != std::string::npos;
-
+	bool is_animated_format = u::contains(codec_name, "gif") || u::contains(codec_name, "webp");
 	info.has_video_stream = has_video_stream && (duration > 0.1 || is_animated_format);
 
 	return info;
+}
+
+static bool init_hw = false;
+std::set<std::string> hw_accels;
+std::set<std::string> hw_encoders;
+
+std::vector<u::EncodingDevice> u::get_hardware_encoding_devices() {
+	namespace bp = boost::process;
+
+	static std::vector<EncodingDevice> devices;
+
+	if (init_hw)
+		return devices;
+	else
+		init_hw = true;
+
+	// First check available hardware acceleration methods
+	bp::ipstream pipe_stream;
+	bp::child c(
+		blur.ffmpeg_path.wstring(),
+		"-v",
+		"error",
+		"-hide_banner",
+		"-hwaccels",
+		bp::std_out > pipe_stream,
+		bp::std_err > bp::null
+#ifdef _WIN32
+		,
+		bp::windows::create_no_window
+#endif
+	);
+
+	std::string line;
+
+	bool in_accel_section = false;
+
+	while (pipe_stream && std::getline(pipe_stream, line)) {
+		boost::algorithm::trim(line);
+
+		if (line == "Hardware acceleration methods:") {
+			in_accel_section = true;
+			continue;
+		}
+
+		if (in_accel_section && !line.empty()) {
+			hw_accels.insert(line);
+		}
+	}
+
+	c.wait();
+
+	// Now check specific encoders
+	bp::ipstream encoder_stream;
+	bp::child c2(
+		blur.ffmpeg_path.wstring(),
+		"-v",
+		"error",
+		"-hide_banner",
+		"-encoders",
+		bp::std_out > encoder_stream,
+		bp::std_err > bp::null
+#ifdef _WIN32
+		,
+		bp::windows::create_no_window
+#endif
+	);
+
+	bool in_encoder_section = false;
+
+	while (encoder_stream && std::getline(encoder_stream, line)) {
+		boost::algorithm::trim(line);
+
+		if (line == "------") {
+			in_encoder_section = true;
+			continue;
+		}
+
+		if (in_encoder_section && !line.empty() && u::contains(line, "V....D")) {
+			auto tmp = u::split_string(line, "V....D ")[1];
+			auto encoder = u::split_string(tmp, " ")[0];
+			hw_encoders.insert(encoder);
+		}
+	}
+
+	c2.wait();
+
+	// Check for NVIDIA (NVENC)
+	bool has_nvidia = false;
+	if (u::contains(hw_accels, "cuda") || u::contains(hw_accels, "nvenc") || u::contains(hw_accels, "nvdec")) {
+		for (const auto& encoder : hw_encoders) {
+			if (u::contains(encoder, "nvenc")) {
+				EncodingDevice device;
+				device.type = "nvidia";
+				device.method = "nvenc";
+				device.is_primary = true;
+				devices.push_back(device);
+				break;
+			}
+		}
+	}
+
+	// Check for AMD (AMF)
+	bool has_amd = false;
+	for (const auto& encoder : hw_encoders) {
+		if (u::contains(encoder, "amf")) {
+			has_amd = true;
+			EncodingDevice device;
+			device.type = "amd";
+			device.method = "amf";
+			device.is_primary = devices.empty(); // Primary if no other device yet
+			devices.push_back(device);
+			break;
+		}
+	}
+
+	// Check for Intel (QSV)
+	if (u::contains(hw_accels, "qsv")) {
+		for (const auto& encoder : hw_encoders) {
+			if (u::contains(encoder, "qsv")) {
+				EncodingDevice device;
+				device.type = "intel";
+				device.method = "qsv";
+				device.is_primary = devices.empty(); // Primary if no other device yet
+				devices.push_back(device);
+				break;
+			}
+		}
+	}
+
+	// Check for Mac (VideoToolbox)
+	bool has_mac = false;
+#ifdef __APPLE__
+	for (const auto& encoder : hw_encoders) {
+		if (u::contains(encoder, "videotoolbox")) {
+			has_mac = true;
+			EncodingDevice device;
+			device.type = "mac";
+			device.method = "videotoolbox";
+			device.is_primary = devices.empty(); // Primary if no other device yet
+			devices.push_back(device);
+			break;
+		}
+	}
+#endif
+
+	return devices;
+}
+
+std::vector<std::string> u::get_available_gpu_types() {
+	auto devices = get_hardware_encoding_devices();
+	std::vector<std::string> gpu_types;
+
+	for (const auto& device : devices) {
+		gpu_types.push_back(device.type);
+	}
+
+	return gpu_types;
+}
+
+std::string u::get_primary_gpu_type() {
+	auto devices = get_hardware_encoding_devices();
+
+	// First try to find device marked as primary
+	for (const auto& device : devices) {
+		if (device.is_primary) {
+			return device.type;
+		}
+	}
+
+	// If no primary device found but we have devices, return the first one
+	if (!devices.empty()) {
+		return devices[0].type;
+	}
+
+	return "cpu";
+}
+
+std::vector<std::string> u::get_codecs(bool gpu_encoding, const std::string& gpu_type) {
+	if (!init_hw)
+		get_hardware_encoding_devices();
+
+	std::vector<std::string> available_codecs;
+
+	if (gpu_encoding) {
+		if (gpu_type == "nvidia") {
+			if (hw_encoders.contains("h264_nvenc"))
+				available_codecs.emplace_back("h264");
+			if (hw_encoders.contains("hevc_nvenc"))
+				available_codecs.emplace_back("h265");
+			if (hw_encoders.contains("av1_nvenc"))
+				available_codecs.emplace_back("av1");
+		}
+		else if (gpu_type == "amd") {
+			if (hw_encoders.contains("h264_amf"))
+				available_codecs.emplace_back("h264");
+			if (hw_encoders.contains("hevc_amf"))
+				available_codecs.emplace_back("h265");
+			if (hw_encoders.contains("av1_amf"))
+				available_codecs.emplace_back("av1");
+		}
+		else if (gpu_type == "intel") {
+			if (hw_encoders.contains("h264_qsv"))
+				available_codecs.emplace_back("h264");
+			if (hw_encoders.contains("hevc_qsv"))
+				available_codecs.emplace_back("h265");
+			if (hw_encoders.contains("av1_qsv"))
+				available_codecs.emplace_back("av1");
+		}
+		else if (gpu_type == "mac") {
+			if (hw_encoders.contains("h264_video_toolbox"))
+				available_codecs.emplace_back("h264");
+			if (hw_encoders.contains("hevc_videotoolbox"))
+				available_codecs.emplace_back("h265");
+			if (hw_encoders.contains("prores_video_toolbox"))
+				available_codecs.emplace_back("prores");
+			if (hw_encoders.contains("av1_video_toolbox")) // is ts real
+				available_codecs.emplace_back("av1");
+		}
+	}
+	else {
+		// Fallback if GPU encoding isn't enabled: standard software codecs
+		available_codecs = { "h264", "h265", "av1", "vp9" };
+	}
+
+	return available_codecs;
 }

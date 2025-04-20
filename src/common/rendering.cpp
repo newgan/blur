@@ -224,7 +224,7 @@ RenderCommandsResult Render::build_render_commands() {
 	}
 
 	if (!m_settings.advanced.ffmpeg_override.empty()) {
-		// Split override string into individual arguments
+		// split override string into individual arguments
 		std::wistringstream iss(u::towstring(m_settings.advanced.ffmpeg_override));
 		std::wstring token;
 		while (iss >> token) {
@@ -232,7 +232,6 @@ RenderCommandsResult Render::build_render_commands() {
 		}
 	}
 	else {
-		// Video format
 		if (m_settings.gpu_encoding) {
 			std::string gpu_type = u::to_lower(m_settings.gpu_type);
 			std::string codec = u::to_lower(m_settings.codec.empty() ? "h264" : m_settings.codec);

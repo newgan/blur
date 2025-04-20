@@ -120,11 +120,9 @@ config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config
 	}
 
 	if (!u::contains(SVP_INTERPOLATION_ALGORITHMS, config.advanced.svp_interpolation_algorithm)) {
-		errors.insert(
-			std::format(
-				"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
-			)
-		);
+		errors.insert(std::format(
+			"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
+		));
 
 		if (fix)
 			config.advanced.svp_interpolation_algorithm = DEFAULT_CONFIG.advanced.svp_interpolation_algorithm;
@@ -178,6 +176,8 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 	config_base::extract_config_value(config_map, "gpu interpolation", settings.gpu_interpolation);
 	config_base::extract_config_value(config_map, "gpu encoding", settings.gpu_encoding);
 	config_base::extract_config_string(config_map, "gpu type (nvidia/amd/intel)", settings.gpu_type);
+
+	settings.verify_gpu_encoding();
 
 	config_base::extract_config_value(config_map, "timescale", settings.timescale);
 	config_base::extract_config_value(config_map, "input timescale", settings.input_timescale);
@@ -371,4 +371,29 @@ BlurSettings::ToJsonResult BlurSettings::to_json() const {
 		.success = true,
 		.json = j,
 	};
+}
+
+BlurSettings::BlurSettings() {
+	verify_gpu_encoding();
+}
+
+auto& blur_copy = blur; // cause BlurSettings.blur is a thing
+
+void BlurSettings::verify_gpu_encoding() {
+	if (!blur_copy.initialised)
+		return;
+
+	if (gpu_type.empty() || !u::contains(u::get_available_gpu_types(), gpu_type)) {
+		gpu_type = u::get_primary_gpu_type();
+	}
+
+	if (gpu_type == "cpu") {
+		gpu_encoding = false;
+	}
+
+	auto available_codecs = u::get_codecs(gpu_encoding, gpu_type);
+
+	if (!u::contains(available_codecs, codec)) {
+		codec = "h264";
+	}
 }

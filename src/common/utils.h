@@ -154,4 +154,16 @@ namespace u {
 	};
 
 	VideoInfo get_video_info(const std::filesystem::path& path);
+
+	struct EncodingDevice {
+		std::string type;   // "nvidia", "amd", "intel", "mac"
+		std::string method; // Specific encoding method (e.g., "nvenc", "amf", "qsv", "videotoolbox")
+		bool is_primary;    // Whether this is likely the primary GPU
+	};
+
+	std::vector<EncodingDevice> get_hardware_encoding_devices();
+	std::vector<std::string> get_available_gpu_types();
+	std::string get_primary_gpu_type();
+
+	std::vector<std::string> get_codecs(bool gpu_encoding, const std::string& gpu_type);
 }

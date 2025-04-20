@@ -454,44 +454,13 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	*/
 	section_component("rendering");
 
-	std::vector<std::string> available_codecs;
-	if (settings.gpu_encoding) {
-		std::string gpu_type = u::to_lower(settings.gpu_type);
-
-		available_codecs.emplace_back("h264");
-
-		if (gpu_type == "nvidia") {
-			available_codecs.emplace_back("h265");
-			available_codecs.emplace_back("av1");
-		}
-		else if (gpu_type == "amd") {
-			available_codecs.emplace_back("h265");
-			available_codecs.emplace_back("av1");
-		}
-		else if (gpu_type == "intel") {
-			available_codecs.emplace_back("h265");
-			available_codecs.emplace_back("av1");
-		}
-		else if (gpu_type == "mac") {
-			available_codecs.emplace_back("h265");
-			available_codecs.emplace_back("prores");
-			available_codecs.emplace_back("av1");
-		}
-	}
-	else {
-		available_codecs = { "h264", "h265", "av1", "vp9" };
-	}
-
-	// if the current selected codec isn't in available_codecs, default to h264
-	if (!u::contains(available_codecs, settings.codec)) {
-		settings.codec = "h264";
-	}
+	settings.verify_gpu_encoding();
 
 	ui::add_dropdown(
 		"codec dropdown",
 		container,
 		std::format("codec ({})", settings.gpu_encoding ? settings.gpu_type : "cpu"),
-		available_codecs,
+		u::get_codecs(settings.gpu_encoding, settings.gpu_type),
 		settings.codec,
 		fonts::font
 	);
@@ -553,7 +522,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 				"gpu encoding type dropdown",
 				container,
 				"gpu encoding - gpu type",
-				{ "nvidia", "amd", "intel", "mac" },
+				u::get_available_gpu_types(),
 				settings.gpu_type,
 				fonts::font
 			);
