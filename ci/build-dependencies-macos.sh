@@ -67,6 +67,28 @@ download_library() {
   cd ../..
 }
 
+download_model_files() {
+  local base_url="$1"
+  local model_name="$2"
+  local file_list=("${@:3}")
+
+  echo "Downloading model: $model_name"
+  local model_dir="$out_dir/models/$model_name"
+
+  mkdir -p "$model_dir"
+  echo "Created directory: $model_dir"
+
+  for file in "${file_list[@]}"; do
+    local file_url="$base_url/$file"
+    local output_path="$model_dir/$file"
+
+    echo "Downloading $file_url to $output_path"
+    wget -q "$file_url" -O "$output_path"
+  done
+
+  echo "Model $model_name download completed"
+}
+
 build() {
   local repo="$1"
   local pull_args="$2"
@@ -118,7 +140,7 @@ download_zip \
 download_zip \
   "https://ffmpeg.martin-riedl.de/download/macos/arm64/1744739657_N-119265-g0040d7e608/ffprobe.zip" \
   "ffprobe" \
-  "ffprobe"
+  "ffmpeg"
 
 ## svpflow
 echo "Downloading SVPFlow libraries..."
@@ -208,6 +230,17 @@ ninja -C build
 # meson build
 # ninja -C build
 # " "build" "vapoursynth-plugins"
+
+# Define model downloads
+echo "Starting model downloads..."
+
+# Download RIFE models
+download_model_files \
+  "https://raw.githubusercontent.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/a2579e656dac7909a66e7da84578a2f80ccba41c/models/rife-v4.26_ensembleFalse" \
+  "rife-v4.26_ensembleFalse" \
+  "flownet.bin" "flownet.param"
+
+echo "Model downloads completed"
 
 echo "done"
 
