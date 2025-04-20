@@ -175,8 +175,8 @@ def interpolate_mvtools(
     )
 
 
-def interpolate_rife(video, new_fps: int, model_name: str):
-    model_path = u.get_model_path(model_name)
+def interpolate_rife(video, new_fps: int, model_path: str):
+    u.check_model_path(model_path)
 
     orig_format = video.format
     needs_conversion = orig_format.id != vs.RGBS

@@ -94,7 +94,7 @@ if settings["deduplicate"] and settings["deduplicate_range"] != 0:
         case _:
             video = blur.deduplicate_rife.fill_drops_rife(
                 video,
-                model_name=settings["rife_model"],
+                model_path=settings["rife_model"],
                 threshold=deduplicate_threshold,
                 max_frames=deduplicate_range,
                 debug=settings["debug"],
@@ -134,7 +134,7 @@ if settings["interpolate"]:
             print(f"pre-interpolating to {pre_interpolated_fps}")
 
             video = blur.interpolate.interpolate_rife(
-                video, pre_interpolated_fps, model_name=settings["rife_model"]
+                video, pre_interpolated_fps, model_path=settings["rife_model"]
             )
 
             fps_added = video.fps - old_fps
@@ -151,7 +151,7 @@ if settings["interpolate"]:
         match settings["interpolation_method"]:
             case "rife":
                 video = blur.interpolate.interpolate_rife(
-                    video, interpolated_fps, model_name=settings["rife_model"]
+                    video, interpolated_fps, model_path=settings["rife_model"]
                 )
 
             # case "mvtools":

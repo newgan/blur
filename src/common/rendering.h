@@ -7,6 +7,12 @@ struct RenderCommands {
 	std::vector<std::wstring> ffmpeg;
 };
 
+struct RenderCommandsResult {
+	bool success;
+	std::string error_message;
+	std::optional<RenderCommands> commands;
+};
+
 struct RenderResult {
 	bool success;
 	std::string error_message;
@@ -49,7 +55,7 @@ private:
 
 	void build_output_filename();
 
-	RenderCommands build_render_commands();
+	RenderCommandsResult build_render_commands();
 
 	void update_progress(int current_frame, int total_frames);
 

@@ -140,13 +140,21 @@ bool Render::remove_temp_path() {
 }
 
 // NOLINTBEGIN(readability-function-cognitive-complexity) todo: refactor
-RenderCommands Render::build_render_commands() {
+RenderCommandsResult Render::build_render_commands() {
 	RenderCommands commands;
 
 	std::wstring path_string = m_video_path.wstring();
 	std::ranges::replace(path_string, '\\', '/');
 
 	std::wstring blur_script_path = (blur.resources_path / "lib/blur.py").wstring();
+
+	auto settings_json = m_settings.to_json();
+	if (!settings_json.success || !settings_json.json) {
+		return {
+			.success = false,
+			.error_message = settings_json.error_message,
+		};
+	}
 
 	// Build vspipe command
 	commands.vspipe = { L"-p",
@@ -155,7 +163,7 @@ RenderCommands Render::build_render_commands() {
 		                L"-a",
 		                L"video_path=" + path_string,
 		                L"-a",
-		                L"settings=" + u::towstring(m_settings.to_json().dump()),
+		                L"settings=" + u::towstring(settings_json.json->dump()),
 #if defined(__APPLE__)
 		                L"-a",
 		                std::format(L"macos_bundled={}", blur.used_installer ? L"true" : L"false"),
@@ -205,16 +213,14 @@ RenderCommands Render::build_render_commands() {
 
 	if (!audio_filters.empty()) {
 		commands.ffmpeg.emplace_back(L"-af");
-		commands.ffmpeg.push_back(
-			std::accumulate(
-				std::next(audio_filters.begin()),
-				audio_filters.end(),
-				audio_filters[0],
-				[](const std::wstring& a, const std::wstring& b) {
-					return a + L"," + b;
-				}
-			)
-		);
+		commands.ffmpeg.push_back(std::accumulate(
+			std::next(audio_filters.begin()),
+			audio_filters.end(),
+			audio_filters[0],
+			[](const std::wstring& a, const std::wstring& b) {
+				return a + L"," + b;
+			}
+		));
 	}
 
 	if (!m_settings.advanced.ffmpeg_override.empty()) {
@@ -303,7 +309,10 @@ RenderCommands Render::build_render_commands() {
 		);
 	}
 
-	return commands;
+	return {
+		.success = true,
+		.commands = commands,
+	};
 }
 
 // NOLINTEND(readability-function-cognitive-complexity)
@@ -518,9 +527,15 @@ RenderResult Render::render() {
 	}
 
 	// render
-	RenderCommands render_commands = build_render_commands();
+	auto render_commands_res = build_render_commands();
+	if (!render_commands_res.success || !render_commands_res.commands) {
+		return {
+			.success = false,
+			.error_message = render_commands_res.error_message,
+		};
+	}
 
-	auto render_res = do_render(render_commands);
+	auto render_res = do_render(*render_commands_res.commands);
 
 	if (render_res.stopped) {
 		u::log(L"Stopped render '{}'", m_video_name);

@@ -115,11 +115,9 @@ config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config
 	}
 
 	if (!u::contains(SVP_INTERPOLATION_ALGORITHMS, config.advanced.svp_interpolation_algorithm)) {
-		errors.insert(
-			std::format(
-				"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
-			)
-		);
+		errors.insert(std::format(
+			"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
+		));
 
 		if (fix)
 			config.advanced.svp_interpolation_algorithm = DEFAULT_CONFIG.advanced.svp_interpolation_algorithm;
@@ -272,7 +270,7 @@ BlurSettings config_blur::get_config(const std::filesystem::path& config_filepat
 	return parse(cfg_path);
 }
 
-nlohmann::json BlurSettings::to_json() const {
+BlurSettings::ToJsonResult BlurSettings::to_json() const {
 	nlohmann::json j;
 
 	j["blur"] = this->blur;
@@ -327,12 +325,30 @@ nlohmann::json BlurSettings::to_json() const {
 	j["svp_interpolation_algorithm"] = this->advanced.svp_interpolation_algorithm;
 	j["interpolation_blocksize"] = this->advanced.interpolation_blocksize;
 	j["interpolation_mask_area"] = this->advanced.interpolation_mask_area;
-	j["rife_model"] = this->advanced.rife_model;
 
+	std::filesystem::path rife_model_path;
+#if defined(_WIN32)
+	rife_model_path = u::get_resources_path() / "lib/models" / this->advanced.rife_model;
+#elif defined(__linux__)
+	// todo
+#elif defined(__APPLE__)
+	rife_model_path = u::get_resources_path() / "models" / this->advanced.rife_model;
+#endif
+
+	if (!std::filesystem::exists(rife_model_path))
+		return {
+			.success = false,
+			.error_message = std::format("RIFE model '{}' could not be found", this->advanced.rife_model),
+		};
+
+	j["rife_model"] = rife_model_path;
 	j["manual_svp"] = this->advanced.manual_svp;
 	j["super_string"] = this->advanced.super_string;
 	j["vectors_string"] = this->advanced.vectors_string;
 	j["smooth_string"] = this->advanced.smooth_string;
 
-	return j;
+	return {
+		.success = true,
+		.json = j,
+	};
 }

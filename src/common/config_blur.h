@@ -99,7 +99,13 @@ public:
 		       gpu_type == other.gpu_type && override_advanced == other.override_advanced && advanced == other.advanced;
 	}
 
-	[[nodiscard]] nlohmann::json to_json() const;
+	struct ToJsonResult {
+		bool success;
+		std::optional<nlohmann::json> json;
+		std::string error_message;
+	};
+
+	[[nodiscard]] ToJsonResult to_json() const;
 };
 
 namespace config_blur {

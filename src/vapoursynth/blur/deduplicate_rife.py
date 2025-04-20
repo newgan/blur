@@ -99,12 +99,12 @@ def interpolate_dupes(
 
 def fill_drops_rife(
     clip: vs.VideoNode,
-    model_name: str,
+    model_path: str,
     threshold: float = 0.1,
     max_frames: int | None = None,
     debug=False,
 ):
-    model_path = u.get_model_path(model_name)
+    u.check_model_path(model_path)
 
     def handle_frames(n, f):
         global cur_interp

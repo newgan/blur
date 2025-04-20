@@ -1,14 +1,22 @@
 ﻿#include "rendering_frame.h"
 
-RenderCommands FrameRender::build_render_commands(
+RenderCommandsResult FrameRender::build_render_commands(
 	const std::filesystem::path& input_path, const std::filesystem::path& output_path, const BlurSettings& settings
 ) {
-	RenderCommands commands;
-
 	std::wstring path_string = input_path.wstring();
 	std::ranges::replace(path_string, '\\', '/');
 
 	std::wstring blur_script_path = (blur.resources_path / "lib/blur.py").wstring();
+
+	auto settings_json = settings.to_json();
+	if (!settings_json.success || !settings_json.json) {
+		return {
+			.success = false,
+			.error_message = settings_json.error_message,
+		};
+	}
+
+	RenderCommands commands;
 
 	// Build vspipe command
 	commands.vspipe = { L"-p",
@@ -17,7 +25,7 @@ RenderCommands FrameRender::build_render_commands(
 		                L"-a",
 		                L"video_path=" + path_string,
 		                L"-a",
-		                L"settings=" + u::towstring(settings.to_json().dump()),
+		                L"settings=" + u::towstring(settings_json.json->dump()),
 #if defined(__APPLE__)
 		                L"-a",
 		                std::format(L"macos_bundled={}", blur.used_installer ? L"true" : L"false"),
@@ -44,7 +52,10 @@ RenderCommands FrameRender::build_render_commands(
 	};
 	// clang-format on
 
-	return commands;
+	return {
+		.success = true,
+		.commands = commands,
+	};
 }
 
 FrameRender::DoRenderResult FrameRender::do_render(RenderCommands render_commands, const BlurSettings& settings) {
@@ -198,9 +209,15 @@ FrameRender::RenderResponse FrameRender::render(const std::filesystem::path& inp
 	std::filesystem::path output_path = m_temp_path / "render.png";
 
 	// render
-	RenderCommands render_commands = build_render_commands(input_path, output_path, settings);
+	auto render_commands_res = build_render_commands(input_path, output_path, settings);
+	if (!render_commands_res.success || !render_commands_res.commands) {
+		return {
+			.success = false,
+			.error_message = render_commands_res.error_message,
+		};
+	}
 
-	auto render_res = do_render(render_commands, settings);
+	auto render_res = do_render(*render_commands_res.commands, settings);
 
 	return {
 		.success = render_res.success,

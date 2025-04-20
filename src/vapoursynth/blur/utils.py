@@ -16,10 +16,8 @@ def coalesce(value, fallback):
     return fallback if value is None else value
 
 
-def get_model_path(model_name: str):
-    rife_model_path = Path(__file__).parent / f"../models/{model_name}"
+def check_model_path(rife_model_path: str):
+    path = Path(rife_model_path)
 
-    if not rife_model_path.exists():
-        raise BlurException(f"RIFE model not found at {rife_model_path}")
-
-    return rife_model_path
+    if not path.exists():
+        raise BlurException(f"RIFE model not found at {path}")
