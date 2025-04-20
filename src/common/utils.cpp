@@ -244,37 +244,67 @@ std::filesystem::path u::get_settings_path() {
 	return settings_path;
 }
 
-bool u::is_video_file(const std::filesystem::path& path) {
+u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 	namespace bp = boost::process;
-
-	std::stringstream output;
-	std::stringstream error;
 
 	bp::ipstream pipe_stream;
 	bp::child c(
-		blur.ffmpeg_path.wstring(),
-		"-i",
+		blur.ffprobe_path.wstring(),
+		"-v",
+		"error",
+		"-show_entries",
+		"stream=codec_type,codec_name,duration,color_range",
+		"-show_entries",
+		"format=duration",
+		"-of",
+		"default=noprint_wrappers=1",
 		path.wstring(),
-		bp::std_out > bp::null,
-		bp::std_err > pipe_stream
+		bp::std_out > pipe_stream,
+		bp::std_err > bp::null
 #ifdef _WIN32
 		,
 		bp::windows::create_no_window
 #endif
 	);
 
-	std::string line;
-	bool has_video_stream = false;
+	VideoInfo info;
 
+	bool has_video_stream = false;
+	double duration = 0.0;
+	std::string codec_name;
+
+	std::string line;
 	while (pipe_stream && std::getline(pipe_stream, line)) {
-		boost::algorithm::to_lower(line);
-		if (line.find("video:") != std::string::npos) {
+		boost::algorithm::trim(line);
+
+		if (line.find("codec_type=video") != std::string::npos) {
 			has_video_stream = true;
-			break;
+		}
+		else if (line.find("codec_name=") != std::string::npos) {
+			codec_name = line.substr(line.find('=') + 1);
+		}
+		else if (line.find("duration=") != std::string::npos) {
+			try {
+				duration = std::stod(line.substr(line.find('=') + 1));
+			}
+			catch (...) {
+				duration = 0.0;
+			}
+		}
+		else if (line.find("color_range=") != std::string::npos) {
+			info.color_range = line.substr(line.find('=') + 1);
 		}
 	}
 
-	c.wait(); // wait for ffmpeg to finish
+	c.wait();
 
-	return has_video_stream;
+	// 1. It must have a video stream
+	// 2. Either it has a non-zero duration or it's an animated format
+	// Static images will typically have duration=0 or N/A
+	bool is_animated_format =
+		codec_name.find("gif") != std::string::npos || codec_name.find("webp") != std::string::npos;
+
+	info.has_video_stream = has_video_stream && (duration > 0.1 || is_animated_format);
+
+	return info;
 }

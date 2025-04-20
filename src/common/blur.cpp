@@ -33,11 +33,13 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 #if defined(_WIN32)
 		vspipe_path = (blur.resources_path / "lib\\vapoursynth\\vspipe.exe").wstring();
 		ffmpeg_path = (blur.resources_path / "lib\\ffmpeg\\ffmpeg.exe").wstring();
+		ffprobe_path = (blur.resources_path / "lib\\ffprobe\\ffprobe.exe").wstring();
 #elif defined(__linux__)
 		// todo
 #elif defined(__APPLE__)
 		vspipe_path = (blur.resources_path / "vapoursynth/vspipe").wstring();
 		ffmpeg_path = (blur.resources_path / "ffmpeg/ffmpeg").wstring();
+		ffprobe_path = (blur.resources_path / "ffprobe/ffprobe").wstring();
 #endif
 	}
 	else {
@@ -52,6 +54,16 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 			return {
 				.success = false,
 				.error_message = "FFmpeg could not be found. " + manual_troubleshooting_info,
+			};
+		}
+
+		if (auto _ffprobe_path = u::get_program_path("ffprobe")) {
+			ffprobe_path = *_ffprobe_path;
+		}
+		else {
+			return {
+				.success = false,
+				.error_message = "FFprobe could not be found. " + manual_troubleshooting_info,
 			};
 		}
 

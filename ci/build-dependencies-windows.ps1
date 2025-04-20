@@ -15,7 +15,7 @@ function Download-File {
         [string]$Url,
         [string]$OutFile
     )
-    
+
     Write-Host "Downloading $Url to $OutFile"
     $webClient = New-Object System.Net.WebClient
     $webClient.DownloadFile($Url, $OutFile)
@@ -29,7 +29,7 @@ function Extract-Files {
         [string[]]$FilePatterns,
         [string]$DestinationPath
     )
-    
+
     if (-not (Get-Command "7z" -ErrorAction SilentlyContinue)) {
         Write-Warning "7z not found. Please install 7-Zip and make sure it's in your PATH."
         Write-Warning "7z file is located at: $ArchivePath"
@@ -38,11 +38,11 @@ function Extract-Files {
 
     $tempDir = [System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($ArchivePath), "temp-extract-" + [System.IO.Path]::GetRandomFileName())
     New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
-    
+
     try {
         # Extract archive
         & 7z x $ArchivePath -o"$tempDir" -y
-        
+
         foreach ($pattern in $FilePatterns) {
             $filePath = Join-Path $tempDir $pattern
             if (Test-Path $filePath) {
@@ -117,9 +117,12 @@ foreach ($plugin in $plugins) {
 }
 
 # Download and process FFmpeg
-$ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z"
+$ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-2025-04-14-git-3b2a9410ef-essentials_build.7z"
 $ffmpegArchive = Join-Path $ffmpegDir "ffmpeg-git-essentials.7z"
 Download-File -Url $ffmpegUrl -OutFile $ffmpegArchive
-Extract-Files -ArchivePath $ffmpegArchive -FilePatterns @("ffmpeg-2025-03-31-git-35c091f4b7-essentials_build\bin\ffmpeg.exe") -DestinationPath $ffmpegDir
+Extract-Files -ArchivePath $ffmpegArchive -FilePatterns @(
+    "ffmpeg-2025-04-14-git-3b2a9410ef-essentials_build\bin\ffmpeg.exe",
+    "ffmpeg-2025-04-14-git-3b2a9410ef-essentials_build\bin\ffprobe.exe"
+) -DestinationPath $ffmpegDir
 
 Write-Host "Done"

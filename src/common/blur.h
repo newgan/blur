@@ -19,6 +19,7 @@ public:
 	bool used_installer = false;
 
 	std::filesystem::path ffmpeg_path;
+	std::filesystem::path ffprobe_path;
 	std::filesystem::path vspipe_path;
 
 	struct InitialisationResponse {

@@ -85,9 +85,15 @@ build() {
 # downloads
 ## ffmpeg (static)
 download_zip \
-  "https://ffmpeg.martin-riedl.de/download/macos/arm64/1743700936_N-119137-g46762c8b82/ffmpeg.zip" \
+  "https://ffmpeg.martin-riedl.de/download/macos/arm64/1744739657_N-119265-g0040d7e608/ffmpeg.zip" \
   "ffmpeg" \
   "ffmpeg"
+
+## ffprobe (static) todo: shared? for smaller size?
+download_zip \
+  "https://ffmpeg.martin-riedl.de/download/macos/arm64/1744739657_N-119265-g0040d7e608/ffprobe.zip" \
+  "ffprobe" \
+  "ffprobe"
 
 ## svpflow
 echo "Downloading SVPFlow libraries..."

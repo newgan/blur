@@ -101,7 +101,8 @@ void tasks::add_files(const std::vector<std::wstring>& path_strs) {
 		if (path.empty() || !std::filesystem::exists(path))
 			continue;
 
-		if (!u::is_video_file(path)) {
+		auto video_info = u::get_video_info(path);
+		if (!video_info.has_video_stream) {
 			gui::renderer::add_notification(
 				std::format("File is not a valid video or is unreadable: {}", base::to_utf8(path.wstring())),
 				ui::NotificationType::NOTIF_ERROR
@@ -111,7 +112,7 @@ void tasks::add_files(const std::vector<std::wstring>& path_strs) {
 
 		u::log(L"queueing {}", path.wstring());
 
-		Render render(path);
+		Render render(path, video_info);
 
 		if (gui::renderer::screen != gui::renderer::Screens::MAIN) {
 			gui::renderer::add_notification(

@@ -56,7 +56,8 @@ bool cli::run(
 			continue;
 		}
 
-		if (!u::is_video_file(input_path)) {
+		auto video_info = u::get_video_info(input_path);
+		if (!video_info.has_video_stream) {
 			u::log(L"Video '{}' is not a valid video or is unreadable", input_path.wstring());
 			continue;
 		}
@@ -76,7 +77,7 @@ bool cli::run(
 		}
 
 		// set up render
-		auto render = rendering.queue_render(Render(input_path, output_path, config_path));
+		auto render = rendering.queue_render(Render(input_path, video_info, output_path, config_path));
 
 		if (blur.verbose) {
 			u::log(

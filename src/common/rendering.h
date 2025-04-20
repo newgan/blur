@@ -41,6 +41,8 @@ private:
 	std::filesystem::path m_temp_path;
 	std::filesystem::path m_preview_path;
 
+	u::VideoInfo m_video_info;
+
 	BlurSettings m_settings;
 
 	bool m_to_kill = false;
@@ -56,6 +58,7 @@ private:
 public:
 	Render(
 		std::filesystem::path input_path,
+		const u::VideoInfo& video_info,
 		const std::optional<std::filesystem::path>& output_path = {},
 		const std::optional<std::filesystem::path>& config_path = {}
 	);
