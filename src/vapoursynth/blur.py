@@ -111,15 +111,33 @@ if settings["timescale"]:
 if settings["interpolate"]:
 
     def parse_fps_setting(setting_key):
-        fps_value = settings[setting_key]
-        split = fps_value.split("x")
+        fps_value = settings[setting_key].strip()
 
-        if len(split) > 1:
-            # contains x, is a multiplier (e.g. 5x)
-            return video.fps * float(split[0])
+        if fps_value.endswith("x"):
+            # ends with x, is a multiplier (e.g. 5x)
+            multiplier_str = fps_value[:-1].strip()
+            if not multiplier_str:
+                raise u.BlurException(
+                    f"Invalid FPS multiplier {setting_key}: '{fps_value}'. Should be something like 5x."
+                )
+
+            try:
+                multiplier = float(multiplier_str)
+            except ValueError:
+                raise u.BlurException(
+                    f"Invalid FPS multiplier {setting_key}: '{fps_value}'. Should be something like 5x. Do you have non-number characters before the final x?"
+                )
+
+            return video.fps * multiplier
+
         else:
-            # no x, is an fps (e.g. 600)
-            return int(fps_value)
+            # doesn't end with x, is an fps (e.g. 600)
+            try:
+                return int(fps_value)
+            except ValueError:
+                raise u.BlurException(
+                    f"Invalid FPS {setting_key}: '{fps_value}' - failed to parse it as an integer. Is it an integer?"
+                )
 
     interpolated_fps = parse_fps_setting("interpolated_fps")
 
