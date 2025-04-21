@@ -24,7 +24,6 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 	output << "- pre-interpolation" << "\n";
 	output << "pre-interpolate: " << (current_settings.pre_interpolate ? "true" : "false") << "\n";
 	output << "pre-interpolated fps: " << current_settings.pre_interpolated_fps << "\n";
-	output << "pre-interpolation method: " << current_settings.pre_interpolation_method << "\n";
 #endif
 
 	output << "\n";
@@ -120,9 +119,11 @@ config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config
 	}
 
 	if (!u::contains(SVP_INTERPOLATION_ALGORITHMS, config.advanced.svp_interpolation_algorithm)) {
-		errors.insert(std::format(
-			"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
-		));
+		errors.insert(
+			std::format(
+				"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
+			)
+		);
 
 		if (fix)
 			config.advanced.svp_interpolation_algorithm = DEFAULT_CONFIG.advanced.svp_interpolation_algorithm;
@@ -160,7 +161,6 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 
 	config_base::extract_config_value(config_map, "pre-interpolate", settings.pre_interpolate);
 	config_base::extract_config_string(config_map, "pre-interpolated fps", settings.pre_interpolated_fps);
-	config_base::extract_config_string(config_map, "pre-interpolation method", settings.pre_interpolation_method);
 #endif
 
 	config_base::extract_config_value(config_map, "deduplicate", settings.deduplicate);
@@ -295,7 +295,6 @@ BlurSettings::ToJsonResult BlurSettings::to_json() const {
 
 	j["pre_interpolate"] = this->pre_interpolate;
 	j["pre_interpolated_fps"] = this->pre_interpolated_fps;
-	j["pre_interpolation_method"] = this->pre_interpolation_method;
 
 	j["deduplicate"] = this->deduplicate;
 	j["deduplicate_method"] = this->deduplicate_method;

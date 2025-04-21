@@ -62,7 +62,6 @@ struct BlurSettings {
 		true;
 #endif
 	std::string pre_interpolated_fps = "360";
-	std::string pre_interpolation_method = "rife";
 
 	bool timescale = false;
 	float input_timescale = 1.f;
@@ -102,8 +101,8 @@ public:
 		       blur_weighting == other.blur_weighting && interpolate == other.interpolate &&
 		       interpolated_fps == other.interpolated_fps && interpolation_method == other.interpolation_method &&
 		       pre_interpolate == other.pre_interpolate && pre_interpolated_fps == other.pre_interpolated_fps &&
-		       pre_interpolation_method == other.pre_interpolation_method && timescale == other.timescale &&
-		       input_timescale == other.input_timescale && output_timescale == other.output_timescale &&
+		       timescale == other.timescale && input_timescale == other.input_timescale &&
+		       output_timescale == other.output_timescale &&
 		       output_timescale_audio_pitch == other.output_timescale_audio_pitch && filters == other.filters &&
 		       brightness == other.brightness && saturation == other.saturation && contrast == other.contrast &&
 		       encode_preset == other.encode_preset && deduplicate == other.deduplicate &&
