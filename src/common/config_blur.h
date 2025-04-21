@@ -46,10 +46,21 @@ struct BlurSettings {
 	std::string blur_weighting = "equal";
 
 	bool interpolate = true;
-	std::string interpolated_fps = "5x";
+	std::string interpolated_fps =
+
+#ifdef __APPLE__
+		"5x";
+#else
+		"1200";
+#endif
 	std::string interpolation_method = "svp";
 
-	bool pre_interpolate = false;
+	bool pre_interpolate =
+#ifdef __APPLE__
+		false;
+#else
+		true;
+#endif
 	std::string pre_interpolated_fps = "360";
 	std::string pre_interpolation_method = "rife";
 
@@ -63,6 +74,7 @@ struct BlurSettings {
 	float saturation = 1.f;
 	float contrast = 1.f;
 
+	std::string encode_preset = "h264";
 	int quality = 16;
 
 	bool deduplicate = true;
@@ -74,13 +86,15 @@ struct BlurSettings {
 
 	bool gpu_decoding = true;
 	bool gpu_interpolation = true;
-	bool gpu_encoding = false;
-	std::string gpu_type = "nvidia";
+	bool gpu_encoding = true;
+	std::string gpu_type = "";
 
 	bool override_advanced = false;
 	AdvancedSettings advanced;
 
 public:
+	BlurSettings();
+
 	bool operator==(const BlurSettings& other) const {
 		// reflection would be nice c++ -_-
 		// todo: boost? i mean, im already using it partially
@@ -92,12 +106,15 @@ public:
 		       input_timescale == other.input_timescale && output_timescale == other.output_timescale &&
 		       output_timescale_audio_pitch == other.output_timescale_audio_pitch && filters == other.filters &&
 		       brightness == other.brightness && saturation == other.saturation && contrast == other.contrast &&
-		       deduplicate == other.deduplicate && deduplicate_method == other.deduplicate_method &&
-		       quality == other.quality && preview == other.preview && detailed_filenames == other.detailed_filenames &&
-		       copy_dates == other.copy_dates && gpu_decoding == other.gpu_decoding &&
-		       gpu_interpolation == other.gpu_interpolation && gpu_encoding == other.gpu_encoding &&
-		       gpu_type == other.gpu_type && override_advanced == other.override_advanced && advanced == other.advanced;
+		       encode_preset == other.encode_preset && deduplicate == other.deduplicate &&
+		       deduplicate_method == other.deduplicate_method && quality == other.quality && preview == other.preview &&
+		       detailed_filenames == other.detailed_filenames && copy_dates == other.copy_dates &&
+		       gpu_decoding == other.gpu_decoding && gpu_interpolation == other.gpu_interpolation &&
+		       gpu_encoding == other.gpu_encoding && gpu_type == other.gpu_type &&
+		       override_advanced == other.override_advanced && advanced == other.advanced;
 	}
+
+	void verify_gpu_encoding();
 
 	struct ToJsonResult {
 		bool success;

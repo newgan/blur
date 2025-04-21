@@ -454,8 +454,36 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	*/
 	section_component("rendering");
 
+	settings.verify_gpu_encoding();
+
+	ui::add_dropdown(
+		"codec dropdown",
+		container,
+		std::format("encode preset ({})", settings.gpu_encoding ? "gpu: " + settings.gpu_type : "cpu"),
+		u::get_supported_presets(settings.gpu_encoding, settings.gpu_type),
+		settings.encode_preset,
+		fonts::font
+	);
+
 	if (settings.advanced.ffmpeg_override.empty()) {
-		ui::add_slider("quality", container, 0, 51, &settings.quality, "quality: {}", fonts::font, {}, 0.f);
+		int min_quality = 0;
+		int max_quality = 51;
+		std::string quality_label = "quality: {}";
+
+		if (settings.encode_preset == "prores" && settings.gpu_type == "mac") {
+			min_quality = 0; // proxy
+			max_quality = 3; // hq
+			quality_label = "quality: {} (0:proxy, 1:lt, 2:standard, 3:hq)";
+		}
+		else if (settings.encode_preset == "av1") {
+			max_quality = 63;
+		}
+
+		settings.quality = std::clamp(settings.quality, min_quality, max_quality);
+
+		ui::add_slider(
+			"quality", container, min_quality, max_quality, &settings.quality, quality_label, fonts::font, {}, 0.f
+		);
 	}
 	else {
 		ui::add_text(
@@ -490,14 +518,17 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		ui::add_checkbox("gpu encoding checkbox", container, "gpu encoding", settings.gpu_encoding, fonts::font);
 
 		if (settings.gpu_encoding) {
-			ui::add_dropdown(
-				"gpu encoding type dropdown",
-				container,
-				"gpu encoding - gpu type",
-				{ "nvidia", "amd", "intel" },
-				settings.gpu_type,
-				fonts::font
-			);
+			auto gpu_types = u::get_available_gpu_types();
+			if (gpu_types.size() > 1) {
+				ui::add_dropdown(
+					"gpu encoding type dropdown",
+					container,
+					"gpu encoding - gpu type",
+					gpu_types,
+					settings.gpu_type,
+					fonts::font
+				);
+			}
 		}
 	}
 	else {
@@ -1056,7 +1087,7 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 		{
 			"quality",
 			{
-				"Quality setting for output video",
+				"Quality setting for output video. Depends on the codec",
 				"(0 = lossless quality, 51 = really bad)",
 			},
 		},

@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "common/config_presets.h"
 
 std::string u::trim(std::string_view str) {
 	str.remove_prefix(std::min(str.find_first_not_of(" \t\r\v\n"), str.size()));
@@ -301,10 +302,231 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 	// 1. It must have a video stream
 	// 2. Either it has a non-zero duration or it's an animated format
 	// Static images will typically have duration=0 or N/A
-	bool is_animated_format =
-		codec_name.find("gif") != std::string::npos || codec_name.find("webp") != std::string::npos;
-
+	bool is_animated_format = u::contains(codec_name, "gif") || u::contains(codec_name, "webp");
 	info.has_video_stream = has_video_stream && (duration > 0.1 || is_animated_format);
 
 	return info;
+}
+
+static bool init_hw = false;
+std::set<std::string> hw_accels;
+std::set<std::string> hw_encoders;
+
+std::vector<u::EncodingDevice> u::get_hardware_encoding_devices() {
+	namespace bp = boost::process;
+
+	static std::vector<EncodingDevice> devices;
+
+	if (init_hw)
+		return devices;
+	else
+		init_hw = true;
+
+	// First check available hardware acceleration methods
+	bp::ipstream pipe_stream;
+	bp::child c(
+		blur.ffmpeg_path.wstring(),
+		"-v",
+		"error",
+		"-hide_banner",
+		"-hwaccels",
+		bp::std_out > pipe_stream,
+		bp::std_err > bp::null
+#ifdef _WIN32
+		,
+		bp::windows::create_no_window
+#endif
+	);
+
+	std::string line;
+
+	bool in_accel_section = false;
+
+	while (pipe_stream && std::getline(pipe_stream, line)) {
+		boost::algorithm::trim(line);
+
+		if (line == "Hardware acceleration methods:") {
+			in_accel_section = true;
+			continue;
+		}
+
+		if (in_accel_section && !line.empty()) {
+			hw_accels.insert(line);
+		}
+	}
+
+	c.wait();
+
+	// Now check specific encoders
+	bp::ipstream encoder_stream;
+	bp::child c2(
+		blur.ffmpeg_path.wstring(),
+		"-v",
+		"error",
+		"-hide_banner",
+		"-encoders",
+		bp::std_out > encoder_stream,
+		bp::std_err > bp::null
+#ifdef _WIN32
+		,
+		bp::windows::create_no_window
+#endif
+	);
+
+	bool in_encoder_section = false;
+
+	while (encoder_stream && std::getline(encoder_stream, line)) {
+		boost::algorithm::trim(line);
+
+		if (line == "------") {
+			in_encoder_section = true;
+			continue;
+		}
+
+		if (in_encoder_section && !line.empty() && u::contains(line, "V....D")) {
+			auto tmp = u::split_string(line, "V....D ")[1];
+			auto encoder = u::split_string(tmp, " ")[0];
+			hw_encoders.insert(encoder);
+		}
+	}
+
+	c2.wait();
+
+	// Check for NVIDIA (NVENC)
+	bool has_nvidia = false;
+	if (u::contains(hw_accels, "cuda") || u::contains(hw_accels, "nvenc") || u::contains(hw_accels, "nvdec")) {
+		for (const auto& encoder : hw_encoders) {
+			if (u::contains(encoder, "nvenc")) {
+				EncodingDevice device;
+				device.type = "nvidia";
+				device.method = "nvenc";
+				device.is_primary = true;
+				devices.push_back(device);
+				break;
+			}
+		}
+	}
+
+	// Check for AMD (AMF)
+	bool has_amd = false;
+	for (const auto& encoder : hw_encoders) {
+		if (u::contains(encoder, "amf")) {
+			has_amd = true;
+			EncodingDevice device;
+			device.type = "amd";
+			device.method = "amf";
+			device.is_primary = devices.empty(); // Primary if no other device yet
+			devices.push_back(device);
+			break;
+		}
+	}
+
+	// Check for Intel (QSV)
+	if (u::contains(hw_accels, "qsv")) {
+		for (const auto& encoder : hw_encoders) {
+			if (u::contains(encoder, "qsv")) {
+				EncodingDevice device;
+				device.type = "intel";
+				device.method = "qsv";
+				device.is_primary = devices.empty(); // Primary if no other device yet
+				devices.push_back(device);
+				break;
+			}
+		}
+	}
+
+	// Check for Mac (VideoToolbox)
+	bool has_mac = false;
+#ifdef __APPLE__
+	for (const auto& encoder : hw_encoders) {
+		if (u::contains(encoder, "videotoolbox")) {
+			has_mac = true;
+			EncodingDevice device;
+			device.type = "mac";
+			device.method = "videotoolbox";
+			device.is_primary = devices.empty(); // Primary if no other device yet
+			devices.push_back(device);
+			break;
+		}
+	}
+#endif
+
+	return devices;
+}
+
+std::vector<std::string> u::get_available_gpu_types() {
+	auto devices = get_hardware_encoding_devices();
+	std::vector<std::string> gpu_types;
+
+	for (const auto& device : devices) {
+		gpu_types.push_back(device.type);
+	}
+
+	return gpu_types;
+}
+
+std::string u::get_primary_gpu_type() {
+	auto devices = get_hardware_encoding_devices();
+
+	// First try to find device marked as primary
+	for (const auto& device : devices) {
+		if (device.is_primary) {
+			return device.type;
+		}
+	}
+
+	// If no primary device found but we have devices, return the first one
+	if (!devices.empty()) {
+		return devices[0].type;
+	}
+
+	return "cpu";
+}
+
+std::vector<std::string> u::get_supported_presets(bool gpu_encoding, const std::string& gpu_type) {
+	if (!init_hw)
+		get_hardware_encoding_devices();
+
+	auto available_presets = config_presets::get_available_presets(gpu_encoding, gpu_type);
+
+	std::vector<std::string> filtered_presets;
+
+	for (const auto& preset : available_presets) {
+		if (hw_encoders.contains(preset.codec)) {
+			filtered_presets.push_back(preset.name);
+		}
+	}
+
+	return filtered_presets;
+}
+
+std::vector<std::wstring> u::ffmpeg_string_to_args(const std::wstring& str) {
+	std::vector<std::wstring> args;
+
+	bool in_quote = false;
+	std::wstring current_arg;
+
+	for (size_t i = 0; i < str.length(); i++) {
+		wchar_t c = str[i];
+
+		if (c == L'"') {
+			in_quote = !in_quote;
+			// don't add the quote character to the argument
+		}
+		else if (c == L' ' && !in_quote) {
+			if (!current_arg.empty()) {
+				args.push_back(current_arg);
+				current_arg.clear();
+			}
+		}
+		else {
+			current_arg += c;
+		}
+	}
+
+	if (!current_arg.empty()) {
+		args.push_back(current_arg);
+	}
+
+	return args;
 }

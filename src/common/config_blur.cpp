@@ -34,6 +34,7 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 
 	output << "\n";
 	output << "- rendering" << "\n";
+	output << "encode preset: " << current_settings.encode_preset << "\n";
 	output << "quality: " << current_settings.quality << "\n";
 	output << "preview: " << (current_settings.preview ? "true" : "false") << "\n";
 	output << "detailed filenames: " << (current_settings.detailed_filenames ? "true" : "false") << "\n";
@@ -165,6 +166,7 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 	config_base::extract_config_value(config_map, "deduplicate", settings.deduplicate);
 	config_base::extract_config_value(config_map, "deduplicate method", settings.deduplicate_method);
 
+	config_base::extract_config_value(config_map, "encode preset", settings.encode_preset);
 	config_base::extract_config_value(config_map, "quality", settings.quality);
 	config_base::extract_config_value(config_map, "preview", settings.preview);
 	config_base::extract_config_value(config_map, "detailed filenames", settings.detailed_filenames);
@@ -174,6 +176,8 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 	config_base::extract_config_value(config_map, "gpu interpolation", settings.gpu_interpolation);
 	config_base::extract_config_value(config_map, "gpu encoding", settings.gpu_encoding);
 	config_base::extract_config_string(config_map, "gpu type (nvidia/amd/intel)", settings.gpu_type);
+
+	settings.verify_gpu_encoding();
 
 	config_base::extract_config_value(config_map, "timescale", settings.timescale);
 	config_base::extract_config_value(config_map, "input timescale", settings.input_timescale);
@@ -301,6 +305,12 @@ BlurSettings::ToJsonResult BlurSettings::to_json() const {
 	j["output_timescale"] = this->output_timescale;
 	j["output_timescale_audio_pitch"] = this->output_timescale_audio_pitch;
 
+	j["filters"] = this->filters;
+	j["brightness"] = this->brightness;
+	j["saturation"] = this->saturation;
+	j["contrast"] = this->contrast;
+
+	j["encode preset"] = this->encode_preset;
 	j["quality"] = this->quality;
 	j["preview"] = this->preview;
 	j["detailed_filenames"] = this->detailed_filenames;
@@ -361,4 +371,29 @@ BlurSettings::ToJsonResult BlurSettings::to_json() const {
 		.success = true,
 		.json = j,
 	};
+}
+
+BlurSettings::BlurSettings() {
+	verify_gpu_encoding();
+}
+
+auto& blur_copy = blur; // cause BlurSettings.blur is a thing
+
+void BlurSettings::verify_gpu_encoding() {
+	if (!blur_copy.initialised)
+		return;
+
+	if (gpu_type.empty() || !u::contains(u::get_available_gpu_types(), gpu_type)) {
+		gpu_type = u::get_primary_gpu_type();
+	}
+
+	if (gpu_type == "cpu") {
+		gpu_encoding = false;
+	}
+
+	auto available_codecs = u::get_supported_presets(gpu_encoding, gpu_type);
+
+	if (!u::contains(available_codecs, encode_preset)) {
+		encode_preset = "h264";
+	}
 }
