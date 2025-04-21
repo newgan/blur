@@ -1,6 +1,5 @@
 #include "common/updates.h"
 #include <boost/process.hpp>
-#include <cstddef>
 
 using json = nlohmann::json;
 namespace bp = boost::process;
@@ -9,134 +8,52 @@ const std::string WINDOWS_INSTALLER_NAME = "blur-Windows-Installer-x64.exe";
 const std::string MACOS_INSTALLER_NAME = "blur-macOS-Release-arm64.dmg";
 
 namespace {
-	// NOLINTBEGIN ai code idc
-	bool is_version_newer(const std::string& current, const std::string& latest) {
-		// Parse version strings into components
-		std::vector<std::string> current_components;
-		std::vector<std::string> latest_components;
-
-		// Split by dots and dashes
-		std::regex component_splitter("[\\.-]");
-
-		// Split current version into components
-		std::string current_clean = current;
-		if (!current_clean.empty() && current_clean[0] == 'v') {
-			current_clean = current_clean.substr(1);
+	bool is_version_newer(std::string current, std::string latest) {
+		// Remove leading 'v' if present
+		if (!current.empty() && current[0] == 'v') {
+			current = current.substr(1);
+		}
+		if (!latest.empty() && latest[0] == 'v') {
+			latest = latest.substr(1);
 		}
 
-		std::sregex_token_iterator current_iter(current_clean.begin(), current_clean.end(), component_splitter, -1);
-		std::sregex_token_iterator end;
-		for (; current_iter != end; ++current_iter) {
-			current_components.push_back(*current_iter);
+		auto current_split = u::split_string(current, ".");
+		auto latest_split = u::split_string(latest, ".");
+
+		// Extract major version numbers
+		int current_major = std::stoi(current_split[0]);
+		int latest_major = std::stoi(latest_split[0]);
+
+		// compare major versions
+		if (current_major < latest_major)
+			return true; // latest major version is newer. e.g. v2.x vs v1.x
+		if (current_major > latest_major)
+			return false; // ..
+
+		// compare subversions
+		if (current_split.size() == 1 && latest_split.size() > 1)
+			return true; // latest version has a subversion where current does not. e.g. v2.1 vs v2
+		if (latest_split.size() == 1 && current_split.size() > 1)
+			return false; // ..
+
+		size_t current_subversions = current_split[1].size();
+		size_t latest_subversions = latest_split[1].size();
+		size_t min_subversions = std::min(current_subversions, latest_subversions);
+		for (size_t i = 0; i < min_subversions; i++) {
+			char current_sub = current_split[1][i] - '0';
+			char latest_sub = latest_split[1][i] - '0';
+
+			if (current_sub < latest_sub)
+				return true; // latest subversion is newer. e.g. v2.1 vs v2.2 or v2.1111 vs v2.1112
+			if (current_sub > latest_sub)
+				return false; // ..
 		}
 
-		// Split latest version into components
-		std::string latest_clean = latest;
-		if (!latest_clean.empty() && latest_clean[0] == 'v') {
-			latest_clean = latest_clean.substr(1);
-		}
-
-		std::sregex_token_iterator latest_iter(latest_clean.begin(), latest_clean.end(), component_splitter, -1);
-		for (; latest_iter != end; ++latest_iter) {
-			latest_components.push_back(*latest_iter);
-		}
-
-		// Compare numeric parts first (major.minor.patch)
-		size_t i = 0;
-		while (i < std::min(current_components.size(), latest_components.size())) {
-			// If both components are numeric, compare as integers
-			if (std::regex_match(current_components[i], std::regex("^\\d+$")) &&
-			    std::regex_match(latest_components[i], std::regex("^\\d+$")))
-			{
-				int current_val = std::stoi(current_components[i]);
-				int latest_val = std::stoi(latest_components[i]);
-
-				if (current_val < latest_val)
-					return true;
-				if (current_val > latest_val)
-					return false;
-			}
-			// Handle preview/beta/alpha components
-			else if (i > 0) { // Only consider text components after version numbers
-				// If current is a release but latest is a preview, current is newer
-				bool current_is_preview = current_components[i].find("preview") != std::string::npos ||
-				                          current_components[i].find("beta") != std::string::npos ||
-				                          current_components[i].find("alpha") != std::string::npos;
-
-				bool latest_is_preview = latest_components[i].find("preview") != std::string::npos ||
-				                         latest_components[i].find("beta") != std::string::npos ||
-				                         latest_components[i].find("alpha") != std::string::npos;
-
-				// If one is preview and the other isn't
-				if (current_is_preview != latest_is_preview) {
-					return current_is_preview; // Current is older if it's a preview
-				}
-
-				// If both are preview versions
-				if (current_is_preview && latest_is_preview) {
-					// Extract preview numbers for comparison
-					std::regex preview_num("\\d+");
-					std::smatch current_match, latest_match;
-
-					if (std::regex_search(current_components[i], current_match, preview_num) &&
-					    std::regex_search(latest_components[i], latest_match, preview_num))
-					{
-						int current_preview_num = std::stoi(current_match[0]);
-						int latest_preview_num = std::stoi(latest_match[0]);
-
-						if (current_preview_num < latest_preview_num)
-							return true;
-						if (current_preview_num > latest_preview_num)
-							return false;
-					}
-					// If no numbers found, compare lexicographically
-					else {
-						if (current_components[i] < latest_components[i])
-							return true;
-						if (current_components[i] > latest_components[i])
-							return false;
-					}
-				}
-				// If neither are previews, compare lexicographically
-				else {
-					if (current_components[i] < latest_components[i])
-						return true;
-					if (current_components[i] > latest_components[i])
-						return false;
-				}
-			}
-
-			i++;
-		}
-
-		// If we've compared all components of one version but the other has more,
-		// the one with more components is newer, unless it's a preview
-		if (current_components.size() != latest_components.size()) {
-			if (current_components.size() < latest_components.size()) {
-				// Check if the extra component in latest is a preview indicator
-				if (i < latest_components.size() && (latest_components[i].find("preview") != std::string::npos ||
-				                                     latest_components[i].find("beta") != std::string::npos ||
-				                                     latest_components[i].find("alpha") != std::string::npos))
-				{
-					return false; // Current is a stable release, so it's newer
-				}
-				return true; // Latest has more components and isn't preview, so it's newer
-			}
-			// Check if the extra component in current is a preview indicator
-			if (i < current_components.size() && (current_components[i].find("preview") != std::string::npos ||
-			                                      current_components[i].find("beta") != std::string::npos ||
-			                                      current_components[i].find("alpha") != std::string::npos))
-			{
-				return true; // Current is a preview, so it's older
-			}
-			return false; // Current has more components and isn't preview, so it's newer
-		}
-
-		// Versions are equal
-		return false;
+		// they're the same up to the point where one has more subversions
+		return latest_subversions >
+		       current_subversions; // latest is newer if more subversions. e.g. 2.111 > 2.11. note: yes, this will
+		                            // happen for v2.0 vs v2 or v2.10 vs v2.1, but edge case, idc. will never happen.
 	}
-
-	// NOLINTEND
 }
 
 updates::UpdateCheckRes updates::is_latest_version(bool include_beta) {
