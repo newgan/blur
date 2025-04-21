@@ -1,4 +1,5 @@
 ﻿#include "rendering.h"
+#include "config_presets.h"
 
 void Rendering::render_videos() {
 	if (!m_queue.empty()) {
@@ -224,167 +225,26 @@ RenderCommandsResult Render::build_render_commands() {
 	}
 
 	if (!m_settings.advanced.ffmpeg_override.empty()) {
-		// split override string into individual arguments
-		std::wistringstream iss(u::towstring(m_settings.advanced.ffmpeg_override));
-		std::wstring token;
-		while (iss >> token) {
-			commands.ffmpeg.push_back(token);
+		auto args = u::ffmpeg_string_to_args(u::towstring(m_settings.advanced.ffmpeg_override));
+
+		for (const auto& arg : args) {
+			commands.ffmpeg.push_back(arg);
 		}
 	}
 	else {
-		if (m_settings.gpu_encoding) {
-			std::string gpu_type = u::to_lower(m_settings.gpu_type);
-			std::string codec = u::to_lower(m_settings.codec.empty() ? "h264" : m_settings.codec);
-
-			if (gpu_type == "nvidia") {
-				std::wstring nvenc_codec = L"h264_nvenc";
-				if (codec == "h265")
-					nvenc_codec = L"hevc_nvenc";
-				else if (codec == "av1")
-					nvenc_codec = L"av1_nvenc";
-
-				commands.ffmpeg.insert(
-					commands.ffmpeg.end(),
-					{ L"-c:v", nvenc_codec, L"-preset", L"p7", L"-qp", std::to_wstring(m_settings.quality) }
-				);
-			}
-			else if (gpu_type == "amd") {
-				std::wstring amd_codec = L"h264_amf";
-				if (codec == "h265")
-					amd_codec = L"hevc_amf";
-				else if (codec == "av1")
-					amd_codec = L"av1_amf";
-
-				commands.ffmpeg.insert(
-					commands.ffmpeg.end(),
-					{ L"-c:v",
-				      amd_codec,
-				      L"-qp_i",
-				      std::to_wstring(m_settings.quality),
-				      L"-qp_b",
-				      std::to_wstring(m_settings.quality),
-				      L"-qp_p",
-				      std::to_wstring(m_settings.quality),
-				      L"-quality",
-				      L"quality" }
-				);
-			}
-			else if (gpu_type == "intel") {
-				std::wstring intel_codec = L"h264_qsv";
-				if (codec == "h265")
-					intel_codec = L"hevc_qsv";
-				else if (codec == "av1")
-					intel_codec = L"av1_qsv";
-
-				commands.ffmpeg.insert(
-					commands.ffmpeg.end(),
-					{ L"-c:v",
-				      intel_codec,
-				      L"-global_quality",
-				      std::to_wstring(m_settings.quality),
-				      L"-preset",
-				      L"veryslow" }
-				);
-			}
-			else if (gpu_type == "mac") {
-				std::wstring mac_codec = L"h264_videotoolbox";
-				if (codec == "h265")
-					mac_codec = L"hevc_videotoolbox";
-				else if (codec == "av1")
-					mac_codec = L"av1_videotoolbox";
-				else if (codec == "prores")
-					mac_codec = L"prores_videotoolbox";
-
-				std::wstring quality_param = L"-q:v";
-				std::wstring quality_value = std::to_wstring(m_settings.quality <= 30 ? m_settings.quality : 30);
-
-				if (codec == "prores") {
-					quality_param = L"-profile:v";
-					// ProRes profiles: 0 (proxy), 1 (lt), 2 (standard), 3 (hq)
-					quality_value = std::to_wstring(m_settings.quality);
-				}
-
-				commands.ffmpeg.insert(
-					commands.ffmpeg.end(), { L"-c:v", mac_codec, quality_param, quality_value, L"-allow_sw", L"0" }
-					// Force hardware encoding
-				);
-			}
-		}
-		else {
-			std::string codec = u::to_lower(m_settings.codec.empty() ? "h264" : m_settings.codec);
-
-			if (codec == "h264") {
-				commands.ffmpeg.insert(
-					commands.ffmpeg.end(),
-					{ L"-c:v",
-				      L"libx264",
-				      L"-pix_fmt",
-				      L"yuv420p",
-				      L"-preset",
-				      L"superfast",
-				      L"-crf",
-				      std::to_wstring(m_settings.quality) }
-				);
-			}
-			else if (codec == "h265") {
-				commands.ffmpeg.insert(
-					commands.ffmpeg.end(),
-					{ L"-c:v",
-				      L"libx265",
-				      L"-pix_fmt",
-				      L"yuv420p",
-				      L"-preset",
-				      L"medium",
-				      L"-crf",
-				      std::to_wstring(m_settings.quality) }
-				);
-			}
-			else if (codec == "av1") {
-				commands.ffmpeg.insert(
-					commands.ffmpeg.end(),
-					{ L"-c:v",
-				      L"libaom-av1",
-				      L"-pix_fmt",
-				      L"yuv420p",
-				      L"-cpu-used",
-				      L"4",
-				      L"-crf",
-				      std::to_wstring(m_settings.quality) }
-				);
-			}
-			else if (codec == "vp9") {
-				commands.ffmpeg.insert(
-					commands.ffmpeg.end(),
-					{ L"-c:v",
-				      L"libvpx-vp9",
-				      L"-pix_fmt",
-				      L"yuv420p",
-				      L"-deadline",
-				      L"realtime",
-				      L"-crf",
-				      std::to_wstring(m_settings.quality) }
-				);
-			}
-			else {
-				// Default to H.264 if unsupported codec specified
-				commands.ffmpeg.insert(
-					commands.ffmpeg.end(),
-					{ L"-c:v",
-				      L"libx264",
-				      L"-pix_fmt",
-				      L"yuv420p",
-				      L"-preset",
-				      L"superfast",
-				      L"-crf",
-				      std::to_wstring(m_settings.quality) }
-				);
-			}
-		}
-
-		// Audio format
-		commands.ffmpeg.insert(
-			commands.ffmpeg.end(), { L"-c:a", L"aac", L"-b:a", L"320k", L"-movflags", L"+faststart" }
+		std::vector<std::wstring> preset_args = config_presets::get_preset_params(
+			m_settings.gpu_encoding ? m_settings.gpu_type : "cpu",
+			u::to_lower(m_settings.encode_preset.empty() ? "h264" : m_settings.encode_preset),
+			m_settings.quality
 		);
+
+		commands.ffmpeg.insert(commands.ffmpeg.end(), preset_args.begin(), preset_args.end());
+
+		// audio
+		commands.ffmpeg.insert(commands.ffmpeg.end(), { L"-c:a", L"aac", L"-b:a", L"320k" });
+
+		// extra
+		commands.ffmpeg.insert(commands.ffmpeg.end(), { L"-movflags", L"+faststart" });
 	}
 
 	// Output path

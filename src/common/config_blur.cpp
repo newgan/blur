@@ -34,7 +34,7 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 
 	output << "\n";
 	output << "- rendering" << "\n";
-	output << "codec: " << current_settings.codec << "\n";
+	output << "encode preset: " << current_settings.encode_preset << "\n";
 	output << "quality: " << current_settings.quality << "\n";
 	output << "preview: " << (current_settings.preview ? "true" : "false") << "\n";
 	output << "detailed filenames: " << (current_settings.detailed_filenames ? "true" : "false") << "\n";
@@ -166,7 +166,7 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 	config_base::extract_config_value(config_map, "deduplicate", settings.deduplicate);
 	config_base::extract_config_value(config_map, "deduplicate method", settings.deduplicate_method);
 
-	config_base::extract_config_value(config_map, "codec", settings.codec);
+	config_base::extract_config_value(config_map, "encode preset", settings.encode_preset);
 	config_base::extract_config_value(config_map, "quality", settings.quality);
 	config_base::extract_config_value(config_map, "preview", settings.preview);
 	config_base::extract_config_value(config_map, "detailed filenames", settings.detailed_filenames);
@@ -310,7 +310,7 @@ BlurSettings::ToJsonResult BlurSettings::to_json() const {
 	j["saturation"] = this->saturation;
 	j["contrast"] = this->contrast;
 
-	j["codec"] = this->codec;
+	j["encode preset"] = this->encode_preset;
 	j["quality"] = this->quality;
 	j["preview"] = this->preview;
 	j["detailed_filenames"] = this->detailed_filenames;
@@ -391,9 +391,9 @@ void BlurSettings::verify_gpu_encoding() {
 		gpu_encoding = false;
 	}
 
-	auto available_codecs = u::get_codecs(gpu_encoding, gpu_type);
+	auto available_codecs = u::get_supported_presets(gpu_encoding, gpu_type);
 
-	if (!u::contains(available_codecs, codec)) {
-		codec = "h264";
+	if (!u::contains(available_codecs, encode_preset)) {
+		encode_preset = "h264";
 	}
 }

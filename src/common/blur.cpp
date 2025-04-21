@@ -5,6 +5,7 @@
 #include "updates.h"
 #include "config_blur.h"
 #include "config_app.h"
+#include "config_presets.h"
 
 Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview) {
 	resources_path = u::get_resources_path();
@@ -17,6 +18,10 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 	auto app_config_path = config_app::get_app_config_path();
 	if (!std::filesystem::exists(app_config_path))
 		config_app::create(app_config_path, GlobalAppSettings{});
+
+	auto preset_config_path = config_presets::get_preset_config_path();
+	if (!std::filesystem::exists(preset_config_path))
+		config_presets::create(preset_config_path, PresetSettings{});
 
 #if defined(_WIN32)
 	used_installer = std::filesystem::exists(resources_path / "lib\\vapoursynth\\vspipe.exe") &&

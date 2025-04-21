@@ -128,6 +128,15 @@ namespace u {
 		return str.find(value) != std::string::npos;
 	}
 
+	inline std::string replace_all(std::string str, const std::string& from, const std::string& to) {
+		size_t start_pos = 0;
+		while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+			str.replace(start_pos, from.length(), to);
+			start_pos += to.length();
+		}
+		return str;
+	}
+
 	std::string trim(std::string_view str);
 	std::string random_string(int len);
 	std::vector<std::string> split_string(std::string str, const std::string& delimiter);
@@ -165,5 +174,7 @@ namespace u {
 	std::vector<std::string> get_available_gpu_types();
 	std::string get_primary_gpu_type();
 
-	std::vector<std::string> get_codecs(bool gpu_encoding, const std::string& gpu_type);
+	std::vector<std::string> get_supported_presets(bool gpu_encoding, const std::string& gpu_type);
+
+	std::vector<std::wstring> ffmpeg_string_to_args(const std::wstring& str);
 }

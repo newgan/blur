@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "common/config_presets.h"
 
 std::string u::trim(std::string_view str) {
 	str.remove_prefix(std::min(str.find_first_not_of(" \t\r\v\n"), str.size()));
@@ -482,52 +483,50 @@ std::string u::get_primary_gpu_type() {
 	return "cpu";
 }
 
-std::vector<std::string> u::get_codecs(bool gpu_encoding, const std::string& gpu_type) {
+std::vector<std::string> u::get_supported_presets(bool gpu_encoding, const std::string& gpu_type) {
 	if (!init_hw)
 		get_hardware_encoding_devices();
 
-	std::vector<std::string> available_codecs;
+	auto available_presets = config_presets::get_available_presets(gpu_encoding, gpu_type);
 
-	if (gpu_encoding) {
-		if (gpu_type == "nvidia") {
-			if (hw_encoders.contains("h264_nvenc"))
-				available_codecs.emplace_back("h264");
-			if (hw_encoders.contains("hevc_nvenc"))
-				available_codecs.emplace_back("h265");
-			if (hw_encoders.contains("av1_nvenc"))
-				available_codecs.emplace_back("av1");
-		}
-		else if (gpu_type == "amd") {
-			if (hw_encoders.contains("h264_amf"))
-				available_codecs.emplace_back("h264");
-			if (hw_encoders.contains("hevc_amf"))
-				available_codecs.emplace_back("h265");
-			if (hw_encoders.contains("av1_amf"))
-				available_codecs.emplace_back("av1");
-		}
-		else if (gpu_type == "intel") {
-			if (hw_encoders.contains("h264_qsv"))
-				available_codecs.emplace_back("h264");
-			if (hw_encoders.contains("hevc_qsv"))
-				available_codecs.emplace_back("h265");
-			if (hw_encoders.contains("av1_qsv"))
-				available_codecs.emplace_back("av1");
-		}
-		else if (gpu_type == "mac") {
-			if (hw_encoders.contains("h264_videotoolbox"))
-				available_codecs.emplace_back("h264");
-			if (hw_encoders.contains("hevc_videotoolbox"))
-				available_codecs.emplace_back("h265");
-			if (hw_encoders.contains("prores_videotoolbox"))
-				available_codecs.emplace_back("prores");
-			if (hw_encoders.contains("av1_videotoolbox"))
-				available_codecs.emplace_back("av1");
+	std::vector<std::string> filtered_presets;
+
+	for (const auto& preset : available_presets) {
+		if (hw_encoders.contains(preset.codec)) {
+			filtered_presets.push_back(preset.name);
 		}
 	}
-	else {
-		// Fallback if GPU encoding isn't enabled: standard software codecs
-		available_codecs = { "h264", "h265", "av1", "vp9" };
+
+	return filtered_presets;
+}
+
+std::vector<std::wstring> u::ffmpeg_string_to_args(const std::wstring& str) {
+	std::vector<std::wstring> args;
+
+	bool in_quote = false;
+	std::wstring current_arg;
+
+	for (size_t i = 0; i < str.length(); i++) {
+		wchar_t c = str[i];
+
+		if (c == L'"') {
+			in_quote = !in_quote;
+			// don't add the quote character to the argument
+		}
+		else if (c == L' ' && !in_quote) {
+			if (!current_arg.empty()) {
+				args.push_back(current_arg);
+				current_arg.clear();
+			}
+		}
+		else {
+			current_arg += c;
+		}
 	}
 
-	return available_codecs;
+	if (!current_arg.empty()) {
+		args.push_back(current_arg);
+	}
+
+	return args;
 }

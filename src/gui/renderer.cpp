@@ -459,9 +459,9 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	ui::add_dropdown(
 		"codec dropdown",
 		container,
-		std::format("codec ({})", settings.gpu_encoding ? settings.gpu_type : "cpu"),
-		u::get_codecs(settings.gpu_encoding, settings.gpu_type),
-		settings.codec,
+		std::format("encode preset ({})", settings.gpu_encoding ? "gpu: " + settings.gpu_type : "cpu"),
+		u::get_supported_presets(settings.gpu_encoding, settings.gpu_type),
+		settings.encode_preset,
 		fonts::font
 	);
 
@@ -470,12 +470,12 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		int max_quality = 51;
 		std::string quality_label = "quality: {}";
 
-		if (settings.codec == "prores" && settings.gpu_type == "mac") {
+		if (settings.encode_preset == "prores" && settings.gpu_type == "mac") {
 			min_quality = 0; // proxy
 			max_quality = 3; // hq
 			quality_label = "quality: {} (0:proxy, 1:lt, 2:standard, 3:hq)";
 		}
-		else if (settings.codec == "av1") {
+		else if (settings.encode_preset == "av1") {
 			max_quality = 63;
 		}
 
@@ -518,14 +518,17 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		ui::add_checkbox("gpu encoding checkbox", container, "gpu encoding", settings.gpu_encoding, fonts::font);
 
 		if (settings.gpu_encoding) {
-			ui::add_dropdown(
-				"gpu encoding type dropdown",
-				container,
-				"gpu encoding - gpu type",
-				u::get_available_gpu_types(),
-				settings.gpu_type,
-				fonts::font
-			);
+			auto gpu_types = u::get_available_gpu_types();
+			if (gpu_types.size() > 1) {
+				ui::add_dropdown(
+					"gpu encoding type dropdown",
+					container,
+					"gpu encoding - gpu type",
+					gpu_types,
+					settings.gpu_type,
+					fonts::font
+				);
+			}
 		}
 	}
 	else {
