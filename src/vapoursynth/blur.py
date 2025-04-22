@@ -1,10 +1,6 @@
 import vapoursynth as vs
 from vapoursynth import core
 
-# from vsrife import RIFE
-
-# import adjust
-
 import sys
 import json
 from pathlib import Path
@@ -298,14 +294,7 @@ if settings["blur"]:
 
             weights = do_weighting_fn(settings["blur_weighting"])
 
-            # frame blend
-            # if vars().get("macos_bundled") == "true":
-            #     video = blur.blending.average_expr1(video, weights)
-            # else:
             video = blur.blending.average(video, weights)
-
-    # if frame_gap > 0:
-    #     video = core.std.SelectEvery(video, cycle=frame_gap, offsets=0)
 
     # set exact fps
     video = blur.interpolate.change_fps(video, settings["blur_output_fps"])
