@@ -52,8 +52,8 @@ interpolation_mask_area = u.coalesce(
 if vars().get("macos_bundled") == "true":
     video = core.bs.VideoSource(source=video_path, cachemode=0)
 else:
-    video = core.lsmas.LibavSMASHSource(
-        source=video_path, prefer_hw=3 if settings["gpu_decoding"] else 0
+    video = core.lsmas.LWLibavSource(
+        source=video_path, cache=0, prefer_hw=3 if settings["gpu_decoding"] else 0
     )
 
 if settings["deduplicate"] and settings["deduplicate_range"] != 0:
