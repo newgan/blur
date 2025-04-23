@@ -76,22 +76,22 @@ function Download-ModelFiles {
         [string]$ModelName,
         [string[]]$FileList
     )
-    
+
     Write-Host "Downloading model: $ModelName"
     $modelDir = Join-Path $modelsBaseDir $ModelName
-    
+
     # Create model directory if it doesn't exist
     if (-not (Test-Path $modelDir)) {
         New-Item -ItemType Directory -Force -Path $modelDir | Out-Null
         Write-Host "Created directory: $modelDir"
     }
-    
+
     foreach ($file in $FileList) {
         $fileUrl = "$BaseUrl/$file"
         $outputPath = Join-Path $modelDir $file
         Download-File -Url $fileUrl -OutFile $outputPath
     }
-    
+
     Write-Host "Model $ModelName download completed"
 }
 
@@ -147,10 +147,10 @@ $plugins = @(
 
 foreach ($plugin in $plugins) {
     Write-Host "Processing $($plugin.Name) plugin..."
-    
+
     # Determine if it's a direct DLL download by checking if IsDirectDll is true
     $isDirectDll = $plugin.ContainsKey('IsDirectDll') -and $plugin.IsDirectDll
-    
+
     if ($isDirectDll) {
         # Direct DLL download (no extraction needed)
         $dllPath = Join-Path $pluginsDir "$($plugin.Name.ToLower()).dll"
@@ -165,12 +165,12 @@ foreach ($plugin in $plugins) {
 }
 
 # Download and process FFmpeg
-$ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-2025-04-14-git-3b2a9410ef-essentials_build.7z"
+$ffmpegUrl = "https://github.com/GyanD/codexffmpeg/releases/download/2025-04-21-git-9e1162bdf1/ffmpeg-2025-04-21-git-9e1162bdf1-essentials_build.7z"
 $ffmpegArchive = Join-Path $ffmpegDir "ffmpeg-git-essentials.7z"
 Download-File -Url $ffmpegUrl -OutFile $ffmpegArchive
 Extract-Files -ArchivePath $ffmpegArchive -FilePatterns @(
-    "ffmpeg-2025-04-14-git-3b2a9410ef-essentials_build\bin\ffmpeg.exe",
-    "ffmpeg-2025-04-14-git-3b2a9410ef-essentials_build\bin\ffprobe.exe"
+    "ffmpeg-2025-04-21-git-9e1162bdf1-essentials_build\bin\ffmpeg.exe",
+    "ffmpeg-2025-04-21-git-9e1162bdf1-essentials_build\bin\ffprobe.exe"
 ) -DestinationPath $ffmpegDir
 
 # Define model downloads
