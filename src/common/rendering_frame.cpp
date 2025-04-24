@@ -93,9 +93,8 @@ FrameRender::DoRenderResult FrameRender::do_render(RenderCommands render_command
 			bp::std_out > vspipe_stdout,
 			bp::std_err > vspipe_stderr,
 			env,
-			io_context
+			io_context,
 #ifdef _WIN32
-			,
 			bp::windows::create_no_window
 #endif
 		);
@@ -106,9 +105,8 @@ FrameRender::DoRenderResult FrameRender::do_render(RenderCommands render_command
 			bp::std_in < vspipe_stdout,
 			bp::std_out.null(),
 			bp::std_err.null(),
-			io_context
+			io_context,
 #ifdef _WIN32
-			,
 			bp::windows::create_no_window
 #endif
 		);

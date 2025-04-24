@@ -261,9 +261,8 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 		"default=noprint_wrappers=1",
 		path.wstring(),
 		bp::std_out > pipe_stream,
-		bp::std_err > bp::null
+		bp::std_err > bp::null,
 #ifdef _WIN32
-		,
 		bp::windows::create_no_window
 #endif
 	);
@@ -331,9 +330,8 @@ std::vector<u::EncodingDevice> u::get_hardware_encoding_devices() {
 		"-hide_banner",
 		"-hwaccels",
 		bp::std_out > pipe_stream,
-		bp::std_err > bp::null
+		bp::std_err > bp::null,
 #ifdef _WIN32
-		,
 		bp::windows::create_no_window
 #endif
 	);
@@ -366,9 +364,8 @@ std::vector<u::EncodingDevice> u::get_hardware_encoding_devices() {
 		"-hide_banner",
 		"-encoders",
 		bp::std_out > encoder_stream,
-		bp::std_err > bp::null
+		bp::std_err > bp::null,
 #ifdef _WIN32
-		,
 		bp::windows::create_no_window
 #endif
 	);
@@ -529,4 +526,58 @@ std::vector<std::wstring> u::ffmpeg_string_to_args(const std::wstring& str) {
 	}
 
 	return args;
+}
+
+std::map<int, std::string> u::get_rife_gpus() {
+	namespace bp = boost::process;
+
+	bp::environment env = boost::this_process::environment();
+
+#if defined(__APPLE__)
+	if (blur.used_installer) {
+		env["PYTHONHOME"] = (blur.resources_path / "python").string();
+		env["PYTHONPATH"] = (blur.resources_path / "python/lib/python3.12/site-packages").string();
+	}
+#endif
+
+	std::wstring get_gpus_script_path = (blur.resources_path / "lib/get_rife_gpus.py").wstring();
+
+	bp::ipstream out_stream;
+	bp::ipstream err_stream;
+
+	bp::child c(
+		blur.vspipe_path.wstring(),
+		L"-c",
+		L"y4m",
+		get_gpus_script_path,
+		L"-",
+		bp::std_out.null(),
+		bp::std_err > err_stream,
+		env,
+#ifdef _WIN32
+		bp::windows::create_no_window
+#endif
+	);
+
+	std::map<int, std::string> gpu_map;
+
+	std::string line;
+	std::regex gpu_line_pattern(R"(\[(\d+)\s+(.*?)\])"); // regex to match: [0 GPU NAME]
+
+	while (err_stream && std::getline(err_stream, line)) {
+		boost::algorithm::trim(line);
+		u::log("stderr: {}", line);
+
+		std::smatch match;
+		if (std::regex_search(line, match, gpu_line_pattern)) {
+			int gpu_index = std::stoi(match[1].str());
+			std::string gpu_name = match[2].str();
+
+			gpu_map[gpu_index] = gpu_name;
+		}
+	}
+
+	c.wait();
+
+	return gpu_map;
 }

@@ -177,4 +177,6 @@ namespace u {
 	std::vector<std::string> get_supported_presets(bool gpu_encoding, const std::string& gpu_type);
 
 	std::vector<std::wstring> ffmpeg_string_to_args(const std::wstring& str);
+
+	std::map<int, std::string> get_rife_gpus();
 }

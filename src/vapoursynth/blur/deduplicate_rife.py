@@ -9,7 +9,12 @@ duped_frames = 0
 
 
 def get_interp(
-    clip, duplicate_index, threshold: float, max_frames: int | None, model_path
+    clip,
+    duplicate_index,
+    threshold: float,
+    max_frames: int | None,
+    model_path: str,
+    gpu_index: int,
 ):
     global cur_interp
     global dupe_last_good_idx
@@ -62,7 +67,7 @@ def get_interp(
         fps_num=duped_frames,
         fps_den=1,
         model_path=model_path,
-        gpu_id=0,
+        gpu_id=gpu_index,
     )
 
     cur_interp = cur_interp[1 : 1 + duped_frames]  # first frame is a duplicate
@@ -71,7 +76,12 @@ def get_interp(
 
 
 def interpolate_dupes(
-    clip, frame_index, threshold: float, max_frames: int | None, model_path
+    clip,
+    frame_index,
+    threshold: float,
+    max_frames: int | None,
+    model_path: str,
+    gpu_index: int,
 ):
     global cur_interp
     global dupe_last_good_idx
@@ -81,7 +91,7 @@ def interpolate_dupes(
 
     if cur_interp is None:
         # haven't interpolated yet
-        get_interp(clip1, frame_index, threshold, max_frames, model_path)
+        get_interp(clip1, frame_index, threshold, max_frames, model_path, gpu_index)
 
     if cur_interp is None:
         # interpolated but no dedupe solution. get out
@@ -100,6 +110,7 @@ def interpolate_dupes(
 def fill_drops_rife(
     clip: vs.VideoNode,
     model_path: str,
+    gpu_index: int,
     threshold: float = 0.1,
     max_frames: int | None = None,
     debug=False,
@@ -114,7 +125,9 @@ def fill_drops_rife(
             return clip
 
         # duplicate frame
-        interp = interpolate_dupes(clip, n, threshold, max_frames, model_path)
+        interp = interpolate_dupes(
+            clip, n, threshold, max_frames, model_path, gpu_index
+        )
 
         if debug:
             return core.text.Text(

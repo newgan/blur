@@ -28,10 +28,9 @@ import blur.weighting
 import blur.adjust
 import blur.utils as u
 
+video_path = Path(vars().get("video_path", ""))
 
-video_path = Path(vars().get("video_path"))
-
-settings = json.loads(vars().get("settings"))
+settings = json.loads(vars().get("settings", "{}"))
 
 # validate some settings
 svp_interpolation_algorithm = u.coalesce(
@@ -91,6 +90,7 @@ if settings["deduplicate"] and settings["deduplicate_range"] != 0:
             video = blur.deduplicate_rife.fill_drops_rife(
                 video,
                 model_path=settings["rife_model"],
+                gpu_index=settings["rife_gpu_index"],
                 threshold=deduplicate_threshold,
                 max_frames=deduplicate_range,
                 debug=settings["debug"],
@@ -148,7 +148,10 @@ if settings["interpolate"]:
             print(f"pre-interpolating to {pre_interpolated_fps}")
 
             video = blur.interpolate.interpolate_rife(
-                video, pre_interpolated_fps, model_path=settings["rife_model"]
+                video,
+                pre_interpolated_fps,
+                model_path=settings["rife_model"],
+                gpu_index=settings["rife_gpu_index"],
             )
 
             fps_added = video.fps - old_fps
@@ -165,7 +168,10 @@ if settings["interpolate"]:
         match settings["interpolation_method"]:
             case "rife":
                 video = blur.interpolate.interpolate_rife(
-                    video, interpolated_fps, model_path=settings["rife_model"]
+                    video,
+                    interpolated_fps,
+                    model_path=settings["rife_model"],
+                    gpu_index=settings["rife_gpu_index"],
                 )
 
             # case "mvtools":
