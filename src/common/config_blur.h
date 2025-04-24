@@ -55,12 +55,7 @@ struct BlurSettings {
 #endif
 	std::string interpolation_method = "svp";
 
-	bool pre_interpolate =
-#ifdef __APPLE__
-		false;
-#else
-		true;
-#endif
+	bool pre_interpolate = false;
 	std::string pre_interpolated_fps = "360";
 
 	bool timescale = false;
@@ -87,7 +82,7 @@ struct BlurSettings {
 	bool gpu_interpolation = true;
 	bool gpu_encoding = true;
 	std::string gpu_type = "";
-	int rife_gpu_index = 0;
+	int rife_gpu_index = -1;
 
 	bool override_advanced = false;
 	AdvancedSettings advanced;
@@ -132,6 +127,7 @@ public:
 	};
 
 	[[nodiscard]] GetRifeModelResult get_rife_model_path() const;
+	void set_fastest_rife_gpu();
 };
 
 namespace config_blur {

@@ -181,6 +181,10 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 
 	settings.verify_gpu_encoding();
 
+	if (settings.rife_gpu_index == -1) {
+		settings.set_fastest_rife_gpu();
+	}
+
 	config_base::extract_config_value(config_map, "timescale", settings.timescale);
 	config_base::extract_config_value(config_map, "input timescale", settings.input_timescale);
 	config_base::extract_config_value(config_map, "output timescale", settings.output_timescale);
@@ -413,4 +417,23 @@ BlurSettings::GetRifeModelResult BlurSettings::get_rife_model_path() const {
 		.success = true,
 		.rife_model_path = rife_model_path,
 	};
+}
+
+void BlurSettings::set_fastest_rife_gpu() {
+	if (!blur_copy.initialised_rife_gpus)
+		return;
+
+	auto sample_video_path = blur_copy.settings_path / "sample_video.mp4";
+	bool sample_video_exists = std::filesystem::exists(sample_video_path);
+
+	if (sample_video_exists) {
+		auto rife_model_path = this->get_rife_model_path();
+		if (rife_model_path.success) {
+			int fastest_gpu_index =
+				u::get_fastest_rife_gpu_index(blur_copy.rife_gpus, *rife_model_path.rife_model_path, sample_video_path);
+
+			this->rife_gpu_index = fastest_gpu_index;
+			u::log("set rife_gpu_index to the fastest gpu ({})", fastest_gpu_index);
+		}
+	}
 }

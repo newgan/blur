@@ -545,7 +545,6 @@ std::map<int, std::string> u::get_rife_gpus() {
 
 	std::wstring get_gpus_script_path = (blur.resources_path / "lib/get_rife_gpus.py").wstring();
 
-	bp::ipstream out_stream;
 	bp::ipstream err_stream;
 
 	bp::child c(
@@ -583,4 +582,93 @@ std::map<int, std::string> u::get_rife_gpus() {
 	c.wait();
 
 	return gpu_map;
+}
+
+int u::get_fastest_rife_gpu_index(
+	const std::map<int, std::string>& gpu_map,
+	const std::filesystem::path& rife_model_path,
+	const std::filesystem::path& benchmark_video_path
+) {
+	namespace bp = boost::process;
+
+	std::map<int, float> benchmark_map;
+	float fastest_time = FLT_MAX;
+	int fastest_index = -1;
+
+	std::wstring benchmark_gpus_script_path = (blur.resources_path / "lib/benchmark_rife_gpus.py").wstring();
+
+	for (const auto& [gpu_index, gpu_name] : gpu_map) {
+		bp::environment env = boost::this_process::environment();
+
+#if defined(__APPLE__)
+		if (blur.used_installer) {
+			env["PYTHONHOME"] = (blur.resources_path / "python").string();
+			env["PYTHONPATH"] = (blur.resources_path / "python/lib/python3.12/site-packages").string();
+		}
+#endif
+
+		auto start = std::chrono::steady_clock::now();
+
+		bp::child c(
+			blur.vspipe_path.wstring(),
+			L"-c",
+			L"y4m",
+			L"-p",
+			L"-a",
+			std::format(L"rife_model={}", rife_model_path.wstring()),
+			L"-a",
+			std::format(L"rife_gpu_index={}", gpu_index),
+			L"-a",
+			std::format(L"benchmark_video_path={}", benchmark_video_path.wstring()),
+#if defined(__APPLE__)
+			L"-a",
+			std::format(L"macos_bundled={}", blur.used_installer ? L"true" : L"false"),
+#endif
+			L"-e",
+			L"2",
+			benchmark_gpus_script_path,
+			L"-",
+			bp::std_out.null(),
+			bp::std_err.null(),
+			env
+#ifdef _WIN32
+			,
+			bp::windows::create_no_window
+#endif
+		);
+
+		c.detach();
+
+		bool killed_early = false;
+
+		while (c.running()) {
+			float elapsed_seconds =
+				std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - start)
+					.count();
+
+			if (elapsed_seconds > fastest_time) {
+				c.terminate();
+				killed_early = true;
+			}
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		}
+
+		if (!killed_early) {
+			float elapsed_seconds =
+				std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - start)
+					.count();
+			u::log("gpu {} took {}", gpu_index, elapsed_seconds);
+
+			if (elapsed_seconds < fastest_time) {
+				fastest_time = elapsed_seconds;
+				fastest_index = gpu_index;
+			}
+		}
+		else {
+			u::log("gpu {} killed early (too slow)", gpu_index);
+		}
+	}
+
+	return fastest_index;
 }

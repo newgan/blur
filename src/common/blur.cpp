@@ -122,6 +122,10 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 
 	initialised = true;
 
+	std::thread([this] {
+		initialise_rife_gpus();
+	}).detach();
+
 	return {
 		.success = true,
 	};
@@ -195,4 +199,20 @@ void Blur::update(
 	const std::string& tag, const std::optional<std::function<void(const std::string&)>>& progress_callback
 ) {
 	updates::update_to_tag(tag, progress_callback);
+}
+
+void Blur::initialise_rife_gpus() {
+	rife_gpus = u::get_rife_gpus();
+
+	std::ranges::copy(
+		std::ranges::transform_view(
+			rife_gpus,
+			[](const auto& pair) {
+				return pair.second;
+			}
+		),
+		std::back_inserter(rife_gpu_names)
+	);
+
+	initialised_rife_gpus = true;
 }

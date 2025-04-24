@@ -1,6 +1,7 @@
 #pragma once
 
 #include "updates.h"
+#include "config_blur.h"
 
 const std::string APPLICATION_NAME = "blur";
 const std::string BLUR_VERSION = "2.14";
@@ -40,6 +41,13 @@ public:
 	static void update(
 		const std::string& tag, const std::optional<std::function<void(const std::string&)>>& progress_callback = {}
 	);
+
+	std::map<int, std::string> rife_gpus;
+	std::vector<std::string> rife_gpu_names;
+	bool initialised_rife_gpus = false;
+
+	void initialise_rife_gpus();
+	void pick_fastest_rife_gpu(BlurSettings& settings);
 };
 
 inline Blur blur;
