@@ -454,6 +454,10 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	*/
 	section_component("rendering");
 
+	ui::add_button("list gpus", container, "list gpus", fonts::font, [settings] {
+		u::list_rife_gpus(settings.advanced.rife_model);
+	});
+
 	settings.verify_gpu_encoding();
 
 	ui::add_dropdown(

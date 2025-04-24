@@ -28,10 +28,9 @@ import blur.weighting
 import blur.adjust
 import blur.utils as u
 
+video_path = Path(vars().get("video_path", ""))
 
-video_path = Path(vars().get("video_path"))
-
-settings = json.loads(vars().get("settings"))
+settings = json.loads(vars().get("settings", "{}"))
 
 # validate some settings
 svp_interpolation_algorithm = u.coalesce(

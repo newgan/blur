@@ -530,3 +530,49 @@ std::vector<std::wstring> u::ffmpeg_string_to_args(const std::wstring& str) {
 
 	return args;
 }
+
+void u::list_rife_gpus(const std::string& rife_model_path) {
+	namespace bp = boost::process;
+
+	bp::environment env = boost::this_process::environment();
+
+#if defined(__APPLE__)
+	if (blur.used_installer) {
+		env["PYTHONHOME"] = (blur.resources_path / "python").string();
+		env["PYTHONPATH"] = (blur.resources_path / "python/lib/python3.12/site-packages").string();
+	}
+#endif
+
+	std::wstring get_gpus_script_path = (blur.resources_path / "lib/get_rife_gpus.py").wstring();
+
+	bp::ipstream out_stream;
+	bp::ipstream err_stream;
+
+	bp::child c(
+		blur.vspipe_path.wstring(),
+		L"-c",
+		L"y4m",
+		L"-a",
+		L"model_path=" + u::towstring(rife_model_path),
+		get_gpus_script_path,
+		L"-",
+		bp::std_out.null(),
+		bp::std_err > err_stream,
+		env,
+#ifdef _WIN32
+		,
+		bp::windows::create_no_window
+#endif
+	);
+
+	std::string line;
+
+	while (err_stream && std::getline(err_stream, line)) {
+		boost::algorithm::trim(line);
+		u::log("stderr: {}", line);
+	}
+
+	c.wait();
+
+	u::log("list gpus done");
+}
