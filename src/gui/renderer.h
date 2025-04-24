@@ -70,6 +70,7 @@ namespace gui::renderer {
 			inline BlurSettings current_global_settings;
 
 			inline bool loaded_config = false;
+			inline bool loading_config = false;
 
 			inline bool interpolate_scale = true;
 			inline float interpolated_fps_mult = 5.f;
@@ -88,6 +89,11 @@ namespace gui::renderer {
 			void options(ui::Container& container, BlurSettings& settings);
 			void preview(ui::Container& container, BlurSettings& settings);
 			void option_information(ui::Container& container, BlurSettings& settings);
+
+			void parse_interp();
+			void save_config();
+			void on_load();
+
 			void screen(
 				ui::Container& container,
 				ui::Container& preview_container,

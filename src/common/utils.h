@@ -179,4 +179,9 @@ namespace u {
 	std::vector<std::wstring> ffmpeg_string_to_args(const std::wstring& str);
 
 	std::map<int, std::string> get_rife_gpus();
+	int get_fastest_rife_gpu_index(
+		const std::map<int, std::string>& gpu_map,
+		const std::filesystem::path& rife_model_path,
+		const std::filesystem::path& benchmark_video_path
+	);
 }

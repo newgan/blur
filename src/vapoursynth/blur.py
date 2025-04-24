@@ -48,6 +48,10 @@ interpolation_mask_area = u.coalesce(
     blur.interpolate.DEFAULT_MASKING,
 )
 
+rife_gpu_index = settings["rife_gpu_index"]
+if rife_gpu_index == -1:  # haven't benchmarked yet..?
+    rife_gpu_index = 0
+
 if vars().get("macos_bundled") == "true":
     video = core.bs.VideoSource(source=video_path, cachemode=0)
 else:
@@ -90,7 +94,7 @@ if settings["deduplicate"] and settings["deduplicate_range"] != 0:
             video = blur.deduplicate_rife.fill_drops_rife(
                 video,
                 model_path=settings["rife_model"],
-                gpu_index=settings["rife_gpu_index"],
+                gpu_index=rife_gpu_index,
                 threshold=deduplicate_threshold,
                 max_frames=deduplicate_range,
                 debug=settings["debug"],
@@ -151,7 +155,7 @@ if settings["interpolate"]:
                 video,
                 pre_interpolated_fps,
                 model_path=settings["rife_model"],
-                gpu_index=settings["rife_gpu_index"],
+                gpu_index=rife_gpu_index,
             )
 
             fps_added = video.fps - old_fps
@@ -171,7 +175,7 @@ if settings["interpolate"]:
                     video,
                     interpolated_fps,
                     model_path=settings["rife_model"],
-                    gpu_index=settings["rife_gpu_index"],
+                    gpu_index=rife_gpu_index,
                 )
 
             # case "mvtools":

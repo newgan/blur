@@ -454,8 +454,6 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	*/
 	section_component("rendering");
 
-	settings.verify_gpu_encoding();
-
 	ui::add_dropdown(
 		"codec dropdown",
 		container,
@@ -542,39 +540,31 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	}
 
 #ifndef __APPLE__ // rife mac issue todo:
-	static bool init_rife_gpus = false;
-	static auto rife_gpus = u::get_rife_gpus();
-	static std::vector<std::string> rife_gpu_names;
-
-	if (!init_rife_gpus) {
-		std::ranges::copy(
-			std::ranges::transform_view(
-				rife_gpus,
-				[](const auto& pair) {
-					return pair.second;
-				}
-			),
-			std::back_inserter(rife_gpu_names)
-		);
-
-		init_rife_gpus = true;
-	}
-
 	static std::string rife_gpu;
 
-	rife_gpu = rife_gpus.at(settings.rife_gpu_index);
+	if (settings.rife_gpu_index == -1) {
+		rife_gpu = "default - will use first available";
+	}
+	else {
+		if (blur.initialised_rife_gpus) {
+			rife_gpu = blur.rife_gpus.at(settings.rife_gpu_index);
+		}
+		else {
+			rife_gpu = std::format("gpu {}", settings.rife_gpu_index);
+		}
+	}
 
 	ui::add_dropdown(
 		"rife gpu dropdown",
 		container,
-		"RIFE GPU",
-		rife_gpu_names,
+		"rife gpu",
+		blur.rife_gpu_names,
 		rife_gpu,
 		fonts::font,
 		[&](std::string* new_gpu_name) {
-			for (const auto& [index, gpu_name] : rife_gpus) {
+			for (const auto& [gpu_index, gpu_name] : blur.rife_gpus) {
 				if (gpu_name == *new_gpu_name) {
-					settings.rife_gpu_index = index;
+					settings.rife_gpu_index = gpu_index;
 				}
 			}
 		}
@@ -917,68 +907,73 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 		});
 	}
 
-	if (!preview_path.empty() && std::filesystem::exists(preview_path) && !error) {
-		auto element = ui::add_image(
-			"config preview image",
-			container,
-			preview_path,
-			container.get_usable_rect().size(),
-			std::to_string(preview_id),
-			gfx::rgba(255, 255, 255, loading ? 100 : 255)
-		);
-	}
-	else {
-		if (sample_video_exists) {
-			if (loading) {
-				ui::add_text(
-					"loading config preview text",
-					container,
-					"Loading config preview...",
-					gfx::rgba(255, 255, 255, 100),
-					fonts::font,
-					os::TextAlign::Center
-				);
+	try {
+		if (!preview_path.empty() && std::filesystem::exists(preview_path) && !error) {
+			auto element = ui::add_image(
+				"config preview image",
+				container,
+				preview_path,
+				container.get_usable_rect().size(),
+				std::to_string(preview_id),
+				gfx::rgba(255, 255, 255, loading ? 100 : 255)
+			);
+		}
+		else {
+			if (sample_video_exists) {
+				if (loading) {
+					ui::add_text(
+						"loading config preview text",
+						container,
+						"Loading config preview...",
+						gfx::rgba(255, 255, 255, 100),
+						fonts::font,
+						os::TextAlign::Center
+					);
+				}
+				else {
+					ui::add_text(
+						"failed to generate preview text",
+						container,
+						"Failed to generate preview.",
+						gfx::rgba(255, 255, 255, 100),
+						fonts::font,
+						os::TextAlign::Center
+					);
+				}
 			}
 			else {
 				ui::add_text(
-					"failed to generate preview text",
+					"sample video does not exist text",
 					container,
-					"Failed to generate preview.",
+					"No preview video found.",
 					gfx::rgba(255, 255, 255, 100),
 					fonts::font,
 					os::TextAlign::Center
 				);
+
+				ui::add_text(
+					"sample video does not exist text 2",
+					container,
+					"Drop a video here to add one.",
+					gfx::rgba(255, 255, 255, 100),
+					fonts::font,
+					os::TextAlign::Center
+				);
+
+				ui::add_button("open preview file button", container, "Open file", fonts::font, [] {
+					base::paths paths;
+					utils::show_file_selector("Blur input", "", {}, os::FileDialog::Type::OpenFile, paths);
+
+					if (paths.size() != 1)
+						return; // ??
+
+					tasks::add_sample_video(base::from_utf8(paths[0]));
+				});
 			}
 		}
-		else {
-			ui::add_text(
-				"sample video does not exist text",
-				container,
-				"No preview video found.",
-				gfx::rgba(255, 255, 255, 100),
-				fonts::font,
-				os::TextAlign::Center
-			);
-
-			ui::add_text(
-				"sample video does not exist text 2",
-				container,
-				"Drop a video here to add one.",
-				gfx::rgba(255, 255, 255, 100),
-				fonts::font,
-				os::TextAlign::Center
-			);
-
-			ui::add_button("open preview file button", container, "Open file", fonts::font, [] {
-				base::paths paths;
-				utils::show_file_selector("Blur input", "", {}, os::FileDialog::Type::OpenFile, paths);
-
-				if (paths.size() != 1)
-					return; // ??
-
-				tasks::add_sample_video(base::from_utf8(paths[0]));
-			});
-		}
+	}
+	catch (std::filesystem::filesystem_error& e) {
+		// i have no idea. std::filesystem::exists threw?
 	}
 
 	ui::add_separator("config preview separator", container, ui::SeparatorStyle::FADE_BOTH);
@@ -1253,68 +1248,86 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 
 // NOLINTEND(readability-function-cognitive-complexity)
 
+void gui::renderer::components::configs::parse_interp() {
+	auto parse_fps_setting = [&](const std::string& fps_setting,
+	                             int& fps,
+	                             float& fps_mult,
+	                             bool& scale_mode,
+	                             std::function<void()> set_function,
+	                             const std::string& log_prefix = "") {
+		try {
+			auto split = u::split_string(fps_setting, "x");
+			if (split.size() > 1) {
+				fps_mult = std::stof(split[0]);
+				scale_mode = true;
+			}
+			else {
+				fps = std::stof(fps_setting);
+				scale_mode = false;
+			}
+
+			u::log("loaded {}interp, scale: {} (fps: {}, mult: {})", log_prefix, scale_mode, fps, fps_mult);
+		}
+		catch (std::exception& e) {
+			u::log("failed to parse {}interpolated fps, setting defaults cos user error", log_prefix);
+			set_function();
+		}
+	};
+
+	parse_fps_setting(
+		settings.interpolated_fps, interpolated_fps, interpolated_fps_mult, interpolate_scale, set_interpolated_fps
+	);
+
+	parse_fps_setting(
+		settings.pre_interpolated_fps,
+		pre_interpolated_fps,
+		pre_interpolated_fps_mult,
+		pre_interpolate_scale,
+		set_interpolated_fps,
+		"pre-"
+	);
+};
+
+void gui::renderer::components::configs::save_config() {
+	config_blur::create(config_blur::get_global_config_path(), settings);
+	current_global_settings = settings;
+};
+
+void gui::renderer::components::configs::on_load() {
+	current_global_settings = settings;
+	parse_interp();
+};
+
 void gui::renderer::components::configs::screen(
 	ui::Container& config_container,
 	ui::Container& preview_container,
 	ui::Container& option_information_container,
 	float delta_time
 ) {
-	auto parse_interp = [&] {
-		auto parse_fps_setting = [&](const std::string& fps_setting,
-		                             int& fps,
-		                             float& fps_mult,
-		                             bool& scale_mode,
-		                             std::function<void()> set_function,
-		                             const std::string& log_prefix = "") {
-			try {
-				auto split = u::split_string(fps_setting, "x");
-				if (split.size() > 1) {
-					fps_mult = std::stof(split[0]);
-					scale_mode = true;
-				}
-				else {
-					fps = std::stof(fps_setting);
-					scale_mode = false;
-				}
-
-				u::log("loaded {}interp, scale: {} (fps: {}, mult: {})", log_prefix, scale_mode, fps, fps_mult);
-			}
-			catch (std::exception& e) {
-				u::log("failed to parse {}interpolated fps, setting defaults cos user error", log_prefix);
-				set_function();
-			}
-		};
-
-		parse_fps_setting(
-			settings.interpolated_fps, interpolated_fps, interpolated_fps_mult, interpolate_scale, set_interpolated_fps
-		);
-
-		parse_fps_setting(
-			settings.pre_interpolated_fps,
-			pre_interpolated_fps,
-			pre_interpolated_fps_mult,
-			pre_interpolate_scale,
-			set_interpolated_fps,
-			"pre-"
-		);
-	};
-
-	auto on_load = [&] {
-		current_global_settings = settings;
-		parse_interp();
-	};
-
-	auto save_config = [&] {
-		config_blur::create(config_blur::get_global_config_path(), settings);
-		current_global_settings = settings;
-
-		u::log("saved global settings");
-	};
-
+	static bool loading_config = false;
 	if (!loaded_config) {
-		settings = config_blur::parse_global_config();
-		on_load();
-		loaded_config = true;
+		if (!loading_config) {
+			loading_config = true;
+
+			std::thread([] {
+				settings = config_blur::parse_global_config();
+				on_load();
+				loading_config = false;
+				loaded_config = true;
+			}).detach();
+		}
+
+		ui::add_text(
+			"config loading text",
+			config_container,
+			"Loading config...",
+			gfx::rgba(255, 255, 255, 100),
+			fonts::font,
+			os::TextAlign::Center
+		);
+
+		ui::center_elements_in_container(config_container);
+		return;
 	}
 
 	bool config_changed = settings != current_global_settings;
@@ -1341,9 +1354,7 @@ void gui::renderer::components::configs::screen(
 	}
 
 	options(config_container, settings);
-
 	preview(preview_container, settings);
-
 	option_information(option_information_container, settings);
 }
 
@@ -1411,7 +1422,10 @@ bool gui::renderer::redraw_window(os::Window* window, bool force_render) {
 	const int config_page_container_gap = PAD_X / 2;
 
 	gfx::Rect config_container_rect = rect;
-	config_container_rect.w = 200 + PAD_X * 2;
+
+	if (components::configs::loaded_config) {
+		config_container_rect.w = 200 + PAD_X * 2;
+	}
 
 	ui::reset_container(config_container, config_container_rect, 9, ui::Padding{ PAD_Y, PAD_X, bottom_pad, PAD_X });
 
