@@ -188,13 +188,16 @@ add_executable(
   ${GUI_SOURCES}
   ${RESOURCES}
   src/gui/gui_pch.cpp)
+
 target_link_libraries(
   blur-gui
   PRIVATE laf-base
           laf-gfx
           laf-os
           ZLIB::ZLIB)
+
 target_precompile_headers(blur-gui PRIVATE src/gui/gui_pch.h)
+
 if(APPLE)
   target_link_libraries(blur-gui PRIVATE
       "-framework CoreVideo"
