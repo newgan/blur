@@ -1335,6 +1335,8 @@ bool gui::renderer::redraw_window(bool force_render) {
 	ui::on_frame_start();
 	sdl::on_frame_start();
 
+	render::update_window_size(sdl::window);
+
 	auto now = std::chrono::steady_clock::now();
 	static auto last_frame_time = now;
 
