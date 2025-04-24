@@ -261,8 +261,9 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 		"default=noprint_wrappers=1",
 		path.wstring(),
 		bp::std_out > pipe_stream,
-		bp::std_err > bp::null,
+		bp::std_err > bp::null
 #ifdef _WIN32
+		,
 		bp::windows::create_no_window
 #endif
 	);
@@ -330,8 +331,9 @@ std::vector<u::EncodingDevice> u::get_hardware_encoding_devices() {
 		"-hide_banner",
 		"-hwaccels",
 		bp::std_out > pipe_stream,
-		bp::std_err > bp::null,
+		bp::std_err > bp::null
 #ifdef _WIN32
+		,
 		bp::windows::create_no_window
 #endif
 	);
@@ -364,8 +366,9 @@ std::vector<u::EncodingDevice> u::get_hardware_encoding_devices() {
 		"-hide_banner",
 		"-encoders",
 		bp::std_out > encoder_stream,
-		bp::std_err > bp::null,
+		bp::std_err > bp::null
 #ifdef _WIN32
+		,
 		bp::windows::create_no_window
 #endif
 	);
@@ -553,8 +556,9 @@ std::map<int, std::string> u::get_rife_gpus() {
 		L"-",
 		bp::std_out.null(),
 		bp::std_err > err_stream,
-		env,
+		env
 #ifdef _WIN32
+		,
 		bp::windows::create_no_window
 #endif
 	);
