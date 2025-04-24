@@ -120,9 +120,11 @@ config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config
 	}
 
 	if (!u::contains(SVP_INTERPOLATION_ALGORITHMS, config.advanced.svp_interpolation_algorithm)) {
-		errors.insert(std::format(
-			"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
-		));
+		errors.insert(
+			std::format(
+				"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
+			)
+		);
 
 		if (fix)
 			config.advanced.svp_interpolation_algorithm = DEFAULT_CONFIG.advanced.svp_interpolation_algorithm;
@@ -395,7 +397,7 @@ BlurSettings::GetRifeModelResult BlurSettings::get_rife_model_path() const {
 #	if defined(_WIN32)
 	rife_model_path = u::get_resources_path() / "lib/models" / this->advanced.rife_model;
 #	elif defined(__linux__)
-// todo
+	rife_model_path = u::get_resources_path() / "models" / this->advanced.rife_model;
 #	elif defined(__APPLE__)
 	rife_model_path = u::get_resources_path() / "models" / this->advanced.rife_model;
 #	endif
