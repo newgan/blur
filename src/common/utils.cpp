@@ -566,7 +566,6 @@ std::map<int, std::string> u::get_rife_gpus() {
 
 	while (err_stream && std::getline(err_stream, line)) {
 		boost::algorithm::trim(line);
-		u::log("stderr: {}", line);
 
 		std::smatch match;
 		if (std::regex_search(line, match, gpu_line_pattern)) {
