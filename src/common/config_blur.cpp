@@ -389,8 +389,9 @@ void BlurSettings::verify_gpu_encoding() {
 }
 
 BlurSettings::GetRifeModelResult BlurSettings::get_rife_model_path() const {
-#ifndef __APPLE__ // rife issue again
 	std::filesystem::path rife_model_path;
+
+#ifndef __APPLE__ // rife issue again
 #	if defined(_WIN32)
 	rife_model_path = u::get_resources_path() / "lib/models" / this->advanced.rife_model;
 #	elif defined(__linux__)

@@ -454,6 +454,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	*/
 	section_component("rendering");
 
+#ifndef __APPLE__ // rife mac issue todo:
 	static bool init_rife_gpus = false;
 	static auto rife_gpus = u::get_rife_gpus();
 	static std::vector<std::string> rife_gpu_names;
@@ -491,6 +492,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			}
 		}
 	);
+#endif
 
 	settings.verify_gpu_encoding();
 
