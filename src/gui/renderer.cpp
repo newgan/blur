@@ -454,46 +454,6 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	*/
 	section_component("rendering");
 
-#ifndef __APPLE__ // rife mac issue todo:
-	static bool init_rife_gpus = false;
-	static auto rife_gpus = u::get_rife_gpus();
-	static std::vector<std::string> rife_gpu_names;
-
-	if (!init_rife_gpus) {
-		std::ranges::copy(
-			std::ranges::transform_view(
-				rife_gpus,
-				[](const auto& pair) {
-					return pair.second;
-				}
-			),
-			std::back_inserter(rife_gpu_names)
-		);
-
-		init_rife_gpus = true;
-	}
-
-	static std::string rife_gpu;
-
-	rife_gpu = rife_gpus.at(settings.rife_gpu_index);
-
-	ui::add_dropdown(
-		"rife gpu dropdown",
-		container,
-		"RIFE GPU",
-		rife_gpu_names,
-		rife_gpu,
-		fonts::font,
-		[&](std::string* new_gpu_name) {
-			for (const auto& [index, gpu_name] : rife_gpus) {
-				if (gpu_name == *new_gpu_name) {
-					settings.rife_gpu_index = index;
-				}
-			}
-		}
-	);
-#endif
-
 	settings.verify_gpu_encoding();
 
 	ui::add_dropdown(
@@ -580,6 +540,46 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			fonts::font
 		);
 	}
+
+#ifndef __APPLE__ // rife mac issue todo:
+	static bool init_rife_gpus = false;
+	static auto rife_gpus = u::get_rife_gpus();
+	static std::vector<std::string> rife_gpu_names;
+
+	if (!init_rife_gpus) {
+		std::ranges::copy(
+			std::ranges::transform_view(
+				rife_gpus,
+				[](const auto& pair) {
+					return pair.second;
+				}
+			),
+			std::back_inserter(rife_gpu_names)
+		);
+
+		init_rife_gpus = true;
+	}
+
+	static std::string rife_gpu;
+
+	rife_gpu = rife_gpus.at(settings.rife_gpu_index);
+
+	ui::add_dropdown(
+		"rife gpu dropdown",
+		container,
+		"RIFE GPU",
+		rife_gpu_names,
+		rife_gpu,
+		fonts::font,
+		[&](std::string* new_gpu_name) {
+			for (const auto& [index, gpu_name] : rife_gpus) {
+				if (gpu_name == *new_gpu_name) {
+					settings.rife_gpu_index = index;
+				}
+			}
+		}
+	);
+#endif
 
 	/*
 	    Timescale
