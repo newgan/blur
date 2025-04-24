@@ -20,14 +20,8 @@ if vars().get("macos_bundled") == "true":
 # add blur.py folder to path so it can reference scripts
 sys.path.insert(1, str(Path(__file__).parent))
 
-import blur.interpolate
-
-rife_model = str(vars().get("rife_model"))
-
-video = core.std.BlankClip()
-
-blur.interpolate.interpolate_rife(
-    video, video.fps, model_path=rife_model, only_list_gpus=True
+video = core.std.BlankClip(
+    width=1, height=1, length=2, fpsnum=1, fpsden=1, format=vs.RGBS
 )
 
-video.set_output()
+core.rife.RIFE(video, list_gpu=True)

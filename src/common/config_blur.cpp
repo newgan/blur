@@ -45,6 +45,7 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 	output << "gpu interpolation: " << (current_settings.gpu_interpolation ? "true" : "false") << "\n";
 	output << "gpu encoding: " << (current_settings.gpu_encoding ? "true" : "false") << "\n";
 	output << "gpu type (nvidia/amd/intel): " << current_settings.gpu_type << "\n";
+	output << "rife gpu number: " << current_settings.rife_gpu_index << "\n";
 
 	output << "\n";
 	output << "- timescale" << "\n";
@@ -119,11 +120,9 @@ config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config
 	}
 
 	if (!u::contains(SVP_INTERPOLATION_ALGORITHMS, config.advanced.svp_interpolation_algorithm)) {
-		errors.insert(
-			std::format(
-				"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
-			)
-		);
+		errors.insert(std::format(
+			"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
+		));
 
 		if (fix)
 			config.advanced.svp_interpolation_algorithm = DEFAULT_CONFIG.advanced.svp_interpolation_algorithm;
@@ -176,6 +175,7 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 	config_base::extract_config_value(config_map, "gpu interpolation", settings.gpu_interpolation);
 	config_base::extract_config_value(config_map, "gpu encoding", settings.gpu_encoding);
 	config_base::extract_config_string(config_map, "gpu type (nvidia/amd/intel)", settings.gpu_type);
+	config_base::extract_config_value(config_map, "rife gpu number", settings.rife_gpu_index);
 
 	settings.verify_gpu_encoding();
 
@@ -319,6 +319,7 @@ BlurSettings::ToJsonResult BlurSettings::to_json() const {
 	j["gpu_interpolation"] = this->gpu_interpolation;
 	j["gpu_encoding"] = this->gpu_encoding;
 	j["gpu_type"] = this->gpu_type;
+	j["rife_gpu_index"] = this->rife_gpu_index;
 
 	j["filters"] = this->filters;
 	j["brightness"] = this->brightness;
@@ -342,24 +343,14 @@ BlurSettings::ToJsonResult BlurSettings::to_json() const {
 	j["interpolation_blocksize"] = this->advanced.interpolation_blocksize;
 	j["interpolation_mask_area"] = this->advanced.interpolation_mask_area;
 
-#ifndef __APPLE__ // rife issue again
-	std::filesystem::path rife_model_path;
-#	if defined(_WIN32)
-	rife_model_path = u::get_resources_path() / "lib/models" / this->advanced.rife_model;
-#	elif defined(__linux__)
-	// todo
-#	elif defined(__APPLE__)
-	rife_model_path = u::get_resources_path() / "models" / this->advanced.rife_model;
-#	endif
-
-	if (!std::filesystem::exists(rife_model_path))
+	auto rife_model_path = get_rife_model_path();
+	if (!rife_model_path.success) {
 		return {
 			.success = false,
-			.error_message = std::format("RIFE model '{}' could not be found", this->advanced.rife_model),
+			.error_message = rife_model_path.error_message,
 		};
-
-	j["rife_model"] = rife_model_path;
-#endif
+	}
+	j["rife_model"] = *rife_model_path.rife_model_path;
 
 	j["manual_svp"] = this->advanced.manual_svp;
 	j["super_string"] = this->advanced.super_string;
@@ -395,4 +386,28 @@ void BlurSettings::verify_gpu_encoding() {
 	if (!u::contains(available_codecs, encode_preset)) {
 		encode_preset = "h264";
 	}
+}
+
+BlurSettings::GetRifeModelResult BlurSettings::get_rife_model_path() const {
+#ifndef __APPLE__ // rife issue again
+	std::filesystem::path rife_model_path;
+#	if defined(_WIN32)
+	rife_model_path = u::get_resources_path() / "lib/models" / this->advanced.rife_model;
+#	elif defined(__linux__)
+// todo
+#	elif defined(__APPLE__)
+	rife_model_path = u::get_resources_path() / "models" / this->advanced.rife_model;
+#	endif
+
+	if (!std::filesystem::exists(rife_model_path))
+		return {
+			.success = false,
+			.error_message = std::format("RIFE model '{}' could not be found", this->advanced.rife_model),
+		};
+#endif
+
+	return {
+		.success = true,
+		.rife_model_path = rife_model_path,
+	};
 }

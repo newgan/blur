@@ -87,6 +87,7 @@ struct BlurSettings {
 	bool gpu_interpolation = true;
 	bool gpu_encoding = true;
 	std::string gpu_type = "";
+	int rife_gpu_index = 0;
 
 	bool override_advanced = false;
 	AdvancedSettings advanced;
@@ -110,7 +111,8 @@ public:
 		       detailed_filenames == other.detailed_filenames && copy_dates == other.copy_dates &&
 		       gpu_decoding == other.gpu_decoding && gpu_interpolation == other.gpu_interpolation &&
 		       gpu_encoding == other.gpu_encoding && gpu_type == other.gpu_type &&
-		       override_advanced == other.override_advanced && advanced == other.advanced;
+		       rife_gpu_index == other.rife_gpu_index && override_advanced == other.override_advanced &&
+		       advanced == other.advanced;
 	}
 
 	void verify_gpu_encoding();
@@ -122,6 +124,14 @@ public:
 	};
 
 	[[nodiscard]] ToJsonResult to_json() const;
+
+	struct GetRifeModelResult {
+		bool success;
+		std::optional<std::filesystem::path> rife_model_path;
+		std::string error_message;
+	};
+
+	[[nodiscard]] GetRifeModelResult get_rife_model_path() const;
 };
 
 namespace config_blur {

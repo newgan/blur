@@ -178,5 +178,5 @@ namespace u {
 
 	std::vector<std::wstring> ffmpeg_string_to_args(const std::wstring& str);
 
-	void list_rife_gpus(const std::string& rife_model_path);
+	std::map<int, std::string> get_rife_gpus();
 }

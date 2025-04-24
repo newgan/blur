@@ -175,7 +175,7 @@ def interpolate_mvtools(
     )
 
 
-def interpolate_rife(video, new_fps: int, model_path: str, only_list_gpus=False):
+def interpolate_rife(video, new_fps: int, model_path: str, gpu_index=int):
     u.check_model_path(model_path)
 
     orig_format = video.format
@@ -193,8 +193,7 @@ def interpolate_rife(video, new_fps: int, model_path: str, only_list_gpus=False)
         fps_num=new_fps,
         fps_den=1,
         model_path=model_path,
-        gpu_id=0,
-        list_gpus=only_list_gpus,
+        gpu_id=gpu_index,
     )
 
     if needs_conversion:
