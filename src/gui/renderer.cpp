@@ -3,6 +3,7 @@
 #include "common/rendering.h"
 #include "common/rendering_frame.h"
 
+#include "gui/ui/keys.h"
 #include "sdl.h"
 #include "tasks.h"
 #include "gui.h"
@@ -1332,6 +1333,7 @@ void gui::renderer::components::configs::screen(
 // NOLINTBEGIN(readability-function-size,readability-function-cognitive-complexity)
 
 bool gui::renderer::redraw_window(bool force_render) {
+	keys::on_frame_start();
 	ui::on_frame_start();
 	sdl::on_frame_start();
 
@@ -1382,13 +1384,15 @@ bool gui::renderer::redraw_window(bool force_render) {
 	nav_container_rect.h = 70;
 	nav_container_rect.y = rect.y2() - nav_container_rect.h;
 
-	ui::reset_container(nav_container, nav_container_rect, fonts::dejavu.height(), {});
+	ui::reset_container(nav_container, sdl::window, nav_container_rect, fonts::dejavu.height(), {});
 
 	int nav_cutoff = rect.y2() - nav_container_rect.y;
 	int bottom_pad = std::max(PAD_Y, nav_cutoff);
 
 	const static int main_pad_x = std::min(100, render::window_size.w / 10); // bit of magic never hurt anyone
-	ui::reset_container(main_container, rect, 13, ui::Padding{ PAD_Y, main_pad_x, bottom_pad, main_pad_x });
+	ui::reset_container(
+		main_container, sdl::window, rect, 13, ui::Padding{ PAD_Y, main_pad_x, bottom_pad, main_pad_x }
+	);
 
 	const int config_page_container_gap = PAD_X / 2;
 
@@ -1398,7 +1402,9 @@ bool gui::renderer::redraw_window(bool force_render) {
 		config_container_rect.w = 200 + PAD_X * 2;
 	}
 
-	ui::reset_container(config_container, config_container_rect, 9, ui::Padding{ PAD_Y, PAD_X, bottom_pad, PAD_X });
+	ui::reset_container(
+		config_container, sdl::window, config_container_rect, 9, ui::Padding{ PAD_Y, PAD_X, bottom_pad, PAD_X }
+	);
 
 	gfx::Rect config_preview_container_rect = rect;
 	config_preview_container_rect.x = config_container_rect.x2() + config_page_container_gap;
@@ -1406,13 +1412,18 @@ bool gui::renderer::redraw_window(bool force_render) {
 
 	ui::reset_container(
 		config_preview_container,
+		sdl::window,
 		config_preview_container_rect,
 		fonts::dejavu.height(),
 		ui::Padding{ PAD_Y, PAD_X, bottom_pad, PAD_X }
 	);
 
 	ui::reset_container(
-		option_information_container, config_preview_container_rect, 9, ui::Padding{ PAD_Y, PAD_X, bottom_pad, PAD_X }
+		option_information_container,
+		sdl::window,
+		config_preview_container_rect,
+		9,
+		ui::Padding{ PAD_Y, PAD_X, bottom_pad, PAD_X }
 	);
 
 	gfx::Rect notification_container_rect = rect;
@@ -1421,7 +1432,7 @@ bool gui::renderer::redraw_window(bool force_render) {
 	notification_container_rect.h = 300;
 	notification_container_rect.y = NOTIFICATIONS_PAD_Y;
 
-	ui::reset_container(notification_container, notification_container_rect, 6, {});
+	ui::reset_container(notification_container, sdl::window, notification_container_rect, 6, {});
 
 	switch (screen) {
 		case Screens::MAIN: {
