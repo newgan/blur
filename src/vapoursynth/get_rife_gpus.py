@@ -2,7 +2,6 @@ import vapoursynth as vs
 from vapoursynth import core
 
 import sys
-import json
 from pathlib import Path
 
 if vars().get("macos_bundled") == "true":
