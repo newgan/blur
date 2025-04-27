@@ -22,6 +22,10 @@ Blur is a native desktop application made for easily and efficiently adding moti
 
 > Using SVP for interpolation requires that [SVP Manager](https://www.svp-team.com/get/) be running, or you'll get a red border around videos. This is because the older, free version of SVPflow (the interpolation plugin) that's used on Windows and Linux doesn't have an ARM build unfortunately.
 
+### Linux notes
+
+Requires manual installation of dependencies. [See here for the list of dependencies.](#linux-dependency-requirements)
+
 ## Features
 
 The amount of motion blur is easily configurable, and there are additional options to enable other features such as interpolating the video's fps. This can be used to generate 'fake' motion blur through frame blending the interpolated footage. This motion blur does not blur non-moving parts of the video, like the HUD in gameplay footage.
@@ -190,6 +194,16 @@ You can customise the SVP interpolation settings even further by manually defini
 - smooth string: json string used as input in [SVSmoothFps](https://www.svp-team.com/wiki/Manual:SVPflow#SVSmoothFps.28source.2C_super.2C_vectors.2C_params_string.2C_.5Bsar.5D:_float.2C_.5Bmt.5D:_integer.29)
 
 These options are not visible by default, add them to your config and they will be used.
+
+## Linux dependency requirements
+
+- VapourSynth
+- FFmpeg
+- VapourSynth plugins
+  - SVPflow
+  - [BestSource](https://github.com/vapoursynth/bestsource)
+  - [MVTools](https://github.com/dubhater/vapoursynth-mvtools)
+  - [Akarin](https://github.com/AkarinVS/vapoursynth-plugin)
 
 ---
 
