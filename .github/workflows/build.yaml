@@ -138,16 +138,21 @@ jobs:
           elif [[ "$os" == "Linux" ]]; then
             cli_source="blur-cli"
             gui_source="blur"
-
             cli_binary="blur-cli-$configuration"
             gui_binary="blur-$configuration"
 
+            # Create lib directory and copy vapoursynth into it
+            mkdir -p lib
+            cp -r ../../src/vapoursynth lib/
+
+            # CLI package
             mv "$cli_source" "$cli_binary"
-            tar -cvf "$cli_binary.tar.gz" "$cli_binary"
+            tar -cvf "$cli_binary.tar.gz" "$cli_binary" lib
             cli_path="$cli_binary.tar.gz"
 
+            # GUI package
             mv "$gui_source" "$gui_binary"
-            tar -cvf "$gui_binary.tar.gz" "$gui_binary"
+            tar -cvf "$gui_binary.tar.gz" "$gui_binary" lib
             gui_path="$gui_binary.tar.gz"
           elif [[ "$os" == "macOS" ]]; then
             cli_source="blur-cli"
@@ -202,7 +207,7 @@ jobs:
         with:
           path: installer/setup.iss
           options: /O+
-      
+
       - name: Rename Installer (Windows)
         if: runner.os == 'Windows'
         run: |
@@ -225,4 +230,3 @@ jobs:
             ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.cli_path }}
             ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.gui_path }}
             ${{ runner.os == 'Windows' && 'installer/output/blur-Windows-Installer-x64.exe' || '' }}
-
