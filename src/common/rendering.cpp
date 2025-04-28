@@ -169,6 +169,10 @@ RenderCommandsResult Render::build_render_commands() {
 		                L"-a",
 		                std::format(L"macos_bundled={}", blur.used_installer ? L"true" : L"false"),
 #endif
+#if defined(__WINDOWS__)
+		                L"-a",
+		                L"enable_lsmash=true",
+#endif
 		                blur_script_path,
 		                L"-" };
 
@@ -214,14 +218,16 @@ RenderCommandsResult Render::build_render_commands() {
 
 	if (!audio_filters.empty()) {
 		commands.ffmpeg.emplace_back(L"-af");
-		commands.ffmpeg.push_back(std::accumulate(
-			std::next(audio_filters.begin()),
-			audio_filters.end(),
-			audio_filters[0],
-			[](const std::wstring& a, const std::wstring& b) {
-				return a + L"," + b;
-			}
-		));
+		commands.ffmpeg.push_back(
+			std::accumulate(
+				std::next(audio_filters.begin()),
+				audio_filters.end(),
+				audio_filters[0],
+				[](const std::wstring& a, const std::wstring& b) {
+					return a + L"," + b;
+				}
+			)
+		);
 	}
 
 	if (!m_settings.advanced.ffmpeg_override.empty()) {

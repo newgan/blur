@@ -25,10 +25,10 @@ model_path = Path(vars().get("rife_model", ""))
 gpu_index = vars().get("rife_gpu_index", 0)
 benchmark_video_path = Path(vars().get("benchmark_video_path", ""))
 
-if vars().get("macos_bundled") == "true":
-    video = core.bs.VideoSource(source=benchmark_video_path, cachemode=0)
-else:
+if vars().get("enable_lsmash") == "true":
     video = core.lsmas.LWLibavSource(source=benchmark_video_path, cache=0)
+else:
+    video = core.bs.VideoSource(source=benchmark_video_path, cachemode=0)
 
 video = blur.interpolate.interpolate_rife(
     video, video.fps * 3, model_path=model_path, gpu_index=gpu_index
