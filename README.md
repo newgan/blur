@@ -197,6 +197,10 @@ These options are not visible by default, add them to your config and they will 
 
 ## Linux dependency requirements
 
+### General list of things you need
+
+If your distro isn't listed below, here's a list of the things you'll need to install. Most of the Vapoursynth plugins don't provide Linux builds annoyingly, so you'll have to compile them yourself. They all provide instructions on how to do this though.
+
 - VapourSynth
 - FFmpeg
 - VapourSynth plugins
@@ -204,6 +208,11 @@ These options are not visible by default, add them to your config and they will 
   - [BestSource](https://github.com/vapoursynth/bestsource)
   - [MVTools](https://github.com/dubhater/vapoursynth-mvtools)
   - [Akarin](https://github.com/AkarinVS/vapoursynth-plugin) (or this [fork which supports newer LLVM versions](https://github.com/Jaded-Encoding-Thaumaturgy/akarin-vapoursynth-plugin))
+  - [RIFE-ncnn-Vulkan](https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan)
+
+### Arch required packages
+
+`paru -S vapoursynth ffmpeg vapoursynth-plugin-svpflow vapoursynth-plugin-bestsource vapoursynth-plugin-mvtools vapoursynth-plugin-vsakarin-av1an-git vapoursynth-plugin-rife-ncnn-vulkan`
 
 ---
 
