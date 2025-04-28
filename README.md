@@ -14,7 +14,7 @@ Blur is a native desktop application made for easily and efficiently adding moti
 
 - [Windows installer](https://github.com/f0e/blur/releases/latest/download/blur-Windows-Installer-x64.exe)
 - [macOS installer](https://github.com/f0e/blur/releases/latest/download/blur-macOS-Release-arm64.dmg)
-- [Linux (requires manual installation of dependencies)](https://github.com/f0e/blur/releases/latest)
+- [Linux (requires manual installation of dependencies)](https://github.com/f0e/blur/releases/latest/download/blur-Linux-Release-x64.tar.gz)
 
 ### macOS notes
 
