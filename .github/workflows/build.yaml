@@ -147,28 +147,31 @@ jobs:
             gui_path="$gui_binary"
             cli_path="$cli_binary"
           elif [[ "$os" == "Linux" ]]; then
+            ls -la
+            ls -la lib
+            
             cli_source="blur-cli"
             gui_source="blur"
             cli_binary="blur-cli-$configuration"
             gui_binary="blur-$configuration"
 
-            mkdir -p package/lib
-            mkdir -p package/models/rife-v4.26_ensembleFalse
-
             # copy binaries
-            cp "$cli_source" package/"$cli_binary"
-            cp "$gui_source" package/"$gui_binary"
+            mv "$cli_source" "$cli_binary"
+            mv "$gui_source" "$gui_binary"
 
             # copy lib
-            cp -r ../../src/vapoursynth package/lib/
+            mkdir lib
+            cp -r ../../../src/vapoursynth/* lib/
 
             # copy models
-            cp -r ../../models/rife-v4.26_ensembleFalse/* package/models/rife-v4.26_ensembleFalse/
+            mkdir models
+            cp -r ../../../models/rife-v4.26_ensembleFalse/ models/
 
             package_name="blur-$configuration.tar.gz"
-            cd package
-            tar -czvf "../$package_name" ./*
-            cd ..
+            tar -czvf $package_name *
+
+            # clean up everything except the archive
+            find . -mindepth 1 -not -name "$package_name" -exec rm -rf {} +
 
             cli_path="" # empty - cli & gui are combined
             gui_path="$package_name"
