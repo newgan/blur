@@ -203,7 +203,7 @@ These options are not visible by default, add them to your config and they will 
   - [SVPflow](https://web.archive.org/web/20190322064557/http://www.svp-team.com/files/gpl/svpflow-4.2.0.142.zip)
   - [BestSource](https://github.com/vapoursynth/bestsource)
   - [MVTools](https://github.com/dubhater/vapoursynth-mvtools)
-  - [Akarin](https://github.com/AkarinVS/vapoursynth-plugin)
+  - [Akarin](https://github.com/AkarinVS/vapoursynth-plugin) (or this [fork which supports newer LLVM versions](https://github.com/Jaded-Encoding-Thaumaturgy/akarin-vapoursynth-plugin))
 
 ---
 
