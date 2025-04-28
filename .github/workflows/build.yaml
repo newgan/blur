@@ -20,7 +20,9 @@ jobs:
       - name: Add GCC repository
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y software-properties-common
+          for i in {1..5}; do
+            sudo apt-get update && sudo apt-get install -y software-properties-common && break || sleep 10
+          done
           sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 
       - name: Install Linux dependencies
