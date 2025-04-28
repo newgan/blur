@@ -200,7 +200,7 @@ These options are not visible by default, add them to your config and they will 
 - VapourSynth
 - FFmpeg
 - VapourSynth plugins
-  - SVPflow
+  - [SVPflow](https://web.archive.org/web/20190322064557/http://www.svp-team.com/files/gpl/svpflow-4.2.0.142.zip)
   - [BestSource](https://github.com/vapoursynth/bestsource)
   - [MVTools](https://github.com/dubhater/vapoursynth-mvtools)
   - [Akarin](https://github.com/AkarinVS/vapoursynth-plugin)
