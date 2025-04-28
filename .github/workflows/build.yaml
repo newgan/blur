@@ -147,26 +147,23 @@ jobs:
             gui_path="$gui_binary"
             cli_path="$cli_binary"
           elif [[ "$os" == "Linux" ]]; then
-            ls -la
-            ls -la lib
-            
             cli_source="blur-cli"
             gui_source="blur"
+
             cli_binary="blur-cli-$configuration"
             gui_binary="blur-$configuration"
 
-            # copy binaries
+            # rename binaries
             mv "$cli_source" "$cli_binary"
             mv "$gui_source" "$gui_binary"
 
-            # copy lib
-            mkdir lib
-            cp -r ../../../src/vapoursynth/* lib/
-
             # copy models
             mkdir models
-            cp -r ../../../models/rife-v4.26_ensembleFalse/ models/
+            cp -r ../../models/rife-v4.26_ensembleFalse/ models/
 
+            # note: vapoursynth already copied
+
+            # create archive
             package_name="blur-$configuration.tar.gz"
             tar -czvf $package_name *
 
