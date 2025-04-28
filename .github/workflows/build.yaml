@@ -69,6 +69,15 @@ jobs:
           cd ci
           pwsh build-dependencies-windows.ps1
 
+      - name: Download RIFE models (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p models/rife-v4.26_ensembleFalse
+          cd models/rife-v4.26_ensembleFalse
+          wget -q https://raw.githubusercontent.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/master/models/rife-v4.26_ensembleFalse/flownet.bin
+          wget -q https://raw.githubusercontent.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/master/models/rife-v4.26_ensembleFalse/flownet.param
+          cd ../../
+
       - name: Install LLVM and Clang
         if: runner.os != 'Windows' && runner.os != 'Linux' # Skip on Windows and Linux
         uses: KyleMayes/install-llvm-action@v2
@@ -141,19 +150,26 @@ jobs:
             cli_binary="blur-cli-$configuration"
             gui_binary="blur-$configuration"
 
-            # Create lib directory and copy vapoursynth into it
-            mkdir -p lib
-            cp -r ../../src/vapoursynth lib/
+            mkdir -p package/lib
+            mkdir -p package/models/rife-v4.26_ensembleFalse
 
-            # CLI package
-            mv "$cli_source" "$cli_binary"
-            tar -cvf "$cli_binary.tar.gz" "$cli_binary" lib
-            cli_path="$cli_binary.tar.gz"
+            # copy binaries
+            cp "$cli_source" package/"$cli_binary"
+            cp "$gui_source" package/"$gui_binary"
 
-            # GUI package
-            mv "$gui_source" "$gui_binary"
-            tar -cvf "$gui_binary.tar.gz" "$gui_binary" lib
-            gui_path="$gui_binary.tar.gz"
+            # copy lib
+            cp -r ../../src/vapoursynth package/lib/
+
+            # copy models
+            cp -r ../../models/rife-v4.26_ensembleFalse/* package/models/rife-v4.26_ensembleFalse/
+
+            package_name="blur-$configuration.tar.gz"
+            cd package
+            tar -czvf "../$package_name" ./*
+            cd ..
+
+            cli_path="" # empty - cli & gui are combined
+            gui_path="$package_name"
           elif [[ "$os" == "macOS" ]]; then
             cli_source="blur-cli"
             gui_source="blur.app"
