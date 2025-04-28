@@ -52,12 +52,12 @@ rife_gpu_index = settings["rife_gpu_index"]
 if rife_gpu_index == -1:  # haven't benchmarked yet..?
     rife_gpu_index = 0
 
-if vars().get("macos_bundled") == "true":
-    video = core.bs.VideoSource(source=video_path, cachemode=0)
-else:
+if vars().get("enable_lsmash") == "true":
     video = core.lsmas.LWLibavSource(
         source=video_path, cache=0, prefer_hw=3 if settings["gpu_decoding"] else 0
     )
+else:
+    video = core.bs.VideoSource(source=video_path, cachemode=0)
 
 if settings["deduplicate"] and settings["deduplicate_range"] != 0:
     deduplicate_range: int | None = int(settings["deduplicate_range"])

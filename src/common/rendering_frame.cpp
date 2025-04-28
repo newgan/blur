@@ -30,6 +30,10 @@ RenderCommandsResult FrameRender::build_render_commands(
 		                L"-a",
 		                std::format(L"macos_bundled={}", blur.used_installer ? L"true" : L"false"),
 #endif
+#if defined(__WINDOWS__)
+		                L"-a",
+		                L"enable_lsmash=true",
+#endif
 		                blur_script_path,
 		                L"-" };
 

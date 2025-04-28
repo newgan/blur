@@ -624,6 +624,10 @@ int u::get_fastest_rife_gpu_index(
 			L"-a",
 			std::format(L"macos_bundled={}", blur.used_installer ? L"true" : L"false"),
 #endif
+#if defined(__WINDOWS__)
+			L"-a",
+			L"enable_lsmash=true",
+#endif
 			L"-e",
 			L"2",
 			benchmark_gpus_script_path,
