@@ -20,7 +20,9 @@ jobs:
       - name: Add GCC repository
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y software-properties-common
+          for i in {1..5}; do
+            sudo apt-get update && sudo apt-get install -y software-properties-common && break || sleep 10
+          done
           sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 
       - name: Install Linux dependencies
@@ -68,6 +70,15 @@ jobs:
         run: |
           cd ci
           pwsh build-dependencies-windows.ps1
+
+      - name: Download RIFE models (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p models/rife-v4.26_ensembleFalse
+          cd models/rife-v4.26_ensembleFalse
+          wget -q https://raw.githubusercontent.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/master/models/rife-v4.26_ensembleFalse/flownet.bin
+          wget -q https://raw.githubusercontent.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/master/models/rife-v4.26_ensembleFalse/flownet.param
+          cd ../../
 
       - name: Install LLVM and Clang
         if: runner.os != 'Windows' && runner.os != 'Linux' # Skip on Windows and Linux
@@ -142,13 +153,25 @@ jobs:
             cli_binary="blur-cli-$configuration"
             gui_binary="blur-$configuration"
 
+            # rename binaries
             mv "$cli_source" "$cli_binary"
-            tar -cvf "$cli_binary.tar.gz" "$cli_binary"
-            cli_path="$cli_binary.tar.gz"
-
             mv "$gui_source" "$gui_binary"
-            tar -cvf "$gui_binary.tar.gz" "$gui_binary"
-            gui_path="$gui_binary.tar.gz"
+
+            # copy models
+            mkdir models
+            cp -r ../../models/rife-v4.26_ensembleFalse/ models/
+
+            # note: vapoursynth already copied
+
+            # create archive
+            package_name="blur-$configuration.tar.gz"
+            tar -czvf $package_name *
+
+            # clean up everything except the archive
+            find . -mindepth 1 -not -name "$package_name" -exec rm -rf {} +
+
+            cli_path="" # empty - cli & gui are combined
+            gui_path="$package_name"
           elif [[ "$os" == "macOS" ]]; then
             cli_source="blur-cli"
             gui_source="blur.app"
@@ -202,7 +225,7 @@ jobs:
         with:
           path: installer/setup.iss
           options: /O+
-      
+
       - name: Rename Installer (Windows)
         if: runner.os == 'Windows'
         run: |
@@ -225,4 +248,3 @@ jobs:
             ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.cli_path }}
             ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.gui_path }}
             ${{ runner.os == 'Windows' && 'installer/output/blur-Windows-Installer-x64.exe' || '' }}
-
