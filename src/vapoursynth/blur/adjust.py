@@ -50,8 +50,8 @@ def Tweak(clip, hue=None, sat=None, bright=None, cont=None, coring=True):
         src_u = clip.std.ShufflePlanes(planes=1, colorfamily=vs.GRAY)
         src_v = clip.std.ShufflePlanes(planes=2, colorfamily=vs.GRAY)
 
-        dst_u = c.std.Expr(clips=[src_u, src_v], expr=expr_u)
-        dst_v = c.std.Expr(clips=[src_u, src_v], expr=expr_v)
+        dst_u = c.akarin.Expr(clips=[src_u, src_v], expr=expr_u)
+        dst_v = c.akarin.Expr(clips=[src_u, src_v], expr=expr_v)
 
         clip = c.std.ShufflePlanes(
             clips=[clip, dst_u, dst_v],
