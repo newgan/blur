@@ -199,7 +199,7 @@ These options are not visible by default, add them to your config and they will 
 
 ### General list of things you need
 
-If your distro isn't listed below, here's a list of the things you'll need to install. Most of the Vapoursynth plugins don't provide Linux builds annoyingly, so you'll have to compile them yourself. They all provide instructions on how to do this though.
+If your distro isn't listed below, here's a list of the things you'll need to install. Most of the Vapoursynth plugins don't provide Linux builds annoyingly, so you'll have to compile them yourself if they aren't available via package repos. They all provide instructions on how to do this though.
 
 - VapourSynth
 - FFmpeg
