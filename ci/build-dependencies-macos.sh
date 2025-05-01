@@ -154,6 +154,11 @@ download_library \
   "libsvpflow2_arm.dylib" \
   "vapoursynth-plugins"
 
+download_library \
+  "https://github.com/f0e/Vapoursynth-adjust/releases/download/v1/libadjust.dylib" \
+  "libadjust.dylib" \
+  "vapoursynth-plugins"
+
 # ## RIFE ncnn Vulkan library
 # echo "Downloading RIFE ncnn Vulkan library..."
 # download_library \

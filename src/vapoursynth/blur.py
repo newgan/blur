@@ -320,11 +320,17 @@ if settings["filters"]:
         or settings["contrast"] != 1
         or settings["saturation"] != 1
     ):
-        video = blur.adjust.Tweak(
+        original_format = video.format
+
+        video = core.resize.Point(video, format=vs.YUV444PS)
+
+        video = core.adjust.Tweak(
             video,
             bright=settings["brightness"] - 1,
             cont=settings["contrast"],
             sat=settings["saturation"],
         )
+
+        video = core.resize.Point(video, format=original_format.id)
 
 video.set_output()

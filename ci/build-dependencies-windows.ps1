@@ -139,6 +139,11 @@ $plugins = @(
         Name = "VapourSynth-RIFE-ncnn-Vulkan";
         Url = "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/releases/download/r9_mod_v32/librife_windows_x86-64.dll";
         IsDirectDll = $true;
+    },,
+    @{
+        Name = "Adjust";
+        Url = "https://github.com/f0e/Vapoursynth-adjust/releases/download/v1/adjust.dll";
+        IsDirectDll = $true;
     },
     @{
         Name = "SVPFlow";

@@ -209,6 +209,7 @@ If your distro isn't listed below, here's a list of the things you'll need to in
   - [MVTools](https://github.com/dubhater/vapoursynth-mvtools)
   - [Akarin](https://github.com/AkarinVS/vapoursynth-plugin) (or this [fork which supports newer LLVM versions](https://github.com/Jaded-Encoding-Thaumaturgy/akarin-vapoursynth-plugin))
   - [RIFE-ncnn-Vulkan](https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan)
+  - [Adjust](https://github.com/f0e/Vapoursynth-adjust/releases/tag/v1)
 
 ### Arch required packages
 
