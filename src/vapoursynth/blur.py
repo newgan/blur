@@ -20,8 +20,6 @@ if vars().get("macos_bundled") == "true":
 # add blur.py folder to path so it can reference scripts
 sys.path.insert(1, str(Path(__file__).parent))
 
-import math
-
 import blur.blending
 import blur.deduplicate
 import blur.deduplicate_rife
