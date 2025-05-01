@@ -313,7 +313,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			settings.blur_weighting,
 			fonts::font
 		);
-		ui::add_slider("blur gamma", container, 1.f, 10.f, &settings.blur_gamma, "blur gamma: {:.2f}", fonts::dejavu);
+		ui::add_slider("blur gamma", container, 1.f, 10.f, &settings.blur_gamma, "blur gamma: {:.2f}", fonts::font);
 	}
 
 	/*

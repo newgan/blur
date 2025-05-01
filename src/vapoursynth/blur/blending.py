@@ -101,7 +101,7 @@ def average_bright(
 
     def gamma_correct(video, gamma):
         expr = f"x {gamma} pow"
-        return core.std.Expr(video, expr=expr)
+        return core.akarin.Expr(video, expr=expr)
         # return core.std.Levels(
         #     video, gamma=gamma, min_in=0.0, max_in=1.0, min_out=0.0, max_out=1.0
         # )

@@ -80,6 +80,6 @@ def Tweak(clip, hue=None, sat=None, bright=None, cont=None, coring=True):
         else:
             expression = "x {} * {} + 0.0 max 1.0 min".format(cont, bright)
 
-            clip = clip.std.Expr(expr=[expression, "", ""])
+            clip = clip.akarin.Expr(expr=[expression, "", ""])
 
     return clip
