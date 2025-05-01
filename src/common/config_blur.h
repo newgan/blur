@@ -9,7 +9,7 @@ struct AdvancedSettings {
 
 	float blur_weighting_gaussian_std_dev = 2.f;
 	bool blur_weighting_triangle_reverse = false;
-	std::string blur_weighting_bound = "[0, 2]";
+	std::string blur_weighting_bound = "[0,2]";
 
 	std::string svp_interpolation_preset = "weak";
 	std::string svp_interpolation_algorithm = "13";
