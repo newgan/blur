@@ -313,6 +313,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			settings.blur_weighting,
 			fonts::font
 		);
+		ui::add_slider("blur gamma", container, 1.f, 10.f, &settings.blur_gamma, "blur gamma: {:.2f}", fonts::dejavu);
 	}
 
 	/*
@@ -1018,6 +1019,12 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 		//   {
 		// 	  "FPS of the output video",
 		//   }, },
+		{
+			"blur gamma",
+			{
+				"Amount that the video is darkened before blurring. Makes highlights stand out",
+			},
+		},
 		{
 			"blur weighting gaussian std dev slider",
 			{
