@@ -58,7 +58,7 @@ bool keys::process_event(const SDL_Event& event) {
 			// if (event.wheel.type()) // trackpad
 			// 	scroll_delta_precise = event.wheelDelta().y;
 			// else // mouse
-			scroll_delta = -event.wheel.y * 500.f;
+			scroll_delta = -event.wheel.y * 1500.f;
 			return true;
 		}
 
