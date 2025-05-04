@@ -503,7 +503,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 				ui::add_dropdown(
 					"gpu encoding type dropdown",
 					container,
-					"gpu encoding - gpu type",
+					"gpu encoding device",
 					gpu_types,
 					settings.gpu_type,
 					fonts::dejavu
