@@ -8,6 +8,7 @@ namespace sdl {
 	inline const float MIN_DELTA_TIME = 1.f / 10;
 	inline const float DEFAULT_DELTA_TIME = 1.f / 60;
 	inline double vsync_frame_time = DEFAULT_DELTA_TIME * 1000.f;
+	inline const float TICKRATE = 1.f / 20 * 1000.f;
 
 	void initialise();
 	void cleanup();

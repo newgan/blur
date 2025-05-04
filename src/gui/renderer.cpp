@@ -1363,7 +1363,7 @@ void gui::renderer::components::configs::screen(
 
 // NOLINTBEGIN(readability-function-size,readability-function-cognitive-complexity)
 
-bool gui::renderer::redraw_window(bool force_render) {
+bool gui::renderer::redraw_window(bool rendered_last, bool force_render) {
 	keys::on_frame_start();
 	ui::on_frame_start();
 	sdl::on_frame_start();
@@ -1373,18 +1373,13 @@ bool gui::renderer::redraw_window(bool force_render) {
 	auto now = std::chrono::steady_clock::now();
 	static auto last_frame_time = now;
 
-	// todo: first render in a batch might be fucked, look at progress bar skipping fully to complete instantly on
-	// 25 speed - investigate
-	static bool first = true;
-
 #if DEBUG_RENDER
 	float fps = -1.f;
 #endif
 	float delta_time = NAN;
 
-	if (first) {
+	if (!rendered_last) {
 		delta_time = sdl::DEFAULT_DELTA_TIME;
-		first = false;
 	}
 	else {
 		float time_since_last_frame =
@@ -1579,12 +1574,7 @@ bool gui::renderer::redraw_window(bool force_render) {
 		if (fps != -1.f) {
 			gfx::Point fps_pos(rect.x2() - PAD_X, rect.y + PAD_Y);
 			render::text(
-				surface,
-				fps_pos,
-				gfx::Color(0, 255, 0, 255),
-				std::format("{:.0f} fps", fps),
-				fonts::dejavu,
-				os::TextAlign::Right
+				fps_pos, gfx::Color(0, 255, 0, 255), std::format("{:.0f} fps", fps), fonts::dejavu, FONT_RIGHT_ALIGN
 			);
 		}
 #endif

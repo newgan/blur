@@ -90,7 +90,7 @@ namespace gui::renderer {
 		}
 	}
 
-	bool redraw_window(bool force_render);
+	bool redraw_window(bool rendered_last, bool force_render);
 
 	void add_notification(
 		const std::string& id,

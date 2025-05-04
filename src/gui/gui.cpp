@@ -5,7 +5,7 @@
 #include "ui/keys.h"
 #include "ui/ui.h"
 
-#define DEBUG_RENDER 1
+#define DEBUG_RENDER_LOGGING 0
 
 namespace {
 	const int PAD_X = 24;
@@ -25,10 +25,7 @@ int gui::run() {
 
 			sdl::update_vsync();
 
-			while (true) {
-				if (!SDL_PollEvent(&event))
-					break;
-
+			while (SDL_PollEvent(&event)) {
 				switch (event.type) {
 					case SDL_EVENT_QUIT:
 						sdl::cleanup();
@@ -88,11 +85,13 @@ int gui::run() {
 			}
 
 			const bool rendered = renderer::redraw_window(
+				rendered_last,
 				to_render
 			); // note: rendered isn't true if rendering was forced, it's only if an animation or smth is playing
 
 #if DEBUG_RENDER_LOGGING
-			u::log("rendered: {}, to render: {}", rendered, to_render);
+			static size_t frame = 0;
+			u::log("{} rendered: {}, to render: {}", frame++, rendered, to_render);
 #endif
 
 			// vsync
@@ -111,6 +110,7 @@ int gui::run() {
 			}
 			else {
 				rendered_last = false;
+				SDL_Delay(sdl::TICKRATE);
 			}
 		}
 	}
