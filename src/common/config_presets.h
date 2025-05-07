@@ -8,9 +8,9 @@ struct PresetSettings {
 		{
 			"nvidia",
 			{
-				{ "h264", "-c:v h264_nvenc -preset p7 -qp {quality}" },
-				{ "h265", "-c:v hevc_nvenc -preset p7 -qp {quality}" },
-				{ "av1", "-c:v av1_nvenc -preset p7 -qp {quality}" },
+				{ "h264", "-c:v h264_nvenc -preset p6 -qp {quality}" },
+				{ "h265", "-c:v hevc_nvenc -preset p6 -qp {quality}" },
+				{ "av1", "-c:v av1_nvenc -preset p6 -qp {quality}" },
 			},
 		},
 		{
@@ -49,8 +49,9 @@ struct PresetSettings {
 		}
 	};
 
-	[[nodiscard]] const std::string* find_preset_params(const std::string& gpu_type, const std::string& preset_name)
-		const {
+	[[nodiscard]] const std::string* find_preset_params(
+		const std::string& gpu_type, const std::string& preset_name
+	) const {
 		for (const auto& [type, codec_params] : presets) {
 			if (type == gpu_type) {
 				for (const auto& [codec, params] : codec_params) {
