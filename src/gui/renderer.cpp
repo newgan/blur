@@ -418,18 +418,20 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 
 	ui::add_checkbox("deduplicate checkbox", container, "deduplicate", settings.deduplicate, fonts::dejavu);
 
-	ui::add_dropdown(
-		"deduplicate method dropdown",
-		container,
-		"deduplicate method",
-		{ "svp",
+	if (settings.deduplicate) {
+		ui::add_dropdown(
+			"deduplicate method dropdown",
+			container,
+			"deduplicate method",
+			{ "svp",
 #ifndef __APPLE__ // rife issue again
-	      "rife",
+		      "rife",
 #endif
-	      "old" },
-		settings.deduplicate_method,
-		fonts::dejavu
-	);
+		      "old" },
+			settings.deduplicate_method,
+			fonts::dejavu
+		);
+	}
 
 	/*
 	    Rendering
