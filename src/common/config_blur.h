@@ -81,7 +81,7 @@ struct BlurSettings {
 
 	bool gpu_decoding = true;
 	bool gpu_interpolation = true;
-	bool gpu_encoding = true;
+	bool gpu_encoding = false;
 	std::string gpu_type = "";
 	int rife_gpu_index = -1;
 
