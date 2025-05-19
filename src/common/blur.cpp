@@ -13,7 +13,7 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 
 	auto global_blur_config_path = config_blur::get_global_config_path();
 	if (!std::filesystem::exists(global_blur_config_path))
-		config_blur::create(global_blur_config_path, BlurSettings{});
+		config_blur::create(global_blur_config_path, config_blur::DEFAULT_CONFIG);
 
 	auto app_config_path = config_app::get_app_config_path();
 	if (!std::filesystem::exists(app_config_path))

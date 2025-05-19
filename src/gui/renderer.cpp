@@ -1362,10 +1362,10 @@ void gui::renderer::components::configs::screen(
 		});
 	}
 
-	if (settings != BlurSettings{}) {
+	if (settings != config_blur::DEFAULT_CONFIG) {
 		ui::set_next_same_line(nav_container);
 		ui::add_button("restore defaults button", nav_container, "Restore defaults", fonts::dejavu, [&] {
-			settings = BlurSettings{};
+			settings = config_blur::DEFAULT_CONFIG;
 			parse_interp();
 		});
 	}
