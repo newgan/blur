@@ -284,7 +284,19 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 	section_component("blur", &settings.blur);
 
 	if (settings.blur) {
-		ui::add_slider("blur amount", container, 0.f, 2.f, &settings.blur_amount, "blur amount: {:.2f}", fonts::dejavu);
+		ui::add_slider_tied(
+			"blur amount",
+			container,
+			0.f,
+			2.f,
+			&settings.blur_amount,
+			"blur amount: {:.2f}",
+			&settings.blur_output_fps,
+			settings.blur_amount_tied_to_fps,
+			"fps",
+			fonts::dejavu
+		);
+
 		ui::add_slider("output fps", container, 1, 120, &settings.blur_output_fps, "output fps: {} fps", fonts::dejavu);
 		ui::add_dropdown(
 			"blur weighting",

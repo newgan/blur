@@ -7,6 +7,7 @@
 
 #include "../fonts/dejavu_sans.h"
 #include "../fonts/eb_garamond.h"
+#include "../fonts/icons.h"
 
 #ifndef M_PI
 #	define M_PI 3.1415926535897932384626433832
@@ -104,6 +105,9 @@ bool render::init(SDL_Window* window, const SDL_GLContext& context) {
 	if (!fonts::smaller_header_font.init(
 			EbGaramond_compressed_data, EbGaramond_compressed_size, 18.f, &font_cfg, glyph_ranges
 		))
+		return false;
+
+	if (!fonts::icons.init(Icons_compressed_data, Icons_compressed_size, 14.f, &font_cfg, glyph_ranges))
 		return false;
 
 	return true;
@@ -440,9 +444,6 @@ void render::text(
 	if (!font)
 		return;
 
-	const auto* text_char = text.data();
-	bool outline = false;
-
 	ImGui::PushFont(font.im_font());
 
 	if (flags) {
@@ -460,12 +461,25 @@ void render::text(
 		if (flags & FONT_BOTTOM_ALIGN)
 			pos.y -= size.h;
 
-		if (flags & FONT_OUTLINE)
-			outline = true;
+		if (flags & FONT_OUTLINE) {
+			const gfx::Color outline_colour(0, 0, 0, colour.a * 0.8f);
+			static const std::array<gfx::Point, 4> offsets = {
+				gfx::Point{ -1, 0 },
+				gfx::Point{ 1, 0 },
+				gfx::Point{ 0, -1 },
+				gfx::Point{ 0, 1 },
+			};
+
+			for (const auto& offset : offsets) {
+				imgui.drawlist->AddText(
+					font.im_font(), font.size(), pos + offset, outline_colour.to_imgui(), text.data()
+				);
+			}
+		}
 
 		if (flags & FONT_DROPSHADOW) {
 			const gfx::Color dropshadow_colour(0, 0, 0, colour.a * 0.6f);
-			const int shift_amount = outline ? 2 : 1;
+			const int shift_amount = 1;
 
 			imgui.drawlist->AddText(
 				font.im_font(), font.size(), pos.offset(shift_amount), dropshadow_colour.to_imgui(), text.data()

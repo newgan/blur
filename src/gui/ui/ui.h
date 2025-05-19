@@ -162,11 +162,16 @@ namespace ui {
 		std::optional<std::function<void(const std::variant<int*, float*>&)>> on_change;
 		float precision;
 		std::string tooltip;
+		bool is_tied_slider;
+		bool* is_tied;
+		std::optional<std::variant<int*, float*>> tied_value;
+		std::string tied_text;
 
 		bool operator==(const SliderElementData& other) const {
 			return min_value == other.min_value && max_value == other.max_value &&
 			       current_value == other.current_value && label_format == other.label_format && font == other.font &&
-			       precision == other.precision && tooltip == other.tooltip;
+			       precision == other.precision && tooltip == other.tooltip && is_tied_slider == other.is_tied_slider &&
+			       is_tied == other.is_tied && tied_value == other.tied_value && tied_text == other.tied_text;
 		}
 	};
 
@@ -467,6 +472,22 @@ namespace ui {
 		const std::variant<int, float>& max_value,
 		std::variant<int*, float*> value,
 		const std::string& label_format,
+		const render::Font& font,
+		std::optional<std::function<void(const std::variant<int*, float*>&)>> on_change = {},
+		float precision = 0.f,
+		const std::string& tooltip = ""
+	);
+
+	ui::Element& add_slider_tied(
+		const std::string& id,
+		Container& container,
+		const std::variant<int, float>& min_value,
+		const std::variant<int, float>& max_value,
+		std::variant<int*, float*> value,
+		const std::string& label_format,
+		std::variant<int*, float*> tied_value,
+		bool& is_tied,
+		const std::string& tied_text,
 		const render::Font& font,
 		std::optional<std::function<void(const std::variant<int*, float*>&)>> on_change = {},
 		float precision = 0.f,

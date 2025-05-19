@@ -64,7 +64,7 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 	output << "contrast: " << current_settings.contrast << "\n";
 
 	output << "\n";
-	output << "[advanced options]" << "\n";
+	output << "- advanced" << "\n";
 	output << "advanced: " << (current_settings.override_advanced ? "true" : "false") << "\n";
 
 	if (current_settings.override_advanced) {
@@ -106,6 +106,10 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 			output << "smooth string: " << current_settings.advanced.smooth_string << "\n";
 		}
 	}
+
+	output << "\n";
+	output << "- gui" << "\n";
+	output << "blur amount tied to fps: " << (current_settings.blur_amount_tied_to_fps ? "true" : "false") << "\n";
 }
 
 config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config, bool fix) {
@@ -121,11 +125,9 @@ config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config
 	}
 
 	if (!u::contains(SVP_INTERPOLATION_ALGORITHMS, config.advanced.svp_interpolation_algorithm)) {
-		errors.insert(
-			std::format(
-				"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
-			)
-		);
+		errors.insert(std::format(
+			"SVP interpolation algorithm ({}) is not a valid option", config.advanced.svp_interpolation_algorithm
+		));
 
 		if (fix)
 			config.advanced.svp_interpolation_algorithm = DEFAULT_CONFIG.advanced.svp_interpolation_algorithm;
@@ -239,6 +241,8 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 		config_base::extract_config_string(config_map, "vectors string", settings.advanced.vectors_string);
 		config_base::extract_config_string(config_map, "smooth string", settings.advanced.smooth_string);
 	}
+
+	config_base::extract_config_value(config_map, "blur amount tied to fps", settings.blur_amount_tied_to_fps);
 
 	// recreate the config file using the parsed values (keeps nice formatting)
 	create(config_filepath, settings);

@@ -36,6 +36,7 @@ namespace fonts {
 	inline render::Font dejavu;
 	inline render::Font header_font;
 	inline render::Font smaller_header_font;
+	inline render::Font icons;
 }
 
 namespace render {
