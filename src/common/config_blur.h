@@ -28,7 +28,6 @@ struct AdvancedSettings {
 struct BlurSettings {
 	bool blur = true;
 	float blur_amount = 1.f;
-	bool blur_amount_tied_to_fps = false;
 	int blur_output_fps = 60;
 	std::string blur_weighting = "equal";
 	float blur_gamma = 1.f;
@@ -68,6 +67,8 @@ struct BlurSettings {
 
 	bool override_advanced = false;
 	AdvancedSettings advanced;
+
+	bool blur_amount_tied_to_fps = true;
 
 public:
 	BlurSettings();
