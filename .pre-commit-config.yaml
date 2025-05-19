@@ -27,8 +27,8 @@ repos:
     hooks:
       - id: clang-format
 
-  - repo: https://github.com/f0e/clangd-tidy-pre-commit
-    rev: v1.0.0
-    hooks:
-      - id: clangd-tidy
-        args: ["-p out/build/unix-relwithdebinfo"] # TODO:!!!! fix this
+  # - repo: https://github.com/f0e/clangd-tidy-pre-commit
+  #   rev: v1.0.0
+  #   hooks:
+  #     - id: clangd-tidy
+  #       args: ["-p out/build/unix-relwithdebinfo"] # TODO:!!!! fix this
