@@ -22,21 +22,7 @@ struct AdvancedSettings {
 	std::string vectors_string;
 	std::string smooth_string;
 
-	bool operator==(const AdvancedSettings& other) const {
-		// reflection would be nice c++ -_-
-		// todo: boost? i mean, im already using it partially
-		return video_container == other.video_container && deduplicate_range == other.deduplicate_range &&
-		       deduplicate_threshold == other.deduplicate_threshold && ffmpeg_override == other.ffmpeg_override &&
-		       debug == other.debug && blur_weighting_gaussian_std_dev == other.blur_weighting_gaussian_std_dev &&
-		       blur_weighting_triangle_reverse == other.blur_weighting_triangle_reverse &&
-		       blur_weighting_bound == other.blur_weighting_bound &&
-		       svp_interpolation_preset == other.svp_interpolation_preset &&
-		       svp_interpolation_algorithm == other.svp_interpolation_algorithm &&
-		       interpolation_blocksize == other.interpolation_blocksize &&
-		       interpolation_mask_area == other.interpolation_mask_area && rife_model == other.rife_model &&
-		       manual_svp == other.manual_svp && super_string == other.super_string &&
-		       vectors_string == other.vectors_string && smooth_string == other.smooth_string;
-	}
+	bool operator==(const AdvancedSettings& other) const = default;
 };
 
 struct BlurSettings {
@@ -47,13 +33,7 @@ struct BlurSettings {
 	float blur_gamma = 1.f;
 
 	bool interpolate = true;
-	std::string interpolated_fps =
-
-#ifdef __APPLE__
-		"5x";
-#else
-		"1200";
-#endif
+	std::string interpolated_fps = "5x";
 	std::string interpolation_method = "svp";
 
 	bool pre_interpolate = false;
@@ -82,34 +62,18 @@ struct BlurSettings {
 	bool gpu_decoding = true;
 	bool gpu_interpolation = true;
 	bool gpu_encoding = false;
-	std::string gpu_type = "";
+	std::string gpu_type;
 	int rife_gpu_index = -1;
 
 	bool override_advanced = false;
 	AdvancedSettings advanced;
 
+	bool blur_amount_tied_to_fps = true;
+
 public:
 	BlurSettings();
 
-	bool operator==(const BlurSettings& other) const {
-		// reflection would be nice c++ -_-
-		// todo: boost? i mean, im already using it partially
-		return blur == other.blur && blur_amount == other.blur_amount && blur_output_fps == other.blur_output_fps &&
-		       blur_weighting == other.blur_weighting && blur_gamma == other.blur_gamma &&
-		       interpolate == other.interpolate && interpolated_fps == other.interpolated_fps &&
-		       interpolation_method == other.interpolation_method && pre_interpolate == other.pre_interpolate &&
-		       pre_interpolated_fps == other.pre_interpolated_fps && timescale == other.timescale &&
-		       input_timescale == other.input_timescale && output_timescale == other.output_timescale &&
-		       output_timescale_audio_pitch == other.output_timescale_audio_pitch && filters == other.filters &&
-		       brightness == other.brightness && saturation == other.saturation && contrast == other.contrast &&
-		       encode_preset == other.encode_preset && deduplicate == other.deduplicate &&
-		       deduplicate_method == other.deduplicate_method && quality == other.quality && preview == other.preview &&
-		       detailed_filenames == other.detailed_filenames && copy_dates == other.copy_dates &&
-		       gpu_decoding == other.gpu_decoding && gpu_interpolation == other.gpu_interpolation &&
-		       gpu_encoding == other.gpu_encoding && gpu_type == other.gpu_type &&
-		       rife_gpu_index == other.rife_gpu_index && override_advanced == other.override_advanced &&
-		       advanced == other.advanced;
-	}
+	bool operator==(const BlurSettings& other) const = default;
 
 	void verify_gpu_encoding();
 

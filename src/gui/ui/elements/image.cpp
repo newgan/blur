@@ -1,40 +1,30 @@
 #include "../ui.h"
+#include "../../render/render.h"
 
-#include "gui/ui/utils.h"
+struct ImageElementData {
+	std::filesystem::path image_path;
+	std::shared_ptr<render::Texture> texture;
+	std::string image_id;
+	gfx::Color image_color;
+};
 
-void ui::render_image(const Container& container, os::Surface* surface, const AnimatedElement& element) {
-	static const float rounding = 7.8f;
-
+void ui::render_image(const Container& container, const AnimatedElement& element) {
 	const auto& image_data = std::get<ImageElementData>(element.element->data);
 	float anim = element.animations.at(hasher("main")).current;
 
 	int alpha = anim * 255;
 	int stroke_alpha = anim * 125;
 
-	gfx::Rect image_rect = element.element->rect;
-	image_rect.shrink(3);
+	gfx::Color tint_color = image_data.image_color.adjust_alpha(anim);
 
-	os::Paint paint;
-	paint.color(utils::adjust_color(image_data.image_color, anim));
-	surface->drawSurface(
-		image_data.image_surface.get(), image_data.image_surface->bounds(), image_rect, os::Sampling(), &paint
+	render::image_with_borders(
+		element.element->rect,
+		*image_data.texture,
+		gfx::Color(155, 155, 155, stroke_alpha),
+		gfx::Color(80, 80, 80, stroke_alpha),
+		1.0f,
+		tint_color
 	);
-
-	os::Paint stroke_paint;
-	stroke_paint.style(os::Paint::Style::Stroke);
-	stroke_paint.strokeWidth(1);
-
-	image_rect.enlarge(1);
-	stroke_paint.color(gfx::rgba(155, 155, 155, stroke_alpha));
-	surface->drawRect(image_rect, stroke_paint);
-
-	image_rect.enlarge(1);
-	stroke_paint.color(gfx::rgba(80, 80, 80, stroke_alpha));
-	surface->drawRect(image_rect, stroke_paint);
-
-	image_rect.enlarge(1);
-	stroke_paint.color(gfx::rgba(155, 155, 155, stroke_alpha));
-	surface->drawRect(image_rect, stroke_paint);
 }
 
 std::optional<ui::Element*> ui::add_image(
@@ -45,31 +35,33 @@ std::optional<ui::Element*> ui::add_image(
 	std::string image_id,
 	gfx::Color image_color
 ) {
-	os::SurfaceRef image_surface;
-	os::SurfaceRef last_image_surface;
+	std::shared_ptr<render::Texture> texture;
+	std::shared_ptr<render::Texture> last_texture;
 
-	// get existing image
+	// Check if we already have this element
 	if (container.elements.contains(id)) {
 		Element& cached_element = *container.elements[id].element;
 		auto& image_data = std::get<ImageElementData>(cached_element.data);
-		if (image_data.image_id == image_id) { // edge cases this might not work, it's using current_frame, maybe image
-			                                   // gets written after ffmpeg reports progress? idk. good enough for now
-			image_surface = image_data.image_surface;
+
+		if (image_data.image_id == image_id) {
+			// Reuse the existing texture if ID matches
+			texture = image_data.texture;
 		}
 		else {
-			last_image_surface = image_data.image_surface;
+			// Keep the last texture as fallback
+			last_texture = image_data.texture;
 		}
 	}
 
-	// load image if new
-	if (!image_surface) {
-		image_surface = os::instance()->loadRgbaSurface(image_path.string().c_str());
+	// Load image if new
+	if (!texture) {
+		texture = texture_cache::get_or_load_texture(image_path, image_id);
 
-		if (!image_surface) {
+		if (!texture) {
 			u::log("{} failed to load image (id: {})", id, image_id);
-			if (last_image_surface) {
-				// use last image as fallback todo: this is a bit hacky make it better
-				image_surface = last_image_surface;
+			if (last_texture) {
+				// Use last image as fallback
+				texture = last_texture;
 			}
 			else {
 				return {};
@@ -81,7 +73,8 @@ std::optional<ui::Element*> ui::add_image(
 
 	gfx::Rect image_rect(container.current_position, max_size);
 
-	float aspect_ratio = image_surface->width() / static_cast<float>(image_surface->height());
+	// Calculate aspect ratio and adjust dimensions
+	float aspect_ratio = texture->width() / static_cast<float>(texture->height());
 
 	float target_width = image_rect.h * aspect_ratio;
 	float target_height = image_rect.w / aspect_ratio;
@@ -109,7 +102,7 @@ std::optional<ui::Element*> ui::add_image(
 		image_rect,
 		ImageElementData{
 			.image_path = image_path,
-			.image_surface = image_surface,
+			.texture = texture,
 			.image_id = image_id,
 			.image_color = image_color,
 		},

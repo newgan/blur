@@ -1,17 +1,18 @@
 #pragma once
 
+// NOLINTEND(misc-include-cleaner)
 #include <common/common_pch.h>
 
-// dependencies
-#include <base/paths.h>
-#include <base/system_console.h>
-#include <os/os.h>
+#include "render/primitives/color.h"
+#include "render/primitives/point.h"
+#include "render/primitives/rect.h"
+#include "render/primitives/size.h"
+#include "render/primitives/primitives_impl.h"
 
-#include <os/skia/skia_helpers.h>
-#include <os/skia/skia_surface.h>
+#include <glad/glad.h>
 
-#include <include/core/SkTextBlob.h>
-#include <include/utils/SkTextUtils.h>
-#include <include/core/SkFont.h>
-#include <include/core/SkTypeface.h>
-#include <include/core/SkData.h>
+#include <SDL3/SDL.h>
+// #include <SDL3/SDL_opengl.h>
+#include <SDL3_image/SDL_image.h>
+
+#define IMGUI_USER_CONFIG "gui/render/imconfig.h"

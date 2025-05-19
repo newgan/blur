@@ -9,8 +9,16 @@
       "version>=": "1.83.0"
     },
     "cli11",
+    "cpr",
+    "freetype",
+    "glad",
     "nlohmann-json",
-    "zlib",
-    "cpr"
+    "sdl3",
+    {
+      "name": "sdl3-image",
+      "features": [
+        "jpeg"
+      ]
+    }
   ]
 }

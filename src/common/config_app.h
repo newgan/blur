@@ -4,9 +4,7 @@ struct GlobalAppSettings {
 	bool check_updates = true;
 	bool check_beta = false;
 
-	bool operator==(const GlobalAppSettings& other) const {
-		return check_updates == other.check_updates && check_beta == other.check_beta;
-	}
+	bool operator==(const GlobalAppSettings& other) const = default;
 
 	[[nodiscard]] nlohmann::json to_json() const;
 };

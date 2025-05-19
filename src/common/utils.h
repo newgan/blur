@@ -6,6 +6,10 @@
 #	define DEBUG_LOG(...) ((void)0)
 #endif
 
+#ifndef M_PI
+#	define M_PI 3.1415926535897932384626433832
+#endif
+
 namespace u {
 	inline void log(const std::string& msg) {
 		std::cout << msg << '\n';
@@ -135,6 +139,16 @@ namespace u {
 			start_pos += to.length();
 		}
 		return str;
+	}
+
+	template<typename T>
+	static constexpr T rad_to_deg(T radian) {
+		return radian * (180.f / M_PI);
+	}
+
+	template<typename T>
+	static constexpr T deg_to_rad(T degree) {
+		return static_cast<T>(degree * (M_PI / 180.f));
 	}
 
 	std::string trim(std::string_view str);
