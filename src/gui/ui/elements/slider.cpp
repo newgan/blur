@@ -183,11 +183,11 @@ void ui::render_slider(const Container& container, const AnimatedElement& elemen
 		float tied_anim = element.animations.at(hasher("tied")).current;
 		auto scoped = element.animations.at(hasher("tied"));
 
-		render::rounded_rect_stroke(positions.tied_icon_rect, tie_background, TIE_ROUNDING);
-		render::rounded_rect_filled(positions.tied_icon_rect, tie_background.adjust_alpha(tied_anim), TIE_ROUNDING);
+		render::rounded_rect_stroke(positions.tied_icon_rect, tie_background.adjust_alpha(tied_anim), TIE_ROUNDING);
+		// render::rounded_rect_filled(positions.tied_icon_rect, tie_background.adjust_alpha(tied_anim), TIE_ROUNDING);
 
-		// auto tie_text_colour = gfx::Color::lerp(tooltip_color, text_color, tied_anim);
-		gfx::Color tie_text_colour = *slider_data.is_tied ? text_color : tooltip_color;
+		auto tie_text_colour = gfx::Color::lerp(tooltip_color, text_color, tied_anim);
+		// gfx::Color tie_text_colour = *slider_data.is_tied ? text_color : tooltip_color;
 
 		render::text(positions.tied_icon_pos, tie_text_colour, TIED_ICON, fonts::icons);
 		render::text(positions.tied_text_pos, tie_text_colour, slider_data.tied_text, *slider_data.font);
