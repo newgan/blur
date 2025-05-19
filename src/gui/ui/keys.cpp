@@ -59,6 +59,7 @@ bool keys::process_event(const SDL_Event& event) {
 			// 	scroll_delta_precise = event.wheelDelta().y;
 			// else // mouse
 			scroll_delta = -event.wheel.y * 1500.f;
+			// todo: better trackpad scrolling (https://github.com/libsdl-org/SDL/pull/5382)
 			return true;
 		}
 
