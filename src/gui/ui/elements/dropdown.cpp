@@ -6,10 +6,12 @@
 const float DROPDOWN_ROUNDING = 5.f;
 const gfx::Size DROPDOWN_PADDING(10, 5);
 const float OPTION_LINE_HEIGHT_ADD = 11;
-const float DROPDOWN_ARROW_SIZE = 10.0f;
 const int LABEL_GAP = 10;
 const int OPTIONS_GAP = 3;
 const gfx::Size OPTIONS_PADDING(10, 3);
+// const float DROPDOWN_ARROW_SIZE = 10.0f;
+const std::string DROPDOWN_ARROW_ICON = "b";
+const int DROPDOWN_ARROW_PAD = 2;
 
 namespace {
 	struct Positions {
@@ -70,6 +72,7 @@ void ui::render_dropdown(const Container& container, const AnimatedElement& elem
 	float anim = element.animations.at(hasher("main")).current;
 	float hover_anim = element.animations.at(hasher("hover")).current;
 	float expand_anim = element.animations.at(hasher("expand")).current;
+	float expand_goal = element.animations.at(hasher("expand")).goal;
 
 	auto pos = get_positions(container, element, dropdown_data, expand_anim);
 
@@ -81,6 +84,7 @@ void ui::render_dropdown(const Container& container, const AnimatedElement& elem
 	gfx::Color text_color(255, 255, 255, anim * 255);
 	gfx::Color selected_text_color(255, 100, 100, anim * 255);
 	gfx::Color border_color(border_shade, border_shade, border_shade, anim * 255);
+	gfx::Color arrow_colour(100, 100, 100, anim * 255);
 
 	render::text(pos.label_pos, text_color, dropdown_data.label, *dropdown_data.font);
 
@@ -91,14 +95,37 @@ void ui::render_dropdown(const Container& container, const AnimatedElement& elem
 	// Get currently selected option text
 	render::text(pos.selected_text_pos, text_color, *dropdown_data.selected, *dropdown_data.font, FONT_CENTERED_Y);
 
-	// // Render dropdown arrow
-	// gfx::Point arrow_pos(dropdown_rect.x2() - dropdown_arrow_size - 10, dropdown_rect.center().y);
+	// Render dropdown arrow
+	gfx::Point arrow_pos(
+		pos.dropdown_rect.x2() - DROPDOWN_PADDING.w - DROPDOWN_ARROW_PAD, pos.dropdown_rect.center().y
+	);
+
+	// const float arrow_length = 4.8f;
+	// const float arrow_angle_rad = u::deg_to_rad(46.f);
+
+	// int arrow_offset_x = round(arrow_length * std::cos(arrow_angle_rad));
+	// int arrow_offset_y = round(arrow_length * std::sin(arrow_angle_rad));
+
 	// std::vector<gfx::Point> arrow_points = {
-	//     {arrow_pos.x, arrow_pos.y - dropdown_arrow_size/2},
-	//     {arrow_pos.x + dropdown_arrow_size, arrow_pos.y},
-	//     {arrow_pos.x, arrow_pos.y + dropdown_arrow_size/2}
+	// 	{ arrow_pos.x - arrow_offset_x, arrow_pos.y - arrow_offset_y },
+	// 	arrow_pos,
+	// 	{ arrow_pos.x + arrow_offset_x, arrow_pos.y - arrow_offset_y },
 	// };
-	// render::polygon(arrow_points, text_color);
+
+	// for (int i = 1; i < arrow_points.size(); i++) {
+	// 	render::line(arrow_points[i - 1], arrow_points[i], arrow_colour, true);
+	// }
+
+	// todo: draw this manually rather than using icon via font but font rendering looks way nicer than lines
+	render::text(
+		arrow_pos,
+		arrow_colour,
+		DROPDOWN_ARROW_ICON,
+		fonts::icons,
+		FONT_CENTERED_X | FONT_CENTERED_Y,
+		expand_goal * 180.f,
+		17 // hardcoded lol but its correct enough
+	);
 
 	// Render dropdown options
 	if (expand_anim > 0.01f) {

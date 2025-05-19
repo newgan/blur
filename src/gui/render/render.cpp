@@ -8,20 +8,7 @@
 #include "../fonts/dejavu_sans.h"
 #include "../fonts/eb_garamond.h"
 #include "../fonts/icons.h"
-
-#ifndef M_PI
-#	define M_PI 3.1415926535897932384626433832
-#endif
-
-template<typename T>
-static constexpr T rad_to_deg(T radian) {
-	return radian * (180.f / M_PI);
-}
-
-template<typename T>
-static constexpr T deg_to_rad(T degree) {
-	return static_cast<T>(degree * (M_PI / 180.f));
-}
+#include "imgui_internal.h"
 
 gfx::Color interpolate_color(const std::vector<gfx::Color>& colors, const std::vector<float>& positions, float t) {
 	// Find the segment containing t
@@ -428,8 +415,8 @@ void render::circle_stroke(
 	bool antialiased
 ) {
 	if (!(degrees == 360.f && start_degree == 0.f)) {
-		auto min_rad = deg_to_rad(start_degree);
-		auto max_rad = deg_to_rad(degrees);
+		auto min_rad = u::deg_to_rad(start_degree);
+		auto max_rad = u::deg_to_rad(degrees);
 		imgui.drawlist->PathArcTo(pos, radius, min_rad, max_rad, parts);
 		imgui.drawlist->PathStroke(colour.to_imgui(), 0, thickness);
 		return;
@@ -439,12 +426,20 @@ void render::circle_stroke(
 }
 
 void render::text(
-	gfx::Point pos, const gfx::Color& colour, const std::string& text, const Font& font, unsigned int flags
+	gfx::Point pos,
+	const gfx::Color& colour,
+	const std::string& text,
+	const Font& font,
+	unsigned int flags,
+	float rotation_deg,
+	int rotation_pivot_y
 ) {
 	if (!font)
 		return;
 
 	ImGui::PushFont(font.im_font());
+
+	int vtx_idx_begin = imgui.drawlist->_VtxCurrentIdx;
 
 	if (flags) {
 		const auto size = font.calc_size(text);
@@ -488,6 +483,21 @@ void render::text(
 	}
 
 	imgui.drawlist->AddText(font.im_font(), font.size(), pos, colour.to_imgui(), text.data());
+
+	if (rotation_deg != 0.f) {
+		int vtx_idx_end = imgui.drawlist->_VtxCurrentIdx;
+
+		auto text_size = font.calc_size(text);
+		gfx::Rect text_rect(pos, gfx::Size(text_size.w, rotation_pivot_y));
+
+		ImVec2 pivot_in = text_rect.center();
+		ImVec2 pivot_out = text_rect.center();
+
+		float ang = u::deg_to_rad(rotation_deg);
+		ImGui::ShadeVertsTransformPos(
+			imgui.drawlist, vtx_idx_begin, vtx_idx_end, pivot_in, std::cos(ang), std::sin(ang), pivot_out
+		);
+	}
 
 	ImGui::PopFont();
 }

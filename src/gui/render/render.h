@@ -211,7 +211,9 @@ namespace render {
 		const gfx::Color& colour,
 		const std::string& text,
 		const Font& font,
-		unsigned int flags = FONT_NONE
+		unsigned int flags = FONT_NONE,
+		float rotation_deg = 0.f,
+		int rotation_pivot_y = 0
 	);
 
 	// New image functions
