@@ -125,8 +125,8 @@ ui::Element& ui::add_notification(
 		std::move(element),
 		container.element_gap,
 		{
-			{ hasher("main"), { .speed = 5.f } },
-			{ hasher("hover"), { .speed = 80.f } },
+			{ hasher("main"), AnimationState(5.f) },
+			{ hasher("hover"), AnimationState(80.f) },
 		}
 	);
 }

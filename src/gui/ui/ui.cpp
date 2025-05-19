@@ -84,7 +84,7 @@ ui::Element* ui::add_element(
 	Container& container,
 	Element&& _element,
 	int margin_bottom,
-	const std::unordered_map<size_t, AnimationInitialisation>& animations
+	const std::unordered_map<size_t, AnimationState>& animations
 ) {
 	// pad when switching element type
 	if (container.current_element_ids.size() > 0) {
@@ -113,7 +113,7 @@ ui::Element* ui::add_element(
 }
 
 ui::Element* ui::add_element(
-	Container& container, Element&& _element, const std::unordered_map<size_t, AnimationInitialisation>& animations
+	Container& container, Element&& _element, const std::unordered_map<size_t, AnimationState>& animations
 ) {
 	auto& animated_element = container.elements[_element.id];
 
@@ -126,12 +126,7 @@ ui::Element* ui::add_element(
 	}
 	else {
 		u::log("first added {}", _element.id);
-
-		for (const auto& [animation_id, initialisation] : animations) {
-			animated_element.animations.emplace(
-				animation_id, AnimationState(initialisation.speed, initialisation.value)
-			);
-		}
+		animated_element.animations = animations;
 	}
 
 	animated_element.element = std::make_unique<ui::Element>(std::move(_element));

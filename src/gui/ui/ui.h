@@ -227,7 +227,7 @@ namespace ui {
 		float goal = 0.f;
 		bool complete = false;
 
-		AnimationState(float speed, float value) : speed(speed), current(value), goal(value) {}
+		AnimationState(float speed, float value = 0.f) : speed(speed), current(value), goal(value) {}
 
 		// delete default constructor since we always need a duration
 		AnimationState() = delete;
@@ -244,11 +244,6 @@ namespace ui {
 
 			return current != old_current;
 		}
-	};
-
-	struct AnimationInitialisation {
-		float speed;
-		float value = 0.f;
 	};
 
 	struct AnimatedElement;
@@ -284,7 +279,7 @@ namespace ui {
 		int z_index = 0;
 	};
 
-	const inline AnimationInitialisation DEFAULT_ANIMATION = { .speed = 25.f };
+	const inline AnimationState DEFAULT_ANIMATION(25.f);
 
 	struct Container {
 		SDL_Window* window;
@@ -378,14 +373,12 @@ namespace ui {
 		Container& container,
 		Element&& _element,
 		int margin_bottom,
-		const std::unordered_map<size_t, AnimationInitialisation>& animations = { { hasher("main"),
-	                                                                                DEFAULT_ANIMATION } }
+		const std::unordered_map<size_t, AnimationState>& animations = { { hasher("main"), DEFAULT_ANIMATION } }
 	);
 	Element* add_element(
 		Container& container,
 		Element&& _element,
-		const std::unordered_map<size_t, AnimationInitialisation>& animations = { { hasher("main"),
-	                                                                                DEFAULT_ANIMATION } }
+		const std::unordered_map<size_t, AnimationState>& animations = { { hasher("main"), DEFAULT_ANIMATION } }
 	);
 
 	// elements

@@ -84,8 +84,8 @@ ui::Element& ui::add_button(
 		std::move(element),
 		container.element_gap,
 		{
-			{ hasher("main"), { .speed = 25.f } },
-			{ hasher("hover"), { .speed = 80.f } },
+			{ hasher("main"), AnimationState(25.f) },
+			{ hasher("hover"), AnimationState(80.f) },
 		}
 	);
 }

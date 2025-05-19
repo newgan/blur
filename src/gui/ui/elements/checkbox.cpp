@@ -105,15 +105,9 @@ ui::Element& ui::add_checkbox(
 		std::move(element),
 		container.element_gap,
 		{
-			{ hasher("main"), { .speed = 25.f } },
-			{ hasher("hover"), { .speed = 80.f } },
-			{
-				hasher("check"),
-				{
-					.speed = 40.f,
-					.value = checked ? 1.f : 0.f,
-				},
-			},
+			{ hasher("main"), AnimationState(25.f) },
+			{ hasher("hover"), AnimationState(80.f) },
+			{ hasher("check"), AnimationState(40.f, checked ? 1.f : 0.f) },
 		}
 	);
 }

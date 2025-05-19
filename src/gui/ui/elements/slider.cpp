@@ -357,8 +357,8 @@ ui::Element& ui::add_slider(
 		std::move(element),
 		container.element_gap,
 		{
-			{ hasher("main"), { .speed = 25.f } },
-			{ hasher("hover"), { .speed = 80.f } },
+			{ hasher("main"), AnimationState(25.f) },
+			{ hasher("hover"), AnimationState(80.f) },
 		}
 	);
 }
@@ -411,13 +411,9 @@ ui::Element& ui::add_slider_tied(
 		std::move(element),
 		container.element_gap,
 		{
-			{ hasher("main"), { .speed = 25.f } },
-			{ hasher("hover"), { .speed = 80.f } },
-			{ hasher("tied"),
-	          {
-				  .speed = 80.f,
-				  .value = is_tied ? 1.f : 0.f,
-			  } },
+			{ hasher("main"), AnimationState(25.f) },
+			{ hasher("hover"), AnimationState(80.f) },
+			{ hasher("tied"), AnimationState(80.f, is_tied ? 1.f : 0.f) },
 		}
 	);
 }
