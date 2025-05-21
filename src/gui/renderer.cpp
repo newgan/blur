@@ -272,7 +272,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 				std::format("section {} forced", label),
 				container,
 				"forced on as settings in this section have been modified",
-				gfx::Color(255, 255, 255, 175),
+				gfx::Color::white(175),
 				fonts::dejavu
 			);
 		}
@@ -908,6 +908,12 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 
 	try {
 		if (!preview_path.empty() && std::filesystem::exists(preview_path) && !error) {
+			container.push_element_gap(6);
+			ui::add_text(
+				"preview header", container, "Config preview", gfx::Color::white(175), fonts::dejavu, FONT_CENTERED_X
+			);
+			container.pop_element_gap();
+
 			auto element = ui::add_image(
 				"config preview image",
 				container,
