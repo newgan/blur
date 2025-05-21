@@ -1,11 +1,5 @@
 #include "tasks.h"
 
-#if defined(WIN32) || defined(__APPLE__)
-// dont need launcher
-#else
-#	include "base/launcher.h"
-#endif
-
 #include <common/rendering.h>
 #include "gui.h"
 #include "gui/renderer.h"
@@ -73,7 +67,7 @@ void tasks::run(const std::vector<std::string>& arguments) {
 			),
 			ui::NotificationType::INFO,
 			[&] {
-				base::launcher::open_url(update_res.latest_tag_url);
+				SDL_OpenURL(update_res.latest_tag_url.c_str());
 			},
 			update_notification_duration
 		);
