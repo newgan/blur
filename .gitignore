@@ -7,6 +7,7 @@ build/
 bin/
 out/
 
+# visual studio
 .vs
 
 ### C++ ###
