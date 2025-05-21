@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "ms-vscode.cpptools",
+    "xaver.clang-format",
+    "llvm-vs-code-extensions.vscode-clangd",
+    "ms-vscode.cmake-tools",
+    "cheshirekow.cmake-format",
+    "vadimcn.vscode-lldb"
+  ]
+}
