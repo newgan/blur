@@ -149,8 +149,9 @@ void ui::render_dropdown(const Container& container, const AnimatedElement& elem
 
 	// Render dropdown options
 	if (expand_anim > 0.01f) {
-		gfx::Color option_color(15, 15, 15, anim * 255);
+		gfx::Color option_color(7, 7, 7, anim * 255);
 		gfx::Color option_border_color(border_shade, border_shade, border_shade, anim * 255);
+
 		render::rounded_rect_filled(pos.options_rect, option_color, DROPDOWN_ROUNDING);
 		render::rounded_rect_stroke(pos.options_rect, option_border_color, DROPDOWN_ROUNDING);
 
