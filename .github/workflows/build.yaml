@@ -38,7 +38,8 @@ jobs:
             libgl1-mesa-dev \
             libncurses6 \
             gcc-13 g++-13 \
-            libfontconfig1-dev
+            libfontconfig1-dev \
+            autoconf automake libtool pkg-config libltdl-dev
 
       - name: Install GCC
         if: runner.os == 'Linux'
