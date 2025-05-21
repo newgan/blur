@@ -203,12 +203,20 @@ RenderCommandsResult Render::build_render_commands() {
 	std::vector<std::wstring> audio_filters;
 	if (m_settings.timescale) {
 		if (m_settings.input_timescale != 1.f) {
-			audio_filters.push_back(std::format(L"asetrate=48000*{}", (1 / m_settings.input_timescale)));
+			audio_filters.push_back(std::format(
+				L"asetrate={}*{}",
+				m_video_info.sample_rate != -1 ? m_video_info.sample_rate : 48000,
+				(1 / m_settings.input_timescale)
+			));
 		}
 
 		if (m_settings.output_timescale != 1.f) {
 			if (m_settings.output_timescale_audio_pitch) {
-				audio_filters.push_back(std::format(L"asetrate=48000*{}", m_settings.output_timescale));
+				audio_filters.push_back(std::format(
+					L"asetrate={}*{}",
+					m_video_info.sample_rate != -1 ? m_video_info.sample_rate : 48000,
+					m_settings.output_timescale
+				));
 			}
 			else {
 				audio_filters.push_back(std::format(L"atempo={}", m_settings.output_timescale));

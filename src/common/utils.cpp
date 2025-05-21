@@ -254,7 +254,7 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 		"-v",
 		"error",
 		"-show_entries",
-		"stream=codec_type,codec_name,duration,color_range",
+		"stream=codec_type,codec_name,duration,color_range,sample_rate",
 		"-show_entries",
 		"format=duration",
 		"-of",
@@ -295,6 +295,10 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 		else if (line.find("color_range=") != std::string::npos) {
 			info.color_range = line.substr(line.find('=') + 1);
 		}
+		else if (line.find("sample_rate=") != std::string::npos) {
+			std::string sample_rate_str = line.substr(line.find('=') + 1);
+			info.sample_rate = std::stoi(sample_rate_str);
+		}
 	}
 
 	c.wait();
@@ -304,6 +308,10 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 	// Static images will typically have duration=0 or N/A
 	bool is_animated_format = u::contains(codec_name, "gif") || u::contains(codec_name, "webp");
 	info.has_video_stream = has_video_stream && (duration > 0.1 || is_animated_format);
+
+	if (info.sample_rate == -1) {
+		// todo: throw?
+	}
 
 	return info;
 }
