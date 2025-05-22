@@ -384,6 +384,8 @@ bool ui::update_container_frame(Container& container, float delta_time) {
 
 		if (stale && main_animation.complete) {
 			// animation complete and element stale, remove
+			slider_observers.erase(id);
+
 			u::log("removed {}", id);
 			it = container.elements.erase(it);
 			continue;

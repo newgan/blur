@@ -330,6 +330,13 @@ namespace ui {
 	inline AnimatedElement* active_element = nullptr;
 	inline std::vector<SDL_Event> text_event_queue;
 
+	struct SliderObserver {
+		bool init = false;
+		float last_tied_value = 0.0f;
+	};
+
+	inline std::unordered_map<std::string, SliderObserver> slider_observers;
+
 	inline const auto HIGHLIGHT_COLOR = gfx::Color(133, 24, 16, 255);
 	inline const int TYPE_SWITCH_PADDING = 5;
 

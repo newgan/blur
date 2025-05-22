@@ -79,13 +79,6 @@ namespace {
 			.tied_text_pos = tied_text_pos,
 		};
 	}
-
-	struct SliderObserver {
-		bool init = false;
-		float last_tied_value = 0.0f;
-	};
-
-	std::unordered_map<std::string, SliderObserver> slider_observers;
 }
 
 void ui::render_slider(const Container& container, const AnimatedElement& element) {
