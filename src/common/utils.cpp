@@ -253,8 +253,10 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 		blur.ffprobe_path.wstring(),
 		"-v",
 		"error",
+		"-select_streams",
+		"v:0", // only want to analyse first video stream
 		"-show_entries",
-		"stream=codec_type,codec_name,duration,color_range,sample_rate",
+		"stream=codec_type,codec_name,duration,color_range,sample_rate,r_frame_rate",
 		"-show_entries",
 		"format=duration",
 		"-of",
@@ -298,6 +300,17 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 		else if (line.find("sample_rate=") != std::string::npos) {
 			std::string sample_rate_str = line.substr(line.find('=') + 1);
 			info.sample_rate = std::stoi(sample_rate_str);
+		}
+		else if (line.find("r_frame_rate=") != std::string::npos) {
+			std::string frame_rate_str = line.substr(line.find('=') + 1);
+			auto fps_split = u::split_string(frame_rate_str, "/");
+			if (fps_split.size() == 2) {
+				info.fps_num = std::stoi(fps_split[0]);
+				info.fps_den = std::stoi(fps_split[1]);
+			}
+			else {
+				// todo: throw? what??
+			}
 		}
 	}
 
