@@ -175,6 +175,8 @@ namespace u {
 		bool has_video_stream = false;
 		std::optional<std::string> color_range;
 		int sample_rate = -1;
+		int fps_num = -1;
+		int fps_den = -1;
 	};
 
 	VideoInfo get_video_info(const std::filesystem::path& path);

@@ -164,6 +164,10 @@ RenderCommandsResult Render::build_render_commands() {
 		                L"-a",
 		                L"video_path=" + path_string,
 		                L"-a",
+		                std::format(L"fps_num={}", m_video_info.fps_num),
+		                L"-a",
+		                std::format(L"fps_den={}", m_video_info.fps_den),
+		                L"-a",
 		                L"settings=" + u::towstring(settings_json.json->dump()),
 #if defined(__APPLE__)
 		                L"-a",

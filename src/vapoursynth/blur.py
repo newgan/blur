@@ -31,6 +31,9 @@ video_path = Path(vars().get("video_path", ""))
 
 settings = json.loads(vars().get("settings", "{}"))
 
+fps_num = vars().get("fps_num", -1)
+fps_den = vars().get("fps_den", -1)
+
 # validate some settings
 svp_interpolation_algorithm = u.coalesce(
     u.safe_int(settings["svp_interpolation_algorithm"]),
@@ -53,10 +56,19 @@ if rife_gpu_index == -1:  # haven't benchmarked yet..?
 
 if vars().get("enable_lsmash") == "true":
     video = core.lsmas.LWLibavSource(
-        source=video_path, cache=0, prefer_hw=3 if settings["gpu_decoding"] else 0
+        source=video_path,
+        cache=0,
+        prefer_hw=3 if settings["gpu_decoding"] else 0,
+        fpsnum=fps_num if fps_num != -1 else None,
+        fpsden=fps_den if fps_den != -1 else None,
     )
 else:
-    video = core.bs.VideoSource(source=video_path, cachemode=0)
+    video = core.bs.VideoSource(
+        source=video_path,
+        cachemode=0,
+        fpsnum=fps_num if fps_num != -1 else None,
+        fpsden=fps_den if fps_den != -1 else None,
+    )
 
 # input timescale
 if settings["timescale"]:
