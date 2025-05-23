@@ -88,7 +88,6 @@ void desktop_notification::cleanup() {
 
 #elif __linux__
 #	include <libnotify/notify.h>
-#	include <gtk/gtk.h>
 
 static std::string g_app_name;
 static desktop_notification::ClickCallback g_click_callback;
