@@ -48,13 +48,15 @@ bool cli::run(
 	}
 
 	for (size_t i = 0; i < inputs.size(); ++i) {
-		std::filesystem::path input_path = std::filesystem::canonical(inputs[i]);
+		std::filesystem::path input_path(inputs[i]);
 
 		if (!std::filesystem::exists(input_path)) {
 			// TODO: test with unicode
 			u::log(L"Video '{}' was not found (wrong path?)", input_path.wstring());
 			continue;
 		}
+
+		input_path = std::filesystem::canonical(input_path);
 
 		auto video_info = u::get_video_info(input_path);
 		if (!video_info.has_video_stream) {
