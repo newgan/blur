@@ -1368,10 +1368,15 @@ void gui::renderer::components::configs::screen(
 		});
 	}
 
-	if (settings != config_blur::DEFAULT_CONFIG) {
+	auto modified_default = config_blur::DEFAULT_CONFIG;
+	modified_default.gpu_type = settings.gpu_type;
+	modified_default.rife_gpu_index =
+		settings.rife_gpu_index; // the default config has uninitialised rife gpu, use index from current cfg to prevent
+	                             // restore default from always showing up
+	if (settings != modified_default) {
 		ui::set_next_same_line(nav_container);
-		ui::add_button("restore defaults button", nav_container, "Restore defaults", fonts::dejavu, [&] {
-			settings = config_blur::DEFAULT_CONFIG;
+		ui::add_button("restore defaults button", nav_container, "Restore defaults", fonts::dejavu, [] {
+			settings = config_blur::DEFAULT_CONFIG; // ^ actually restore defaults tho
 			parse_interp();
 		});
 	}
