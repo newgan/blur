@@ -12,7 +12,7 @@ bool cli::run(
 	auto res = blur.initialise(verbose, preview);
 
 	if (!res.success) { // todo: preview in cli
-		u::log(L"Blur failed to initialize");
+		u::log(L"Blur failed to initialise");
 		u::log("Reason: {}", res.error_message);
 		return false;
 	}

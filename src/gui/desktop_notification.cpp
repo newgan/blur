@@ -13,7 +13,7 @@ using namespace Windows::Data::Xml::Dom;
 static std::string g_app_name;
 static desktop_notification::ClickCallback g_click_callback;
 
-bool desktop_notification::initialize(const std::string& app_name) {
+bool desktop_notification::initialise(const std::string& app_name) {
 	g_app_name = app_name;
 	return true;
 }
@@ -63,6 +63,7 @@ void desktop_notification::cleanup() {
 
 static std::string g_app_name;
 static desktop_notification::ClickCallback g_click_callback;
+static bool g_is_initialised = false;
 
 static void on_notification_closed(NotifyNotification* notification, gpointer user_data) {
 	g_object_unref(G_OBJECT(notification));
@@ -74,12 +75,23 @@ static void on_notification_activated(NotifyNotification* notification, char* ac
 	}
 }
 
-bool desktop_notification::initialize(const std::string& app_name) {
+bool desktop_notification::initialise(const std::string& app_name) {
+	if (g_is_initialised) {
+		return true;
+	}
+
 	g_app_name = app_name;
-	return notify_init(app_name.c_str());
+	g_is_initialised = notify_init(app_name.c_str());
+	return g_is_initialised;
 }
 
 bool desktop_notification::show(const std::string& title, const std::string& message, ClickCallback on_click) {
+	if (!g_is_initialised) {
+		if (!initialise(g_app_name.empty() ? "App" : g_app_name)) {
+			return false;
+		}
+	}
+
 	if (!notify_is_initted())
 		return false;
 
@@ -120,9 +132,13 @@ bool desktop_notification::has_permission() {
 }
 
 void desktop_notification::cleanup() {
+	if (!g_is_initialised) {
+		return;
+	}
 	if (notify_is_initted()) {
 		notify_uninit();
 	}
+	g_is_initialised = false;
 }
 
 #endif

@@ -5,6 +5,7 @@
 
 static desktop_notification::ClickCallback g_click_callback;
 static bool g_has_permission = false;
+static bool g_tried_initialise = false;
 
 @interface NotificationDelegate : NSObject <UNUserNotificationCenterDelegate>
 @end
@@ -32,7 +33,10 @@ static NotificationDelegate* g_delegate = nil;
 
 namespace desktop_notification {
 
-bool initialize(const std::string& app_name) {
+bool initialise(const std::string& app_name) {
+	if (g_tried_initialise)
+		return true;
+
 	@autoreleasepool {
 		g_delegate = [[NotificationDelegate alloc] init];
 
@@ -50,11 +54,17 @@ bool initialize(const std::string& app_name) {
 		}];
 	}
 
+	g_tried_initialise = true;
 	return true;
 }
 
 bool show(const std::string& title, const std::string& message, ClickCallback on_click) {
 	if (!g_has_permission) {
+		if (!g_tried_initialise) {
+			// haven't tried to initialise yet, so do it now
+			initialise("doesnt matter - not used");
+		}
+
 		return false;
 	}
 
@@ -69,8 +79,13 @@ bool show(const std::string& title, const std::string& message, ClickCallback on
 		UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:[[NSUUID UUID] UUIDString]
 																			  content:content
 																			  trigger:nil];
-
-		[[UNUserNotificationCenter currentNotificationCenter] addNotificationRequest:request withCompletionHandler:nil];
+		[[UNUserNotificationCenter currentNotificationCenter]
+			addNotificationRequest:request
+			 withCompletionHandler:^(NSError* _Nullable error) {
+			   if (error) {
+				   NSLog(@"Failed to deliver notification: %@", error);
+			   }
+			 }];
 	}
 
 	return true;
@@ -85,7 +100,11 @@ bool has_permission() {
 }
 
 void cleanup() {
+	if (!g_tried_initialise)
+		return;
+
 	g_delegate = nil;
+	g_tried_initialise = false;
 }
 
 } // namespace desktop_notification

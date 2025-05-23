@@ -1,4 +1,5 @@
 #include "sdl.h"
+#include "common/config_app.h"
 #include "render/render.h"
 #include "desktop_notification.h"
 
@@ -16,8 +17,11 @@ void sdl::initialise() {
 		throw std::runtime_error("SDL initialization failed");
 	}
 
-	// Initialize notification system
-	desktop_notification::initialize("Blur"); // mac note: needs to match bundle executable in Info.plist
+	// Initialise notification system
+	auto config = config_app::get_app_config();
+	if (config.render_success_notifications || config.render_failure_notifications) {
+		desktop_notification::initialise(APPLICATION_NAME);
+	}
 
 	// Decide GL+GLSL versions
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -74,7 +78,7 @@ void sdl::initialise() {
 
 	if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) { // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
 		                                                          // ^ c lib
-		throw std::runtime_error("Failed to initialize GLAD");
+		throw std::runtime_error("Failed to initialise GLAD");
 	}
 
 	SDL_GL_MakeCurrent(window, gl_context);

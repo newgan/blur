@@ -1,10 +1,18 @@
 #include "config_app.h"
 #include "config_base.h"
+#include "gui/desktop_notification.h"
 
 void config_app::create(const std::filesystem::path& filepath, const GlobalAppSettings& current_settings) {
 	std::ofstream output(filepath);
 
 	output << "[blur v" << BLUR_VERSION << "]" << "\n";
+
+	output << "\n";
+	output << "- notifications" << "\n";
+	output << "render success notifications: " << (current_settings.render_success_notifications ? "true" : "false")
+		   << "\n";
+	output << "render failure notifications: " << (current_settings.render_failure_notifications ? "true" : "false")
+		   << "\n";
 
 	output << "\n";
 	output << "- updates" << "\n";
@@ -16,6 +24,13 @@ GlobalAppSettings config_app::parse(const std::filesystem::path& config_filepath
 	auto config_map = config_base::read_config_map(config_filepath);
 
 	GlobalAppSettings settings;
+
+	config_base::extract_config_value(
+		config_map, "render success notifications", settings.render_success_notifications
+	);
+	config_base::extract_config_value(
+		config_map, "render failure notifications", settings.render_failure_notifications
+	);
 
 	config_base::extract_config_value(config_map, "check for updates", settings.check_updates);
 	config_base::extract_config_value(config_map, "include beta updates", settings.check_beta);
@@ -32,11 +47,4 @@ std::filesystem::path config_app::get_app_config_path() {
 
 GlobalAppSettings config_app::get_app_config() {
 	return config_base::load_config<GlobalAppSettings>(get_app_config_path(), create, parse);
-}
-
-nlohmann::json GlobalAppSettings::to_json() const {
-	nlohmann::json j;
-	j["check_updates"] = this->check_updates;
-	j["check_beta"] = this->check_beta;
-	return j;
 }

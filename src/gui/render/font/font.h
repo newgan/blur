@@ -7,7 +7,7 @@ namespace render {
 	private:
 		ImFont* m_font{};
 		float m_size{};
-		bool m_initialized = false;
+		bool m_initialised = false;
 		int m_height = 0;
 
 	public:
@@ -24,7 +24,7 @@ namespace render {
 		}
 
 		operator bool() const {
-			return m_initialized;
+			return m_initialised;
 		}
 
 		[[nodiscard]] int height() const {

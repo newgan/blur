@@ -1,12 +1,13 @@
 #pragma once
 
 struct GlobalAppSettings {
+	bool render_success_notifications = false;
+	bool render_failure_notifications = false;
+
 	bool check_updates = true;
 	bool check_beta = false;
 
 	bool operator==(const GlobalAppSettings& other) const = default;
-
-	[[nodiscard]] nlohmann::json to_json() const;
 };
 
 namespace config_app {

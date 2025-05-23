@@ -1,5 +1,6 @@
 #include "renderer.h"
 
+#include "common/config_app.h"
 #include "common/rendering.h"
 #include "common/rendering_frame.h"
 
@@ -7,11 +8,10 @@
 #include "sdl.h"
 #include "tasks.h"
 #include "gui.h"
+#include "desktop_notification.h"
 
 #include "ui/ui.h"
 #include "render/render.h"
-
-#include "desktop_notification.h"
 
 #define DEBUG_RENDER 0
 
@@ -1710,7 +1710,10 @@ void gui::renderer::on_render_finished(Render* render, const RenderResult& resul
 			}
 		);
 
-		desktop_notification::show("Render Complete", "Video render completed successfully");
+		auto app_config = config_app::get_app_config();
+		if (app_config.render_success_notifications) {
+			desktop_notification::show("Render Complete", "Video render completed successfully");
+		}
 	}
 	else {
 		add_notification(
@@ -1737,7 +1740,10 @@ void gui::renderer::on_render_finished(Render* render, const RenderResult& resul
 			std::nullopt
 		);
 
-		desktop_notification::show("Render Failed", std::format("Render failed: {}", result.error_message));
+		auto app_config = config_app::get_app_config();
+		if (app_config.render_failure_notifications) {
+			desktop_notification::show("Render Failed", std::format("Render failed: {}", result.error_message));
+		}
 	}
 }
 

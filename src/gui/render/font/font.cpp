@@ -21,8 +21,8 @@ bool render::Font::init(
 
 	m_height = calc_size("Q").h;
 
-	m_initialized = m_font != nullptr;
-	return m_initialized;
+	m_initialised = m_font != nullptr;
+	return m_initialised;
 }
 
 gfx::Size render::Font::calc_size(const std::string& text) const {
