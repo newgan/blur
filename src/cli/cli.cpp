@@ -71,7 +71,7 @@ bool cli::run(
 			config_path = std::filesystem::canonical(config_paths[i]);
 
 		if (manual_output_files) {
-			output_path = std::filesystem::canonical(outputs[i]);
+			output_path = std::filesystem::absolute(outputs[i]);
 
 			// create output directory if needed
 			if (!std::filesystem::exists(output_path->parent_path()))
