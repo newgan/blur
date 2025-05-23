@@ -26,13 +26,13 @@ def equal(frames):
     return [1 / frames] * frames
 
 
-def gaussian(frames, standard_deviation=2, bound=[0, 2]):
+def gaussian(frames, standard_deviation=1, bound=[0, 2]):
     r = scale_range(frames, bound[0], bound[1])
-    val = [math.exp(-((x) ** 2) / (2 * (standard_deviation**2))) for x in r]
+    val = [math.exp(-((x) ** 2) / (2 * (standard_deviation**2))) for x in reversed(r)]
     return scale_weights(val)
 
 
-def gaussian_sym(frames, standard_deviation=2, bound=[0, 2]):
+def gaussian_sym(frames, standard_deviation=1, bound=[0, 2]):
     max_abs = max(bound)
     r = scale_range(frames, -max_abs, max_abs)
     val = [math.exp(-((x) ** 2) / (2 * (standard_deviation**2))) for x in r]
