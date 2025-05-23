@@ -302,7 +302,16 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"blur weighting",
 			container,
 			"blur weighting",
-			{ "gaussian", "gaussian_sym", "pyramid", "pyramid_sym", "custom_weight", "custom_function", "equal" },
+			{
+				"equal",
+				"gaussian_sym",
+				"vegas",
+				"pyramid",
+				"gaussian",
+				"ascending",
+				"descending",
+				"gaussian_reverse",
+			},
 			settings.blur_weighting,
 			fonts::dejavu
 		);
@@ -774,18 +783,20 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			"blur weighting gaussian std dev: {:.2f}",
 			fonts::dejavu
 		);
-		ui::add_checkbox(
-			"blur weighting triangle reverse checkbox",
+		ui::add_slider(
+			"blur weighting gaussian mean slider",
 			container,
-			"blur weighting triangle reverse",
-			settings.advanced.blur_weighting_triangle_reverse,
+			0.f,
+			2.f,
+			&settings.advanced.blur_weighting_gaussian_mean,
+			"blur weighting gaussian mean: {:.2f}",
 			fonts::dejavu
 		);
 		ui::add_text_input(
-			"blur weighting bound input",
+			"blur weighting gaussian bound input",
 			container,
-			settings.advanced.blur_weighting_bound,
-			"blur weighting bound",
+			settings.advanced.blur_weighting_gaussian_bound,
+			"blur weighting gaussian bound",
 			fonts::dejavu
 		);
 	}

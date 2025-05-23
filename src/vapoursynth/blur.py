@@ -263,53 +263,65 @@ if settings["blur"]:
                 blended_frames += 1
 
             def do_weighting_fn(blur_weighting_fn):
-                blur_weighting_bound = json.loads(settings["blur_weighting_bound"])
+                blur_weighting_gaussian_bound = json.loads(
+                    settings["blur_weighting_gaussian_bound"]
+                )
 
                 match blur_weighting_fn:
+                    case "equal":
+                        return blur.weighting.equal(blended_frames)
+
+                    case "ascending":
+                        return blur.weighting.ascending(blended_frames)
+
+                    case "descending":
+                        return blur.weighting.descending(blended_frames)
+
+                    case "pyramid":
+                        return blur.weighting.pyramid(blended_frames)
+
                     case "gaussian":
                         return blur.weighting.gaussian(
                             blended_frames,
-                            settings["blur_weighting_gaussian_std_dev"],
-                            blur_weighting_bound,
+                            standard_deviation=settings[
+                                "blur_weighting_gaussian_std_dev"
+                            ],
+                            mean=settings["blur_weighting_gaussian_mean"],
+                            bound=blur_weighting_gaussian_bound,
+                        )
+
+                    case "gaussian_reverse":
+                        return blur.weighting.gaussian_reverse(
+                            blended_frames,
+                            standard_deviation=settings[
+                                "blur_weighting_gaussian_std_dev"
+                            ],
+                            mean=settings["blur_weighting_gaussian_mean"],
+                            bound=blur_weighting_gaussian_bound,
                         )
 
                     case "gaussian_sym":
                         return blur.weighting.gaussian_sym(
                             blended_frames,
-                            settings["blur_weighting_gaussian_std_dev"],
-                            blur_weighting_bound,
+                            standard_deviation=settings[
+                                "blur_weighting_gaussian_std_dev"
+                            ],
+                            bound=blur_weighting_gaussian_bound,
                         )
 
-                    case "pyramid":
-                        return blur.weighting.pyramid(
-                            blended_frames,
-                            bool(settings["blur_weighting_triangle_reverse"]),
-                        )
-
-                    case "pyramid_sym":
-                        return blur.weighting.pyramid_sym(blended_frames)
-
-                    case "custom_weight":
-                        return blur.weighting.divide(
-                            blended_frames, settings["blur_weighting"]
-                        )
-
-                    case "custom_function":
-                        return blur.weighting.custom(
-                            blended_frames,
-                            settings["blur_weighting"],
-                            settings["blur_weighting_bound"],
-                        )
-
-                    case "equal":
-                        return blur.weighting.equal(blended_frames)
+                    case "vegas":
+                        return blur.weighting.vegas(blended_frames)
 
                     case _:
-                        # check if it's a custom weighting function
-                        if blur_weighting_fn[0] == "[" and blur_weighting_fn[-1] == "]":
-                            return do_weighting_fn("custom_weight")
-                        else:
-                            return do_weighting_fn("custom_function")
+                        try:
+                            weights = [
+                                int(x) for x in settings["blur_weighting"].split(",")
+                            ]
+                            return blur.weighting.divide(blended_frames, weights)
+                        except (ValueError, AttributeError):
+                            raise u.BlurException(
+                                f"Invalid blur_weighting value: {settings['blur_weighting']}. Valid options are: 'equal', 'gaussian_sym', 'vegas', 'pyramid', 'gaussian', 'ascending', 'descending', 'gaussian_reverse', or a comma-separated list of custom weights (e.g. '1, 2, 3, 2, 1')."
+                            )
 
             weights = do_weighting_fn(settings["blur_weighting"])
 
