@@ -6,7 +6,8 @@ bool cli::run(
 	std::vector<std::string> outputs,
 	std::vector<std::string> config_paths,
 	bool preview,
-	bool verbose
+	bool verbose,
+	bool disable_update_check
 ) {
 	auto res = blur.initialise(verbose, preview);
 
@@ -16,9 +17,11 @@ bool cli::run(
 		return false;
 	}
 
-	auto update_res = Blur::check_updates();
-	if (update_res.success && !update_res.is_latest) {
-		u::log("There's a newer version ({}) available at {}!", update_res.latest_tag, update_res.latest_tag_url);
+	if (!disable_update_check) {
+		auto update_res = Blur::check_updates();
+		if (update_res.success && !update_res.is_latest) {
+			u::log("There's a newer version ({}) available at {}!", update_res.latest_tag, update_res.latest_tag_url);
+		}
 	}
 
 	bool manual_output_files = !outputs.empty();
