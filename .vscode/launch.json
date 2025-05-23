@@ -5,11 +5,10 @@
       "name": "Debug with CodeLLDB",
       "type": "lldb",
       "request": "launch",
-      "program": "${command:cmake.launchTargetPath}",
+      "program": "${command:cmake.getLaunchTargetPath}",
+      // ^ evil bug note: using getLaunchTargetPath here instead of launchTargetPath because launchTargetPath forces clean rebuild on changes??
       "args": [],
       "cwd": "${workspaceFolder}",
-      "stopOnEntry": false,
-      "env": {},
       "preLaunchTask": "CMake: build"
     }
   ]
