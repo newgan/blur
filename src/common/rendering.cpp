@@ -1,44 +1,44 @@
 ﻿#include "rendering.h"
 #include "config_presets.h"
 
-void Rendering::render_videos() {
-	if (!m_queue.empty()) {
-		auto& render = m_queue.front();
-		auto* render_ptr = render.get();
+bool Rendering::render_next_video() {
+	if (m_queue.empty())
+		return false;
 
-		lock();
-		{
-			m_current_render_id = render->get_render_id();
-		}
-		unlock();
+	auto& render = m_queue.front();
+	auto* render_ptr = render.get();
 
-		rendering.call_progress_callback();
-
-		RenderResult render_result;
-		try {
-			render_result = render->render();
-		}
-		catch (const std::exception& e) {
-			u::log(e.what());
-		}
-
-		rendering.call_render_finished_callback(
-			render_ptr, render_result
-		); // note: cant do render.get() here cause compiler optimisations break it somehow (So lit)
-
-		// finished rendering, delete
-		lock();
-		{
-			m_queue.erase(m_queue.begin());
-			m_current_render_id.reset();
-		}
-		unlock();
-
-		rendering.call_progress_callback();
+	lock();
+	{
+		m_current_render_id = render->get_render_id();
 	}
-	else {
-		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	unlock();
+
+	rendering.call_progress_callback();
+
+	RenderResult render_result;
+	try {
+		render_result = render->render();
 	}
+	catch (const std::exception& e) {
+		u::log(e.what());
+	}
+
+	rendering.call_render_finished_callback(
+		render_ptr, render_result
+	); // note: cant do render.get() here cause compiler optimisations break it somehow (So lit)
+
+	// finished rendering, delete
+	lock();
+	{
+		m_queue.erase(m_queue.begin());
+		m_current_render_id.reset();
+	}
+	unlock();
+
+	rendering.call_progress_callback();
+
+	return true;
 }
 
 Render& Rendering::queue_render(Render&& render) {

@@ -89,7 +89,8 @@ bool cli::run(
 	}
 
 	// render videos
-	rendering.render_videos();
+	while (rendering.render_next_video())
+		;
 
 	u::log(L"Finished rendering");
 
