@@ -83,9 +83,8 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 		output << "- advanced blur" << "\n";
 		output << "blur weighting gaussian std dev: " << current_settings.advanced.blur_weighting_gaussian_std_dev
 			   << "\n";
-		output << "blur weighting triangle reverse: "
-			   << (current_settings.advanced.blur_weighting_triangle_reverse ? "true" : "false") << "\n";
-		output << "blur weighting bound: " << current_settings.advanced.blur_weighting_bound << "\n";
+		output << "blur weighting gaussian mean: " << current_settings.advanced.blur_weighting_gaussian_mean << "\n";
+		output << "blur weighting gaussian bound: " << current_settings.advanced.blur_weighting_gaussian_bound << "\n";
 
 		output << "\n";
 		output << "- advanced interpolation" << "\n";
@@ -217,9 +216,11 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 			config_map, "blur weighting gaussian std dev", settings.advanced.blur_weighting_gaussian_std_dev
 		);
 		config_base::extract_config_value(
-			config_map, "blur weighting triangle reverse", settings.advanced.blur_weighting_triangle_reverse
+			config_map, "blur weighting gaussian mean", settings.advanced.blur_weighting_gaussian_mean
 		);
-		config_base::extract_config_string(config_map, "blur weighting bound", settings.advanced.blur_weighting_bound);
+		config_base::extract_config_string(
+			config_map, "blur weighting gaussian bound", settings.advanced.blur_weighting_gaussian_bound
+		);
 
 		config_base::extract_config_string(
 			config_map, "svp interpolation preset", settings.advanced.svp_interpolation_preset
@@ -348,8 +349,8 @@ BlurSettings::ToJsonResult BlurSettings::to_json() const {
 	j["debug"] = this->advanced.debug;
 
 	j["blur_weighting_gaussian_std_dev"] = this->advanced.blur_weighting_gaussian_std_dev;
-	j["blur_weighting_triangle_reverse"] = this->advanced.blur_weighting_triangle_reverse;
-	j["blur_weighting_bound"] = this->advanced.blur_weighting_bound;
+	j["blur_weighting_gaussian_mean"] = this->advanced.blur_weighting_gaussian_mean;
+	j["blur_weighting_gaussian_bound"] = this->advanced.blur_weighting_gaussian_bound;
 
 	j["svp_interpolation_preset"] = this->advanced.svp_interpolation_preset;
 	j["svp_interpolation_algorithm"] = this->advanced.svp_interpolation_algorithm;

@@ -83,7 +83,9 @@ void tasks::run(const std::vector<std::string>& arguments) {
 	add_files(wargs); // todo: mac packaged app support (& linux? does it work?)
 
 	while (!gui::stop) {
-		rendering.render_videos();
+		if (!rendering.render_next_video()) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		}
 	}
 }
 

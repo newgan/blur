@@ -119,7 +119,7 @@ private:
 	std::mutex m_lock;
 
 public:
-	void render_videos();
+	bool render_next_video();
 
 	Render& queue_render(Render&& render);
 

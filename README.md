@@ -92,14 +92,16 @@ Blur supports rendering from frameservers. This means you can avoid having to ru
 - blur - whether or not the output video file will have motion blur
 - blur amount - if blur is enabled, this is the amount of motion blur (0 = no blur, 1 = fully blend every frame together, 1+ = more blur/ghosting)
 - blur output fps - if blur is enabled, this is the fps the output video will be. can be a framerate (e.g. 600) or a multiplier (e.g. 5x)
-- blur weighting - weighting function to use when blending frames. options are listed below:
+- blur weighting - weighting function to use when blending frames. options are listed below. also: [view weighting comparison graphs.](tests/plot_weighting_functions/weighting_functions.pdf)
   - equal - each frame is blended equally
-  - gaussian
   - gaussian_sym
+  - vegas
   - pyramid
-  - pyramid_sym
+  - gaussian
+  - ascending
+  - descending
+  - gaussian_reverse
   - custom weights - custom frame weights, e.g. [5, 3, 3, 2, 1]. higher numbers indicate frames being more visible when blending, lower numbers mean they are less so.
-  - custom function - generate weights based off of custom python code, which is called for each frame 'x', e.g. -x\*\*2+1
 
 ### interpolation
 
@@ -156,8 +158,8 @@ Blur supports rendering from frameservers. This means you can avoid having to ru
 ### advanced blur
 
 - blur weighting gaussian std dev - standard deviation used in the gaussian weighting
-- blur weighting triangle reverse - reverses the direction of the triangle weighting
-- blur weighting bound - weighting bounds, spreads out weights more
+- blur weighting gaussian mean - mean used in the gaussian weighting
+- blur weighting gaussian bound - bound used in the gaussian weighting
 
 ### advanced interpolation
 

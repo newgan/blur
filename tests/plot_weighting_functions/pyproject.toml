@@ -1,0 +1,7 @@
+[project]
+name = "blur-plot-weighting-functions"
+version = "0.1.0"
+description = "Plots the weighting functions used in Blur"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["matplotlib>=3.10.3", "numpy>=2.2.6"]

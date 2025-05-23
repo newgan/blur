@@ -29,11 +29,19 @@ find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3)
 find_package(SDL3_image CONFIG REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(glad CONFIG REQUIRED)
+find_package(GTest CONFIG REQUIRED)
 
 # source files
 file(GLOB_RECURSE COMMON_SOURCES "src/common/*.cpp")
 file(GLOB_RECURSE CLI_SOURCES "src/cli/*.cpp")
 file(GLOB_RECURSE GUI_SOURCES "src/gui/*.cpp")
+file(GLOB_RECURSE CLI_TEST_SOURCES "tests/cli/*.cpp")
+list(FILTER CLI_TEST_SOURCES EXCLUDE REGEX
+     "^.*/tests/plot_weighting_functions/.*$")
+
+# Create CLI sources without main for tests
+set(CLI_SOURCES_NO_MAIN ${CLI_SOURCES})
+list(FILTER CLI_SOURCES_NO_MAIN EXCLUDE REGEX ".*main\\.cpp$")
 
 # collect imgui sources
 set(IMGUI_SOURCES
@@ -171,3 +179,16 @@ endif()
 
 set_target_properties(blur-gui PROPERTIES OUTPUT_NAME "blur")
 setup_target(blur-gui)
+
+# tests
+enable_testing()
+add_executable(blur-tests ${COMMON_SOURCES} ${CLI_SOURCES_NO_MAIN}
+                          ${CLI_TEST_SOURCES})
+target_link_libraries(blur-tests PRIVATE GTest::gtest GTest::gtest_main
+                                         CLI11::CLI11)
+target_precompile_headers(blur-tests PRIVATE tests/cli/cli_test_pch.h)
+setup_target(blur-tests)
+
+include(CTest)
+include(GoogleTest)
+gtest_discover_tests(blur-tests)

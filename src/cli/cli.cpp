@@ -6,7 +6,8 @@ bool cli::run(
 	std::vector<std::string> outputs,
 	std::vector<std::string> config_paths,
 	bool preview,
-	bool verbose
+	bool verbose,
+	bool disable_update_check
 ) {
 	auto res = blur.initialise(verbose, preview);
 
@@ -16,9 +17,11 @@ bool cli::run(
 		return false;
 	}
 
-	auto update_res = Blur::check_updates();
-	if (update_res.success && !update_res.is_latest) {
-		u::log("There's a newer version ({}) available at {}!", update_res.latest_tag, update_res.latest_tag_url);
+	if (!disable_update_check) {
+		auto update_res = Blur::check_updates();
+		if (update_res.success && !update_res.is_latest) {
+			u::log("There's a newer version ({}) available at {}!", update_res.latest_tag, update_res.latest_tag_url);
+		}
 	}
 
 	bool manual_output_files = !outputs.empty();
@@ -48,13 +51,15 @@ bool cli::run(
 	}
 
 	for (size_t i = 0; i < inputs.size(); ++i) {
-		std::filesystem::path input_path = std::filesystem::canonical(inputs[i]);
+		std::filesystem::path input_path(inputs[i]);
 
 		if (!std::filesystem::exists(input_path)) {
 			// TODO: test with unicode
 			u::log(L"Video '{}' was not found (wrong path?)", input_path.wstring());
 			continue;
 		}
+
+		input_path = std::filesystem::canonical(input_path);
 
 		auto video_info = u::get_video_info(input_path);
 		if (!video_info.has_video_stream) {
@@ -69,7 +74,7 @@ bool cli::run(
 			config_path = std::filesystem::canonical(config_paths[i]);
 
 		if (manual_output_files) {
-			output_path = std::filesystem::canonical(outputs[i]);
+			output_path = std::filesystem::absolute(outputs[i]);
 
 			// create output directory if needed
 			if (!std::filesystem::exists(output_path->parent_path()))
@@ -89,7 +94,8 @@ bool cli::run(
 	}
 
 	// render videos
-	rendering.render_videos();
+	while (rendering.render_next_video())
+		;
 
 	u::log(L"Finished rendering");
 

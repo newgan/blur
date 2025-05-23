@@ -6,6 +6,7 @@ namespace cli {
 		std::vector<std::string> outputs,
 		std::vector<std::string> config_paths,
 		bool preview,
-		bool verbose
+		bool verbose,
+		bool disable_update_check = false
 	);
 }
