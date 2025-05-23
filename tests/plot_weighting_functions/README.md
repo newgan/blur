@@ -4,6 +4,6 @@ This script plots the weighting functions used in Blur
 
 ## running
 
-```
+```sh
 uv run plot_weighting_functions.py
 ```
