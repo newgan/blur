@@ -11,9 +11,7 @@ namespace render {
 		int m_height = 0;
 
 	public:
-		bool init(
-			unsigned char* data, size_t data_size, float size, ImFontConfig* font_cfg, const ImWchar* glyph_ranges
-		);
+		bool init(std::span<const unsigned char> data, float size, ImFontConfig* font_cfg, const ImWchar* glyph_ranges);
 
 		[[nodiscard]] gfx::Size calc_size(const std::string& text) const;
 

@@ -1,0 +1,5 @@
+{
+  "cmake.buildEnvironment": {
+    "CLICOLOR_FORCE": "1"
+  }
+}

@@ -10,34 +10,36 @@
 #include "../fonts/icons.h"
 #include "imgui_internal.h"
 
-gfx::Color interpolate_color(const std::vector<gfx::Color>& colors, const std::vector<float>& positions, float t) {
-	// Find the segment containing t
-	size_t i = 0;
-	for (; i < positions.size() - 1; i++) {
-		if (t >= positions[i] && t <= positions[i + 1])
-			break;
+namespace {
+	gfx::Color interpolate_color(const std::vector<gfx::Color>& colors, const std::vector<float>& positions, float t) {
+		// Find the segment containing t
+		size_t i = 0;
+		for (; i < positions.size() - 1; i++) {
+			if (t >= positions[i] && t <= positions[i + 1])
+				break;
+		}
+
+		// If t is outside the range, clamp to the nearest color
+		if (i >= positions.size() - 1) {
+			if (t < positions[0])
+				return colors[0];
+			return colors[colors.size() - 1];
+		}
+
+		// Normalize t to the segment
+		float segment_t = (t - positions[i]) / (positions[i + 1] - positions[i]);
+
+		// Linear interpolation between colors
+		const gfx::Color& c1 = colors[i];
+		const gfx::Color& c2 = colors[i + 1];
+
+		return {
+			static_cast<uint8_t>(c1.r + (segment_t * (c2.r - c1.r))),
+			static_cast<uint8_t>(c1.g + (segment_t * (c2.g - c1.g))),
+			static_cast<uint8_t>(c1.b + (segment_t * (c2.b - c1.b))),
+			static_cast<uint8_t>(c1.a + (segment_t * (c2.a - c1.a))),
+		};
 	}
-
-	// If t is outside the range, clamp to the nearest color
-	if (i >= positions.size() - 1) {
-		if (t < positions[0])
-			return colors[0];
-		return colors[colors.size() - 1];
-	}
-
-	// Normalize t to the segment
-	float segment_t = (t - positions[i]) / (positions[i + 1] - positions[i]);
-
-	// Linear interpolation between colors
-	const gfx::Color& c1 = colors[i];
-	const gfx::Color& c2 = colors[i + 1];
-
-	return gfx::Color(
-		c1.r + segment_t * (c2.r - c1.r),
-		c1.g + segment_t * (c2.g - c1.g),
-		c1.b + segment_t * (c2.b - c1.b),
-		c1.a + segment_t * (c2.a - c1.a)
-	);
 }
 
 bool render::ImGuiWrap::init(SDL_Window* window, const SDL_GLContext& context) {
@@ -83,18 +85,16 @@ bool render::init(SDL_Window* window, const SDL_GLContext& context) {
 	font_cfg.RasterizerDensity = SDL_GetWindowPixelDensity(window); // TODO PORT: update when changing screen
 
 	// init fonts
-	if (!fonts::dejavu.init(DejaVuSans_compressed_data, DejaVuSans_compressed_size, 13.f, &font_cfg, glyph_ranges))
+	if (!fonts::dejavu.init(DEJAVU_SANS_COMPRESSED_DATA, 13.f, &font_cfg, glyph_ranges))
 		return false;
 
-	if (!fonts::header_font.init(EbGaramond_compressed_data, EbGaramond_compressed_size, 30.f, &font_cfg, glyph_ranges))
+	if (!fonts::header_font.init(EB_GARAMOND_COMPRESSED_DATA, 30.f, &font_cfg, glyph_ranges))
 		return false;
 
-	if (!fonts::smaller_header_font.init(
-			EbGaramond_compressed_data, EbGaramond_compressed_size, 18.f, &font_cfg, glyph_ranges
-		))
+	if (!fonts::smaller_header_font.init(EB_GARAMOND_COMPRESSED_DATA, 18.f, &font_cfg, glyph_ranges))
 		return false;
 
-	if (!fonts::icons.init(Icons_compressed_data, Icons_compressed_size, 14.f, &font_cfg, glyph_ranges))
+	if (!fonts::icons.init(ICONS_COMPRESSED_DATA, 14.f, &font_cfg, glyph_ranges))
 		return false;
 
 	return true;
@@ -127,7 +127,8 @@ void render::ImGuiWrap::begin(SDL_Window* window) {
 	last = now;
 }
 
-void render::ImGuiWrap::end(SDL_Window* window) {
+void render::ImGuiWrap::end(SDL_Window* window) { // NOLINT(readability-convert-member-functions-to-static)
+	                                              // ^ yeah, but this is nicer to call
 	ImVec4 clear_colour = ImVec4(0.f, 0.f, 0.f, 1.f);
 
 	ImGui::Render();
@@ -194,7 +195,7 @@ void render::rect_filled_gradient(
 	ImVec2 dir_vec(
 		gradient_direction[1].x - gradient_direction[0].x, gradient_direction[1].y - gradient_direction[0].y
 	);
-	float dir_length = sqrtf(dir_vec.x * dir_vec.x + dir_vec.y * dir_vec.y);
+	float dir_length = sqrtf((dir_vec.x * dir_vec.x) + (dir_vec.y * dir_vec.y));
 
 	if (dir_length < 0.0001f) {
 		return; // Invalid direction
@@ -220,20 +221,20 @@ void render::rect_filled_gradient(
 
 		// Calculate points for this segment
 		ImVec2 p1 = ImVec2(
-			origin.x + dir_vec.x * t1 * (max.x - origin.x) + perp_vec.x * origin.y,
-			origin.y + dir_vec.y * t1 * (max.y - origin.y) + perp_vec.y * origin.x
+			origin.x + (dir_vec.x * t1 * (max.x - origin.x)) + (perp_vec.x * origin.y),
+			origin.y + (dir_vec.y * t1 * (max.y - origin.y)) + (perp_vec.y * origin.x)
 		);
 		ImVec2 p2 = ImVec2(
-			origin.x + dir_vec.x * t2 * (max.x - origin.x) + perp_vec.x * origin.y,
-			origin.y + dir_vec.y * t2 * (max.y - origin.y) + perp_vec.y * origin.x
+			origin.x + (dir_vec.x * t2 * (max.x - origin.x)) + (perp_vec.x * origin.y),
+			origin.y + (dir_vec.y * t2 * (max.y - origin.y)) + (perp_vec.y * origin.x)
 		);
 		ImVec2 p3 = ImVec2(
-			max.x + dir_vec.x * t1 * (max.x - origin.x) + perp_vec.x * max.y,
-			max.y + dir_vec.y * t1 * (max.y - origin.y) + perp_vec.y * max.x
+			max.x + (dir_vec.x * t1 * (max.x - origin.x)) + (perp_vec.x * max.y),
+			max.y + (dir_vec.y * t1 * (max.y - origin.y)) + (perp_vec.y * max.x)
 		);
 		ImVec2 p4 = ImVec2(
-			max.x + dir_vec.x * t2 * (max.x - origin.x) + perp_vec.x * max.y,
-			max.y + dir_vec.y * t2 * (max.y - origin.y) + perp_vec.y * max.x
+			max.x + (dir_vec.x * t2 * (max.x - origin.x)) + (perp_vec.x * max.y),
+			max.y + (dir_vec.y * t2 * (max.y - origin.y)) + (perp_vec.y * max.x)
 		);
 
 		// Draw triangles
@@ -351,9 +352,9 @@ void render::quadrilateral_filled(
 	const gfx::Point& top_right,
 	const gfx::Color& col
 ) {
-	ImVec2 positions[5] = { top_left, bottom_left, bottom_right, top_right, top_left };
+	std::array<ImVec2, 5> positions = { top_left, bottom_left, bottom_right, top_right, top_left };
 
-	imgui.drawlist->AddConvexPolyFilled(positions, 5, col.to_imgui());
+	imgui.drawlist->AddConvexPolyFilled(positions.data(), static_cast<int>(positions.size()), col.to_imgui());
 }
 
 void render::quadrilateral_stroke(
@@ -364,9 +365,11 @@ void render::quadrilateral_stroke(
 	const gfx::Color& col,
 	float thickness
 ) {
-	ImVec2 positions[5] = { top_left, bottom_left, bottom_right, top_right, top_left };
+	std::array<ImVec2, 5> positions = { top_left, bottom_left, bottom_right, top_right, top_left };
 
-	imgui.drawlist->AddPolyline(positions, 5, col.to_imgui(), ImDrawFlags_Closed, thickness);
+	imgui.drawlist->AddPolyline(
+		positions.data(), static_cast<int>(positions.size()), col.to_imgui(), ImDrawFlags_Closed, thickness
+	);
 }
 
 void render::triangle_filled(
@@ -399,7 +402,7 @@ void render::circle_filled(
 	int parts,
 	float degrees,
 	float start_degree,
-	bool antialiased
+	bool anti_aliased
 ) {
 	imgui.drawlist->AddCircleFilled(pos, radius, colour.to_imgui(), parts);
 }
@@ -412,9 +415,9 @@ void render::circle_stroke(
 	int parts,
 	float degrees,
 	float start_degree,
-	bool antialiased
+	bool anti_aliased
 ) {
-	if (!(degrees == 360.f && start_degree == 0.f)) {
+	if (degrees != 360.f || start_degree != 0.f) {
 		auto min_rad = u::deg_to_rad(start_degree);
 		auto max_rad = u::deg_to_rad(degrees);
 		imgui.drawlist->PathArcTo(pos, radius, min_rad, max_rad, parts);
@@ -572,7 +575,7 @@ void render::Texture::bind() const {
 	glBindTexture(GL_TEXTURE_2D, m_id);
 }
 
-void render::Texture::unbind() const {
+void render::Texture::unbind() {
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -659,17 +662,25 @@ void render::push_fullscreen_clip_rect() {
 }
 
 gfx::Rect render::pop_clip_rect() {
-	// Get current before popping
 	ImVec2 min = imgui.drawlist->GetClipRectMin();
 	ImVec2 max = imgui.drawlist->GetClipRectMax();
+
 	imgui.drawlist->PopClipRect();
-	return gfx::Rect(gfx::Point(min.x, min.y), gfx::Point(max.x, max.y));
+
+	return {
+		gfx::Point(min.x, min.y),
+		gfx::Point(max.x, max.y),
+	};
 }
 
 gfx::Rect render::get_clip_rect() {
 	ImVec2 min = imgui.drawlist->GetClipRectMin();
 	ImVec2 max = imgui.drawlist->GetClipRectMax();
-	return gfx::Rect(gfx::Point(min.x, min.y), gfx::Point(max.x, max.y));
+
+	return {
+		gfx::Point(min.x, min.y),
+		gfx::Point(max.x, max.y),
+	};
 }
 
 bool render::clip_string(std::string& text, const Font& font, int max_width, int min_chars) {
@@ -707,7 +718,11 @@ std::vector<std::string> render::wrap_text(
 	std::string current_line;
 
 	while (iss >> word) {
-		std::string test_line = current_line.empty() ? word : current_line + " " + word;
+		std::string test_line = current_line;
+		if (!test_line.empty())
+			test_line += ' ';
+		test_line += word;
+
 		if (font.calc_size(test_line).w > dimensions.w) {
 			if (!current_line.empty()) {
 				lines.push_back(current_line);

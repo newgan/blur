@@ -213,8 +213,8 @@ namespace {
 		return -1;
 	}
 
-	int is_word_boundary(char c) {
-		return std::isspace(c) || std::ispunct(c);
+	bool is_word_boundary(char c) {
+		return (std::isspace(c) != 0) || (std::ispunct(c) != 0);
 	}
 
 	int move_word_left(STB_TEXTEDIT_STRING* str, int c) {

@@ -1,0 +1,5 @@
+[tasks.check]
+run = """
+python3 ci/run-clangd-tidy.py -use-color \
+  -source-filter='^((?!/dependencies/|/vcpkg_installed/).)*$'
+"""

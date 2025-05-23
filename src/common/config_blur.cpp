@@ -380,7 +380,9 @@ BlurSettings::BlurSettings() {
 	verify_gpu_encoding();
 }
 
-auto& blur_copy = blur; // cause BlurSettings.blur is a thing
+namespace {
+	auto& blur_copy = blur; // cause BlurSettings.blur is a thing
+}
 
 void BlurSettings::verify_gpu_encoding() {
 	if (!blur_copy.initialised)
@@ -401,7 +403,7 @@ void BlurSettings::verify_gpu_encoding() {
 	}
 }
 
-BlurSettings::GetRifeModelResult BlurSettings::get_rife_model_path() const {
+BlurSettings::GetRifeModelResult BlurSettings::get_rife_model_path() {
 	std::filesystem::path rife_model_path;
 
 #ifndef __APPLE__ // rife issue again
@@ -434,7 +436,7 @@ void BlurSettings::set_fastest_rife_gpu() {
 	bool sample_video_exists = std::filesystem::exists(sample_video_path);
 
 	if (sample_video_exists) {
-		auto rife_model_path = this->get_rife_model_path();
+		auto rife_model_path = BlurSettings::get_rife_model_path();
 		if (rife_model_path.success) {
 			int fastest_gpu_index =
 				u::get_fastest_rife_gpu_index(blur_copy.rife_gpus, *rife_model_path.rife_model_path, sample_video_path);

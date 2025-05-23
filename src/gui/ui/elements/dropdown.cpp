@@ -19,7 +19,7 @@ namespace {
 		gfx::Rect dropdown_rect;
 		gfx::Point selected_text_pos;
 		gfx::Rect options_rect;
-		float option_line_height;
+		float option_line_height{};
 	};
 
 	Positions get_positions(

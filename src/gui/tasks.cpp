@@ -75,7 +75,8 @@ void tasks::run(const std::vector<std::string>& arguments) {
 	}
 
 	std::vector<std::wstring> wargs;
-	for (const auto argument : arguments) {
+	wargs.reserve(arguments.size());
+	for (const auto& argument : arguments) {
 		wargs.push_back(u::towstring(argument));
 	}
 

@@ -98,11 +98,11 @@ void Render::build_output_filename() {
 
 Render::Render(
 	std::filesystem::path input_path,
-	const u::VideoInfo& video_info,
+	u::VideoInfo video_info,
 	const std::optional<std::filesystem::path>& output_path,
 	const std::optional<std::filesystem::path>& config_path
 )
-	: m_video_path(std::move(input_path)), m_video_info(video_info) {
+	: m_video_path(std::move(input_path)), m_video_info(std::move(video_info)) {
 	// set id note: is this silly? seems elegant but i might be missing some edge case
 	static uint32_t current_render_id = 1; // 0 is null
 	m_render_id = current_render_id++;

@@ -55,7 +55,7 @@ namespace render {
 		void destroy();
 
 		void bind() const;
-		void unbind() const;
+		static void unbind();
 
 		[[nodiscard]] ImTextureID get_id() const {
 			return (ImTextureID)(intptr_t)m_id;
@@ -87,7 +87,6 @@ namespace render {
 		bool init(SDL_Window* window, const SDL_GLContext& context);
 
 		void begin(SDL_Window* window);
-
 		void end(SDL_Window* window);
 	} inline imgui;
 

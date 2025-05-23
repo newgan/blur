@@ -1276,7 +1276,7 @@ void gui::renderer::components::configs::parse_interp() {
 	                             int& fps,
 	                             float& fps_mult,
 	                             bool& scale_mode,
-	                             std::function<void()> set_function,
+	                             const std::function<void()>& set_function,
 	                             const std::string& log_prefix = "") {
 		try {
 			auto split = u::split_string(fps_setting, "x");

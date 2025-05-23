@@ -23,11 +23,16 @@ Checks: >
   -cppcoreguidelines-avoid-non-const-global-variables,
   -cert-err58-cpp,
   -cppcoreguidelines-avoid-do-while,
-  -misc-unused-parameters
+  -misc-unused-parameters,
+  -misc-include-cleaner,
+  -readability-function-cognitive-complexity,
+  -readability-else-after-return,
 
 WarningsAsErrors: ""
 
-HeaderFilterRegex: "^(?!.*(/usr/|/opt/|/Library/|boost/|eigen/|vcpkg|/dependencies/)).*$"
+HeaderFilterRegex: "^(?!.*(\/dependencies\/|\/vcpkg_installed\/)).*$"
+
+UseColor: true
 
 CheckOptions:
   # Naming conventions

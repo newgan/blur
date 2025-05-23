@@ -10,7 +10,7 @@
       "cwd": "${workspaceFolder}",
       "stopOnEntry": false,
       "env": {},
-      "preLaunchTask": "CMake: build" // optional if you want to auto-build before debug
+      "preLaunchTask": "CMake: build"
     }
   ]
 }

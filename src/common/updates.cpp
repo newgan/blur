@@ -91,7 +91,9 @@ updates::UpdateCheckRes updates::is_latest_version(bool include_beta) {
 #elif defined(__APPLE__)
 					if (asset["name"] == MACOS_INSTALLER_NAME) {
 #endif
+						// NOLINTBEGIN(readability-suspicious-call-argument) it's okay bro
 						if (latest_tag.empty() || is_version_newer(latest_tag, release_tag)) {
+							// NOLINTEND(readability-suspicious-call-argument)
 							latest_tag = release_tag;
 							break;
 						}

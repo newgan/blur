@@ -168,6 +168,8 @@ namespace gfx {
 				g = p;
 				blu = q;
 				break;
+			default:
+				break;
 		}
 
 		return { static_cast<uint8_t>(r * 255), static_cast<uint8_t>(g * 255), static_cast<uint8_t>(blu * 255), alpha };

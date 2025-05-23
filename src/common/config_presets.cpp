@@ -82,7 +82,7 @@ PresetSettings config_presets::parse(const std::filesystem::path& config_filepat
 
 			// new preset
 			if (!found) {
-				current_codec_params->push_back({ preset_name, preset_params });
+				current_codec_params->emplace_back(preset_name, preset_params);
 			}
 		}
 	}
@@ -132,12 +132,10 @@ std::vector<config_presets::PresetDetails> config_presets::get_available_presets
 
 				if (*it == L"-c:v" || *it == L"-codec:v") {
 					std::wstring codec = *(it - 1);
-					available_presets.push_back(
-						{
-							.name = preset_name,
-							.codec = u::tostring(codec),
-						}
-					);
+					available_presets.push_back({
+						.name = preset_name,
+						.codec = u::tostring(codec),
+					});
 					break;
 				}
 			}
@@ -147,6 +145,7 @@ std::vector<config_presets::PresetDetails> config_presets::get_available_presets
 	return available_presets;
 }
 
+// NOLINTBEGIN(misc-no-recursion) trust me bro
 std::vector<std::wstring> config_presets::get_preset_params(
 	const std::string& gpu_type, const std::string& preset, int quality
 ) {
@@ -163,3 +162,5 @@ std::vector<std::wstring> config_presets::get_preset_params(
 
 	return get_preset_params("cpu", "h264", quality);
 }
+
+// NOLINTEND(misc-no-recursion)

@@ -64,7 +64,7 @@ private:
 public:
 	Render(
 		std::filesystem::path input_path,
-		const u::VideoInfo& video_info,
+		u::VideoInfo video_info,
 		const std::optional<std::filesystem::path>& output_path = {},
 		const std::optional<std::filesystem::path>& config_path = {}
 	);

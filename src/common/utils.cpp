@@ -1,6 +1,12 @@
 #include "utils.h"
 #include "common/config_presets.h"
 
+namespace {
+	bool init_hw = false;
+	std::set<std::string> hw_accels;
+	std::set<std::string> hw_encoders;
+}
+
 std::string u::trim(std::string_view str) {
 	str.remove_prefix(std::min(str.find_first_not_of(" \t\r\v\n"), str.size()));
 	str.remove_suffix(std::min(str.size() - str.find_last_not_of(" \t\r\v\n") - 1, str.size()));
@@ -329,10 +335,6 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 	return info;
 }
 
-static bool init_hw = false;
-std::set<std::string> hw_accels;
-std::set<std::string> hw_encoders;
-
 std::vector<u::EncodingDevice> u::get_hardware_encoding_devices() {
 	namespace bp = boost::process;
 
@@ -479,6 +481,7 @@ std::vector<std::string> u::get_available_gpu_types() {
 	auto devices = get_hardware_encoding_devices();
 	std::vector<std::string> gpu_types;
 
+	gpu_types.reserve(devices.size());
 	for (const auto& device : devices) {
 		gpu_types.push_back(device.type);
 	}

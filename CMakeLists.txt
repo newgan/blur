@@ -31,12 +31,9 @@ find_package(Freetype REQUIRED)
 find_package(glad CONFIG REQUIRED)
 
 # source files
-file(GLOB_RECURSE COMMON_SOURCES "src/common/*.cpp" "src/common/*.hpp"
-     "src/common/*.h")
-
-file(GLOB_RECURSE CLI_SOURCES "src/cli/*.cpp" "src/cli/*.hpp" "src/cli/*.h")
-
-file(GLOB_RECURSE GUI_SOURCES "src/gui/*.cpp" "src/gui/*.hpp" "src/gui/*.h")
+file(GLOB_RECURSE COMMON_SOURCES "src/common/*.cpp")
+file(GLOB_RECURSE CLI_SOURCES "src/cli/*.cpp")
+file(GLOB_RECURSE GUI_SOURCES "src/gui/*.cpp")
 
 # collect imgui sources
 set(IMGUI_SOURCES
@@ -105,7 +102,7 @@ add_executable(blur-gui WIN32 ${COMMON_SOURCES} ${GUI_SOURCES} ${IMGUI_SOURCES}
 # imgui
 target_include_directories(blur-gui
                            PRIVATE ${PROJECT_SOURCE_DIR}/dependencies/imgui)
-target_compile_definitions(blur-gui PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD)
+target_compile_definitions(blur-gui PRIVATE IMGUI_IMPL_OPENGL_LOADER_CUSTOM)
 
 # stb
 target_include_directories(blur-gui

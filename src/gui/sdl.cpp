@@ -1,5 +1,5 @@
 #include "sdl.h"
-#include "renderer.h"
+#include "render/render.h"
 
 namespace {
 	std::unordered_map<SDL_SystemCursor, SDL_Cursor*> cursor_cache;
@@ -68,7 +68,8 @@ void sdl::initialise() {
 		throw std::runtime_error("Failed to create SDL GL context");
 	}
 
-	if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
+	if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) { // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
+		                                                          // ^ c lib
 		throw std::runtime_error("Failed to initialize GLAD");
 	}
 
@@ -108,7 +109,7 @@ bool sdl::event_watcher(void* data, SDL_Event* event) {
 	switch (event->type) {
 		case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
 			SDL_Window* win = SDL_GetWindowFromID(event->window.windowID);
-			if (win == (SDL_Window*)data) {
+			if (win == static_cast<SDL_Window*>(data)) {
 				// gui::renderer::redraw_window(true); // TODO: squishy jelly
 
 				render::imgui.begin(sdl::window);

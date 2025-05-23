@@ -214,7 +214,7 @@ bool ui::update_slider(const Container& container, AnimatedElement& element) {
 
 	// Create slightly larger clickable area
 	auto clickable_rect = element.element->rect;
-	int extra = (HANDLE_WIDTH / 2) - (positions.track_rect.h / 2);
+	int extra = (HANDLE_WIDTH / 2) - (float(positions.track_rect.h) / 2);
 	if (extra > 0)
 		clickable_rect.h += extra;
 
