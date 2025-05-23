@@ -403,7 +403,9 @@ void BlurSettings::verify_gpu_encoding() {
 	}
 }
 
-BlurSettings::GetRifeModelResult BlurSettings::get_rife_model_path() {
+// NOLINTBEGIN(readability-convert-member-functions-to-static) other platforms need it
+BlurSettings::GetRifeModelResult BlurSettings::get_rife_model_path() const {
+	// NOLINTEND(readability-convert-member-functions-to-static)
 	std::filesystem::path rife_model_path;
 
 #ifndef __APPLE__ // rife issue again

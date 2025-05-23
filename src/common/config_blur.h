@@ -91,7 +91,7 @@ public:
 		std::string error_message;
 	};
 
-	[[nodiscard]] static GetRifeModelResult get_rife_model_path();
+	[[nodiscard]] GetRifeModelResult get_rife_model_path() const;
 	void set_fastest_rife_gpu();
 };
 
