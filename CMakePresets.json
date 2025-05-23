@@ -142,48 +142,39 @@
   "buildPresets": [
     {
       "name": "win-debug",
-      "configurePreset": "win-debug",
-      "jobs": 0
+      "configurePreset": "win-debug"
     },
     {
       "name": "win-release",
-      "configurePreset": "win-release",
-      "jobs": 0
+      "configurePreset": "win-release"
     },
     {
       "name": "win-relwithdebinfo",
-      "configurePreset": "win-relwithdebinfo",
-      "jobs": 0
+      "configurePreset": "win-relwithdebinfo"
     },
     {
       "name": "linux-debug",
-      "configurePreset": "linux-debug",
-      "jobs": 0
+      "configurePreset": "linux-debug"
     },
     {
       "name": "linux-release",
-      "configurePreset": "linux-release",
-      "jobs": 0
+      "configurePreset": "linux-release"
     },
     {
       "name": "linux-relwithdebinfo",
-      "configurePreset": "linux-relwithdebinfo",
-      "jobs": 0
+      "configurePreset": "linux-relwithdebinfo"
     },
     {
       "name": "mac-debug",
-      "configurePreset": "mac-debug",
-      "jobs": 0
+      "configurePreset": "mac-debug"
     },
     {
       "name": "mac-release",
-      "configurePreset": "mac-release",
-      "jobs": 0
+      "configurePreset": "mac-release"
     },
     {
       "name": "mac-relwithdebinfo",
-      "configurePreset": "mac-relwithdebinfo",
-      "jobs": 0
+      "configurePreset": "mac-relwithdebinfo"
     }
   ]
 }
