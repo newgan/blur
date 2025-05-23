@@ -111,10 +111,43 @@ void gui::renderer::components::render(
 	}
 }
 
+void add_open_files_button(ui::Container& container, const std::string& label) {
+	ui::add_button("open file button", container, label, fonts::dejavu, [] {
+		static auto file_callback = [](void* userdata, const char* const* files, int filter) {
+			if (files && *files) {
+				std::vector<std::wstring> wpaths;
+
+				std::span<const char* const> span_files(files, SIZE_MAX); // big size, we stop manually
+
+				for (const auto& file : span_files) {
+					if (file == nullptr)
+						break; // null-terminated array
+
+					wpaths.push_back(u::towstring(file));
+				}
+
+				tasks::add_files(wpaths);
+			}
+		};
+
+		SDL_ShowOpenFileDialog(
+			file_callback, // Properly typed callback function
+			nullptr,       // userdata
+			nullptr,       // parent window (nullptr for default)
+			nullptr,       // file filters
+			0,             // number of filters
+			"",            // default path
+			true           // allow multiple files
+		);
+	});
+};
+
 void gui::renderer::components::main_screen(ui::Container& container, float delta_time) {
 	static float bar_percent = 0.f;
 
-	if (rendering.get_queue().empty() && !current_render_copy) {
+	bool queue_empty = rendering.get_queue().empty() && !current_render_copy;
+
+	if (queue_empty) {
 		bar_percent = 0.f;
 
 		gfx::Point title_pos = container.get_usable_rect().center();
@@ -149,34 +182,7 @@ void gui::renderer::components::main_screen(ui::Container& container, float delt
 			return;
 		}
 
-		ui::add_button("open file button", container, "Open files", fonts::dejavu, [] {
-			static auto file_callback = [](void* userdata, const char* const* files, int filter) {
-				if (files && *files) {
-					std::vector<std::wstring> wpaths;
-
-					std::span<const char* const> span_files(files, SIZE_MAX); // big size, we stop manually
-
-					for (const auto& file : span_files) {
-						if (file == nullptr)
-							break; // null-terminated array
-
-						wpaths.push_back(u::towstring(file));
-					}
-
-					tasks::add_files(wpaths);
-				}
-			};
-
-			SDL_ShowOpenFileDialog(
-				file_callback, // Properly typed callback function
-				nullptr,       // userdata
-				nullptr,       // parent window (nullptr for default)
-				nullptr,       // file filters
-				0,             // number of filters
-				"",            // default path
-				true           // allow multiple files
-			);
-		});
+		add_open_files_button(container, "Open files");
 
 		ui::add_text(
 			"drop file text", container, "or drop them anywhere", gfx::Color::white(), fonts::dejavu, FONT_CENTERED_X
@@ -1518,6 +1524,9 @@ bool gui::renderer::redraw_window(bool rendered_last, bool force_render) {
 						if (current_render)
 							(*current_render)->stop();
 					});
+
+					ui::set_next_same_line(nav_container);
+					add_open_files_button(nav_container, "Add files to queue");
 				}
 
 				ui::set_next_same_line(nav_container);
