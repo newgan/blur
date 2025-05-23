@@ -38,6 +38,7 @@
 #	include <conio.h>
 #	include <shobjidl.h>
 #	include <Windows.h>
+#	include <tlhelp32.h>
 #elif __APPLE__
 #	include <mach-o/dyld.h>
 #	include <CoreFoundation/CoreFoundation.h>

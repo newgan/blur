@@ -22,7 +22,10 @@
       ]
     },
     "gtest",
-    "cppwinrt"
+    {
+      "name": "cppwinrt",
+      "platform": "windows"
+    }
   ],
   "vcpkg-configuration": {
     "default-registry": {

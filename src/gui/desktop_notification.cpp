@@ -1,8 +1,8 @@
 #include "desktop_notification.h"
-#include "common/blur.h"
-#include "sdl.h"
 
 #ifdef _WIN32
+#	include "common/blur.h"
+#	include "sdl.h"
 #	include <shellapi.h>
 #	include <winrt/Windows.Foundation.h>
 #	include <winrt/Windows.UI.Notifications.h>

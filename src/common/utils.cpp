@@ -1,8 +1,6 @@
 #include "utils.h"
 #include "common/config_presets.h"
 
-#include <tlhelp32.h>
-
 namespace {
 	bool init_hw = false;
 	std::set<std::string> hw_accels;
