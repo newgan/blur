@@ -374,6 +374,9 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 #endif
 		);
 
+		m_vspipe_pid = vspipe_process.id();
+		m_ffmpeg_pid = ffmpeg_process.id();
+
 		std::thread progress_thread([&]() {
 			std::string line;
 			std::string progress_line;
@@ -468,6 +471,36 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 			.error_message = e.what(),
 		};
 	}
+}
+
+void Render::pause() {
+	if (m_paused)
+		return;
+
+	// if (m_vspipe_pid > 0)
+	// 	kill(m_vspipe_pid, SIGSTOP);
+
+	if (m_ffmpeg_pid > 0)
+		kill(m_ffmpeg_pid, SIGSTOP);
+
+	m_paused = true;
+
+	u::log("Render paused");
+}
+
+void Render::resume() {
+	if (!m_paused)
+		return;
+
+	// if (m_vspipe_pid > 0)
+	// 	kill(m_vspipe_pid, SIGCONT);
+
+	if (m_ffmpeg_pid > 0)
+		kill(m_ffmpeg_pid, SIGCONT);
+
+	m_paused = false;
+
+	u::log("Render resumed");
 }
 
 RenderResult Render::render() {

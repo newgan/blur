@@ -52,6 +52,9 @@ private:
 	BlurSettings m_settings;
 
 	bool m_to_kill = false;
+	bool m_paused = false;
+	pid_t m_vspipe_pid = -1;
+	pid_t m_ffmpeg_pid = -1;
 
 	void build_output_filename();
 
@@ -77,6 +80,13 @@ public:
 	bool remove_temp_path();
 
 	RenderResult render();
+
+	void pause();
+	void resume();
+
+	[[nodiscard]] bool is_paused() const {
+		return m_paused;
+	}
 
 	void stop() {
 		m_to_kill = true;

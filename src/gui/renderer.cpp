@@ -23,6 +23,8 @@ const int NOTIFICATIONS_PAD_Y = 10;
 
 const float FPS_SMOOTHING = 0.95f;
 
+const uint8_t MUTED_SHADE = 155;
+
 void gui::renderer::components::render(
 	ui::Container& container,
 	Render& render,
@@ -80,21 +82,29 @@ void gui::renderer::components::render(
 		);
 
 		container.push_element_gap(6);
+
+		if (render.is_paused()) {
+			ui::add_text(
+				"paused text", container, "Paused", gfx::Color::white(MUTED_SHADE), fonts::dejavu, FONT_CENTERED_X
+			);
+		}
+
 		ui::add_text(
 			"progress text",
 			container,
 			std::format("frame {}/{}", render_status.current_frame, render_status.total_frames),
-			gfx::Color::white(155),
+			gfx::Color::white(MUTED_SHADE),
 			fonts::dejavu,
 			FONT_CENTERED_X
 		);
+
 		container.pop_element_gap();
 
 		ui::add_text(
 			"progress text 2",
 			container,
 			std::format("{:.2f} frames per second", render_status.fps),
-			gfx::Color::white(155),
+			gfx::Color::white(MUTED_SHADE),
 			fonts::dejavu,
 			FONT_CENTERED_X
 		);
@@ -102,14 +112,21 @@ void gui::renderer::components::render(
 		is_progress_shown = true;
 	}
 	else {
-		ui::add_text(
-			"initialising render text",
-			container,
-			"Initialising render...",
-			gfx::Color::white(),
-			fonts::dejavu,
-			FONT_CENTERED_X
-		);
+		if (render.is_paused()) {
+			ui::add_text(
+				"paused text", container, "Paused", gfx::Color::white(MUTED_SHADE), fonts::dejavu, FONT_CENTERED_X
+			);
+		}
+		else {
+			ui::add_text(
+				"initialising render text",
+				container,
+				"Initialising render...",
+				gfx::Color::white(),
+				fonts::dejavu,
+				FONT_CENTERED_X
+			);
+		}
 	}
 }
 
@@ -176,7 +193,7 @@ void gui::renderer::components::main_screen(ui::Container& container, float delt
 				"failed to initialise reason",
 				main_container,
 				initialisation_res->error_message,
-				gfx::Color::white(155),
+				gfx::Color::white(MUTED_SHADE),
 				fonts::dejavu,
 				FONT_CENTERED_X
 			);
@@ -257,7 +274,7 @@ void gui::renderer::components::configs::set_interpolated_fps() {
 }
 
 void gui::renderer::components::configs::options(ui::Container& container, BlurSettings& settings) {
-	static const gfx::Color section_color = gfx::Color(155, 155, 155, 255);
+	static const gfx::Color section_color = gfx::Color::white(MUTED_SHADE);
 
 	bool first_section = true;
 	auto section_component = [&](std::string label, bool* setting = nullptr, bool forced_on = false) {
@@ -280,7 +297,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 				std::format("section {} forced", label),
 				container,
 				"forced on as settings in this section have been modified",
-				gfx::Color::white(175),
+				gfx::Color::white(MUTED_SHADE),
 				fonts::dejavu
 			);
 		}
@@ -937,7 +954,12 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 		if (!preview_path.empty() && std::filesystem::exists(preview_path) && !error) {
 			container.push_element_gap(6);
 			ui::add_text(
-				"preview header", container, "Config preview", gfx::Color::white(175), fonts::dejavu, FONT_CENTERED_X
+				"preview header",
+				container,
+				"Config preview",
+				gfx::Color::white(MUTED_SHADE),
+				fonts::dejavu,
+				FONT_CENTERED_X
 			);
 			container.pop_element_gap();
 
@@ -1521,14 +1543,29 @@ bool gui::renderer::redraw_window(bool rendered_last, bool force_render) {
 			if (initialisation_res && initialisation_res->success) {
 				auto current_render = rendering.get_current_render();
 				if (current_render) {
-					ui::add_button("stop render button", nav_container, "Stop current render", fonts::dejavu, [] {
+					ui::add_button(
+						(*current_render)->is_paused() ? "resume render button" : "pause render button",
+						nav_container,
+						(*current_render)->is_paused() ? "Resume" : "Pause",
+						fonts::dejavu,
+						[] {
+							auto current_render = rendering.get_current_render();
+							if ((*current_render)->is_paused())
+								(*current_render)->resume();
+							else
+								(*current_render)->pause();
+						}
+					);
+
+					ui::set_next_same_line(nav_container);
+					ui::add_button("stop render button", nav_container, "Cancel", fonts::dejavu, [] {
 						auto current_render = rendering.get_current_render();
 						if (current_render)
 							(*current_render)->stop();
 					});
 
 					ui::set_next_same_line(nav_container);
-					add_open_files_button(nav_container, "Add files to queue");
+					add_open_files_button(nav_container, "Add files");
 				}
 
 				ui::set_next_same_line(nav_container);
