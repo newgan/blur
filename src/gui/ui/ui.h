@@ -146,7 +146,8 @@ namespace ui {
 		NotificationType type;
 		const render::Font* font;
 		int line_height;
-		std::optional<std::function<void()>> on_click;
+		std::optional<std::function<void(const std::string& id)>> on_click;
+		std::optional<std::function<void(const std::string& id)>> on_close;
 
 		bool operator==(const NotificationElementData& other) const {
 			return lines == other.lines && type == other.type && font == other.font && line_height == other.line_height;
@@ -462,7 +463,8 @@ namespace ui {
 		const std::string& text,
 		NotificationType type,
 		const render::Font& font,
-		std::optional<std::function<void()>> on_click = {}
+		std::optional<std::function<void(const std::string& id)>> on_click = {},
+		std::optional<std::function<void(const std::string& id)>> on_close = {}
 	);
 
 	Element& add_slider(

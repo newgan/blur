@@ -39,7 +39,8 @@ public:
 
 	static updates::UpdateCheckRes check_updates();
 	static void update(
-		const std::string& tag, const std::optional<std::function<void(const std::string&)>>& progress_callback = {}
+		const std::string& tag,
+		const std::optional<std::function<void(const std::string& text, bool done)>>& progress_callback = {}
 	);
 
 	std::map<int, std::string> rife_gpus;

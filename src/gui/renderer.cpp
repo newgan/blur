@@ -888,8 +888,16 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 						add_notification(
 							"Failed to generate config preview. Click to copy error message",
 							ui::NotificationType::NOTIF_ERROR,
-							[res] {
+							[res](const std::string& id) {
 								SDL_SetClipboardText(res.error_message.c_str());
+
+								// std::lock_guard<std::mutex> lock(notification_mutex);
+								for (auto& n : notifications) {
+									if (n.id == id) {
+										n.closing = true;
+										break;
+									}
+								}
 
 								add_notification(
 									"Copied error message to clipboard",
@@ -1624,42 +1632,50 @@ bool gui::renderer::redraw_window(bool rendered_last, bool force_render) {
 
 // NOLINTEND(readability-function-size,readability-function-cognitive-complexity)
 
-void gui::renderer::add_notification(
+gui::renderer::Notification& gui::renderer::add_notification(
 	const std::string& id,
 	const std::string& text,
 	ui::NotificationType type,
-	const std::optional<std::function<void()>>& on_click,
-	std::chrono::duration<float> duration
+	const std::optional<std::function<void(const std::string& id)>>& on_click,
+	std::optional<std::chrono::duration<float>> duration,
+	bool closable
 ) {
 	std::lock_guard<std::mutex> lock(notification_mutex);
 
 	Notification new_notification{
 		.id = id,
-		.end_time = std::chrono::steady_clock::now() +
-		            std::chrono::duration_cast<std::chrono::steady_clock::duration>(duration),
+		.end_time = duration ? std::optional(
+								   std::chrono::steady_clock::now() +
+								   std::chrono::duration_cast<std::chrono::steady_clock::duration>(*duration)
+							   )
+		                     : std::nullopt,
 		.text = text,
 		.type = type,
 		.on_click_fn = on_click,
+		.closable = closable,
 	};
 
 	for (auto& notification : notifications) {
 		if (notification.id == id) {
 			notification = new_notification;
-			return;
+			return notification;
 		}
 	}
 
-	notifications.emplace_back(new_notification);
+	return notifications.emplace_back(new_notification);
 }
 
-void gui::renderer::add_notification(
+gui::renderer::Notification& gui::renderer::add_notification(
 	const std::string& text,
 	ui::NotificationType type,
-	const std::optional<std::function<void()>>& on_click,
-	std::chrono::duration<float> duration
+	const std::optional<std::function<void(const std::string& id)>>& on_click,
+	std::optional<std::chrono::duration<float>> duration,
+	bool closable
 ) {
 	static uint32_t current_notification_id = 0;
-	add_notification(std::to_string(current_notification_id++), text, type, on_click, duration);
+	return add_notification(
+		std::format("notification {}", current_notification_id++), text, type, on_click, duration, closable
+	);
 }
 
 void gui::renderer::on_render_finished(Render* render, const RenderResult& result) {
@@ -1674,7 +1690,7 @@ void gui::renderer::on_render_finished(Render* render, const RenderResult& resul
 		add_notification(
 			std::format("Render '{}' completed", u::tostring(render->get_video_name())),
 			ui::NotificationType::SUCCESS,
-			[output_path] {
+			[output_path](const std::string& id) {
 				// Convert path to a file:// URL for SDL_OpenURL
 				std::string file_url = "file://" + output_path.string();
 				if (!SDL_OpenURL(file_url.c_str())) {
@@ -1687,8 +1703,16 @@ void gui::renderer::on_render_finished(Render* render, const RenderResult& resul
 		add_notification(
 			std::format("Render '{}' failed. Click to copy error message", u::tostring(render->get_video_name())),
 			ui::NotificationType::NOTIF_ERROR,
-			[result] {
+			[result](const std::string& id) {
 				SDL_SetClipboardText(result.error_message.c_str());
+
+				// std::lock_guard<std::mutex> lock(notification_mutex);
+				for (auto& n : notifications) {
+					if (n.id == id) {
+						n.closing = true;
+						break;
+					}
+				}
 
 				add_notification(
 					"Copied error message to clipboard",
@@ -1696,7 +1720,8 @@ void gui::renderer::on_render_finished(Render* render, const RenderResult& resul
 					{},
 					std::chrono::duration<float>(2.f)
 				);
-			}
+			},
+			std::nullopt
 		);
 	}
 }
@@ -1707,18 +1732,29 @@ void gui::renderer::render_notifications() {
 	auto now = std::chrono::steady_clock::now();
 
 	for (auto it = notifications.begin(); it != notifications.end();) {
+		if ((it->end_time && now > *it->end_time) || it->closing) {
+			it = notifications.erase(it);
+			continue;
+		}
+
 		ui::add_notification(
-			std::format("notification {}", it->id),
+			it->id,
 			notification_container,
 			it->text,
 			it->type,
 			fonts::dejavu,
-			it->on_click_fn
+			it->on_click_fn,
+			it->closable ? std::optional<std::function<void(const std::string&)>>([](const std::string& id) {
+				for (auto& n : notifications) {
+					if (n.id == id) {
+						n.closing = true;
+						break;
+					}
+				}
+			})
+						 : std::nullopt
 		);
 
-		if (now > it->end_time)
-			it = notifications.erase(it);
-		else
-			++it;
+		++it;
 	}
 }

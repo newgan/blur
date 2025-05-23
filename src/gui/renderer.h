@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "common/rendering.h"
@@ -12,10 +11,12 @@ namespace ui {
 namespace gui::renderer {
 	struct Notification {
 		std::string id;
-		std::chrono::steady_clock::time_point end_time;
+		std::optional<std::chrono::steady_clock::time_point> end_time;
 		std::string text;
 		ui::NotificationType type;
-		std::optional<std::function<void()>> on_click_fn;
+		std::optional<std::function<void(const std::string& id)>> on_click_fn;
+		bool closable = true;
+		bool closing = false;
 	};
 
 	inline std::vector<Notification> notifications;
@@ -92,19 +93,21 @@ namespace gui::renderer {
 
 	bool redraw_window(bool rendered_last, bool force_render);
 
-	void add_notification(
+	Notification& add_notification(
 		const std::string& id,
 		const std::string& text,
 		ui::NotificationType type,
-		const std::optional<std::function<void()>>& on_click = {},
-		std::chrono::duration<float> duration = std::chrono::duration<float>(NOTIFICATION_LENGTH)
+		const std::optional<std::function<void(const std::string& id)>>& on_click = {},
+		std::optional<std::chrono::duration<float>> duration = std::chrono::duration<float>(NOTIFICATION_LENGTH),
+		bool closable = true
 	);
 
-	void add_notification(
+	Notification& add_notification(
 		const std::string& text,
 		ui::NotificationType type,
-		const std::optional<std::function<void()>>& on_click = {},
-		std::chrono::duration<float> duration = std::chrono::duration<float>(NOTIFICATION_LENGTH)
+		const std::optional<std::function<void(const std::string& id)>>& on_click = {},
+		std::optional<std::chrono::duration<float>> duration = std::chrono::duration<float>(NOTIFICATION_LENGTH),
+		bool closable = true
 	);
 
 	void render_notifications();

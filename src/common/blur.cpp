@@ -196,7 +196,8 @@ updates::UpdateCheckRes Blur::check_updates() {
 }
 
 void Blur::update(
-	const std::string& tag, const std::optional<std::function<void(const std::string&)>>& progress_callback
+	const std::string& tag,
+	const std::optional<std::function<void(const std::string& text, bool done)>>& progress_callback
 ) {
 	updates::update_to_tag(tag, progress_callback);
 }

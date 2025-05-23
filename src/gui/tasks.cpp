@@ -43,16 +43,36 @@ void tasks::run(const std::vector<std::string>& arguments) {
 		gui::renderer::add_notification(
 			std::format("There's a newer version ({}) available! Click to run the installer.", update_res.latest_tag),
 			ui::NotificationType::INFO,
-			[&] {
+			[&](const std::string& id) {
+				// std::lock_guard<std::mutex> lock(gui::renderer::notification_mutex);
+				for (auto& n : gui::renderer::notifications) {
+					if (n.id == id) {
+						n.closing = true;
+						break;
+					}
+				}
+
 				const static std::string update_notification_id = "update progress notification";
 
 				gui::renderer::add_notification(
-					update_notification_id, "Downloading update...", ui::NotificationType::INFO
+					update_notification_id,
+					"Downloading update...",
+					ui::NotificationType::INFO,
+					{},
+					std::chrono::duration<float>(gui::renderer::NOTIFICATION_LENGTH),
+					false
 				);
 
 				std::thread([update_res] {
-					Blur::update(update_res.latest_tag, [](const std::string& text) {
-						gui::renderer::add_notification(update_notification_id, text, ui::NotificationType::INFO);
+					Blur::update(update_res.latest_tag, [](const std::string& text, bool done) {
+						gui::renderer::add_notification(
+							update_notification_id,
+							text,
+							ui::NotificationType::INFO,
+							{},
+							std::chrono::duration<float>(gui::renderer::NOTIFICATION_LENGTH),
+							done
+						);
 					});
 
 					gui::stop = true;
