@@ -20,7 +20,8 @@
       "features": [
         "jpeg"
       ]
-    }
+    },
+    "gtest"
   ],
   "vcpkg-configuration": {
     "default-registry": {
