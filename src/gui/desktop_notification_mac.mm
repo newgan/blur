@@ -1,5 +1,8 @@
 #include "desktop_notification.h"
 
+#include <SDL3/SDL.h>
+#include "gui/sdl.h"
+
 #import <Foundation/Foundation.h>
 #import <UserNotifications/UserNotifications.h>
 
@@ -59,6 +62,10 @@ bool initialise(const std::string& app_name) {
 }
 
 bool show(const std::string& title, const std::string& message, ClickCallback on_click) {
+	// don't show notification if window is focused
+	if (SDL_GetWindowFlags(sdl::window) & SDL_WINDOW_INPUT_FOCUS)
+		return false;
+
 	if (!g_has_permission) {
 		if (!g_tried_initialise) {
 			// haven't tried to initialise yet, so do it now
@@ -74,7 +81,7 @@ bool show(const std::string& title, const std::string& message, ClickCallback on
 		UNMutableNotificationContent* content = [[UNMutableNotificationContent alloc] init];
 		content.title = [NSString stringWithUTF8String:title.c_str()];
 		content.body = [NSString stringWithUTF8String:message.c_str()];
-		content.sound = [UNNotificationSound defaultSound];
+		content.sound = nil; //[UNNotificationSound defaultSound];
 
 		UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:[[NSUUID UUID] UUIDString]
 																			  content:content
