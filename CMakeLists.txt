@@ -119,65 +119,89 @@ target_include_directories(blur-gui
 target_link_libraries(blur-gui PRIVATE SDL3::SDL3 SDL3_image::SDL3_image
                                        Freetype::Freetype glad::glad)
 
-target_precompile_headers(blur-gui PRIVATE src/gui/gui_pch.h)
-
 if(APPLE)
-  target_link_libraries(blur-gui PRIVATE "-framework CoreVideo"
-                                         "-framework CoreGraphics")
+  # Disable precompiled headers for the .mm file and .cpp file
+  set_source_files_properties(
+    src/gui/desktop_notification_mac.mm src/gui/desktop_notification.cpp
+    PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 
-  # Only create a bundle for Release and RelWithDebInfo builds
-  if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL
-                                            "RelWithDebInfo")
-    set(MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/src/Info.plist")
+  # Set Objective-C++ compilation for both files
+  set_source_files_properties(
+    src/gui/desktop_notification_mac.mm src/gui/desktop_notification.cpp
+    PROPERTIES COMPILE_FLAGS "-x objective-c++")
 
-    set_target_properties(
-      blur-gui PROPERTIES MACOSX_BUNDLE TRUE MACOSX_BUNDLE_INFO_PLIST
-                                             ${CMAKE_SOURCE_DIR}/src/Info.plist)
+  # Add the .mm file for macOS notifications
+  target_sources(blur-gui PRIVATE src/gui/desktop_notification_mac.mm)
 
-    # Specify the .icns file as the app icon
-    set(MACOSX_BUNDLE_ICON_FILE blur.icns)
+  target_link_libraries(
+    blur-gui
+    PRIVATE "-framework CoreVideo" "-framework CoreGraphics"
+            "-framework Foundation" "-framework AppKit"
+            "-framework UserNotifications")
 
-    # Ensure the .icns file is included in the app bundle's Resources folder
-    set_source_files_properties(${CMAKE_SOURCE_DIR}/resources/blur.icns
-                                PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+  set(MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/src/Info.plist")
 
-    # Link the .icns file to the target
-    target_sources(blur-gui PRIVATE ${CMAKE_SOURCE_DIR}/resources/blur.icns)
+  set_target_properties(
+    blur-gui
+    PROPERTIES MACOSX_BUNDLE TRUE
+               MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/src/Info.plist
+               MACOSX_BUNDLE_BUNDLE_NAME "Blur"
+               MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
+               MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
+               MACOSX_BUNDLE_GUI_IDENTIFIER "com.f0e.blur"
+               OUTPUT_NAME "Blur"
+               XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS
+               "${CMAKE_SOURCE_DIR}/src/Blur.entitlements"
+               XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "-"
+               XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "YES"
+               XCODE_ATTRIBUTE_CODE_SIGN_INJECT_BASE_ENTITLEMENTS "YES"
+               XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep"
+               XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "YES")
 
-    # Add a post-build step that will run after the bundle is created
-    add_custom_command(
-      TARGET blur-gui
-      POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E echo "Copying resources to bundle..."
-      # Make sure the destination directories exist
-      COMMAND ${CMAKE_COMMAND} -E make_directory
-              "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/"
-      COMMAND ${CMAKE_COMMAND} -E make_directory
-              "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/vapoursynth"
-      # Copy ci/out directory if it exists
-      COMMAND ${CMAKE_COMMAND} -E echo "Copying ci/out files..."
-      COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/ci/out"
-              "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/"
-      # Copy vapoursynth scripts
-      COMMAND ${CMAKE_COMMAND} -E echo "Copying vapoursynth files..."
-      COMMAND
-        ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/src/vapoursynth"
-        "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/lib"
-      # Verify the copy worked
-      COMMAND ${CMAKE_COMMAND} -E echo "Resource copying complete"
-      # The VERBATIM flag ensures command arguments are correctly escaped
-      VERBATIM)
-  else()
-    # For Debug and other build types, disable bundling
-    set_target_properties(blur-gui PROPERTIES MACOSX_BUNDLE FALSE)
-  endif()
+  # Specify the .icns file as the app icon
+  set(MACOSX_BUNDLE_ICON_FILE blur.icns)
+
+  # Ensure the .icns file is included in the app bundle's Resources folder
+  set_source_files_properties(${CMAKE_SOURCE_DIR}/resources/blur.icns
+                              PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+
+  # Link the .icns file to the target
+  target_sources(blur-gui PRIVATE ${CMAKE_SOURCE_DIR}/resources/blur.icns)
+
+  # Add a post-build step that will run after the bundle is created
+  add_custom_command(
+    TARGET blur-gui
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying resources to bundle..."
+    # Make sure the destination directories exist
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/"
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/vapoursynth"
+    # Copy ci/out directory if it exists
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying ci/out files..."
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/ci/out"
+            "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/"
+    # Copy vapoursynth scripts
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying vapoursynth files..."
+    COMMAND
+      ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/src/vapoursynth"
+      "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/lib"
+    # Verify the copy worked
+    COMMAND ${CMAKE_COMMAND} -E echo "Resource copying complete"
+    # The VERBATIM flag ensures command arguments are correctly escaped
+    VERBATIM)
 elseif(UNIX)
-  target_link_libraries(blur-gui PRIVATE X11 Xext Xrandr)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(LIBNOTIFY REQUIRED libnotify)
+
+  target_include_directories(blur-gui PRIVATE ${LIBNOTIFY_INCLUDE_DIRS})
+  target_link_libraries(blur-gui PRIVATE X11 Xext Xrandr ${LIBNOTIFY_LIBRARIES})
 elseif(WIN32)
   target_link_libraries(blur-gui PRIVATE Shcore)
 endif()
 
-set_target_properties(blur-gui PROPERTIES OUTPUT_NAME "blur")
+target_precompile_headers(blur-gui PRIVATE src/gui/gui_pch.h)
 setup_target(blur-gui)
 
 # tests

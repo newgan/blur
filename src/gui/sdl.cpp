@@ -1,5 +1,6 @@
 #include "sdl.h"
 #include "render/render.h"
+#include "desktop_notification.h"
 
 namespace {
 	std::unordered_map<SDL_SystemCursor, SDL_Cursor*> cursor_cache;
@@ -14,6 +15,9 @@ void sdl::initialise() {
 	if (!SDL_Init(SDL_INIT_VIDEO)) {
 		throw std::runtime_error("SDL initialization failed");
 	}
+
+	// Initialize notification system
+	desktop_notification::initialize("Blur"); // mac note: needs to match bundle executable in Info.plist
 
 	// Decide GL+GLSL versions
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -101,6 +105,8 @@ void sdl::cleanup() {
 		SDL_DestroyWindow(sdl::window);
 		sdl::window = nullptr;
 	}
+
+	desktop_notification::cleanup();
 
 	SDL_Quit();
 }

@@ -11,6 +11,8 @@
 #include "ui/ui.h"
 #include "render/render.h"
 
+#include "desktop_notification.h"
+
 #define DEBUG_RENDER 0
 
 const int PAD_X = 24;
@@ -1707,6 +1709,8 @@ void gui::renderer::on_render_finished(Render* render, const RenderResult& resul
 				}
 			}
 		);
+
+		desktop_notification::show("Render Complete", "Video render completed successfully");
 	}
 	else {
 		add_notification(
@@ -1732,6 +1736,8 @@ void gui::renderer::on_render_finished(Render* render, const RenderResult& resul
 			},
 			std::nullopt
 		);
+
+		desktop_notification::show("Render Failed", std::format("Render failed: {}", result.error_message));
 	}
 }
 
