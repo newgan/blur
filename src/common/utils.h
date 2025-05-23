@@ -201,4 +201,8 @@ namespace u {
 		const std::filesystem::path& rife_model_path,
 		const std::filesystem::path& benchmark_video_path
 	);
+
+#ifdef WIN32
+	bool windows_toggle_suspend_process(DWORD pid, bool to_suspend);
+#endif
 }

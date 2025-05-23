@@ -1,6 +1,8 @@
 #include "utils.h"
 #include "common/config_presets.h"
 
+#include <tlhelp32.h>
+
 namespace {
 	bool init_hw = false;
 	std::set<std::string> hw_accels;
@@ -708,3 +710,36 @@ int u::get_fastest_rife_gpu_index(
 
 	return fastest_index;
 }
+
+#ifdef WIN32
+bool u::windows_toggle_suspend_process(DWORD pid, bool to_suspend) {
+	HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+	if (hSnapshot == INVALID_HANDLE_VALUE)
+		return false;
+
+	THREADENTRY32 te;
+	te.dwSize = sizeof(te);
+
+	if (!Thread32First(hSnapshot, &te)) {
+		CloseHandle(hSnapshot);
+		return false;
+	}
+
+	do {
+		if (te.th32OwnerProcessID == pid) {
+			HANDLE hThread = OpenThread(THREAD_SUSPEND_RESUME, FALSE, te.th32ThreadID);
+			if (hThread) {
+				if (to_suspend)
+					SuspendThread(hThread);
+				else
+					ResumeThread(hThread);
+				CloseHandle(hThread);
+			}
+		}
+	}
+	while (Thread32Next(hSnapshot, &te));
+
+	CloseHandle(hSnapshot);
+	return true;
+}
+#endif

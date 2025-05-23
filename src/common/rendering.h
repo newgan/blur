@@ -53,8 +53,8 @@ private:
 
 	bool m_to_kill = false;
 	bool m_paused = false;
-	pid_t m_vspipe_pid = -1;
-	pid_t m_ffmpeg_pid = -1;
+	int m_vspipe_pid = -1;
+	int m_ffmpeg_pid = -1;
 
 	void build_output_filename();
 

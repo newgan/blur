@@ -1,5 +1,6 @@
 ﻿#include "rendering.h"
 #include "config_presets.h"
+#include "utils.h"
 
 bool Rendering::render_next_video() {
 	if (m_queue.empty())
@@ -480,8 +481,13 @@ void Render::pause() {
 	// if (m_vspipe_pid > 0)
 	// 	kill(m_vspipe_pid, SIGSTOP);
 
-	if (m_ffmpeg_pid > 0)
+	if (m_ffmpeg_pid > 0) {
+#ifdef WIN32
+		u::windows_toggle_suspend_process(m_ffmpeg_pid, true);
+#else
 		kill(m_ffmpeg_pid, SIGSTOP);
+#endif
+	}
 
 	m_paused = true;
 
@@ -495,8 +501,13 @@ void Render::resume() {
 	// if (m_vspipe_pid > 0)
 	// 	kill(m_vspipe_pid, SIGCONT);
 
-	if (m_ffmpeg_pid > 0)
+	if (m_ffmpeg_pid > 0) {
+#ifdef WIN32
+		u::windows_toggle_suspend_process(m_ffmpeg_pid, false);
+#else
 		kill(m_ffmpeg_pid, SIGCONT);
+#endif
+	}
 
 	m_paused = false;
 
