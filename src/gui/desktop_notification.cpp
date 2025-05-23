@@ -1,7 +1,10 @@
 #include "desktop_notification.h"
+#include "common/blur.h"
+#include "sdl.h"
 
 #ifdef _WIN32
 #	include <shellapi.h>
+#	include <winrt/Windows.Foundation.h>
 #	include <winrt/Windows.UI.Notifications.h>
 #	include <winrt/Windows.Data.Xml.Dom.h>
 #	include <winrt/Windows.ApplicationModel.h>
@@ -9,16 +12,29 @@ using namespace winrt;
 using namespace Windows::UI::Notifications;
 using namespace Windows::Data::Xml::Dom;
 
-// Implementation
 static std::string g_app_name;
 static desktop_notification::ClickCallback g_click_callback;
+static bool g_initialised = false;
 
 bool desktop_notification::initialise(const std::string& app_name) {
+	if (g_initialised)
+		return true;
+
+	// winrt::init_apartment(); // don't need it?
+
 	g_app_name = app_name;
+	g_initialised = true;
 	return true;
 }
 
 bool desktop_notification::show(const std::string& title, const std::string& message, ClickCallback on_click) {
+	// don't show notification if window is focused
+	if (SDL_GetWindowFlags(sdl::window) & SDL_WINDOW_INPUT_FOCUS)
+		return false;
+
+	if (!g_initialised)
+		initialise(APPLICATION_NAME);
+
 	g_click_callback = on_click;
 
 	try {
@@ -28,10 +44,20 @@ bool desktop_notification::show(const std::string& title, const std::string& mes
 		text_elements.Item(0).AppendChild(toast_xml.CreateTextNode(winrt::to_hstring(title)));
 		text_elements.Item(1).AppendChild(toast_xml.CreateTextNode(winrt::to_hstring(message)));
 
+		// // ToastImageAndText02
+		// auto image_elements = toast_xml.GetElementsByTagName(L"image");
+		// auto image_element = image_elements.Item(0).as<Windows::Data::Xml::Dom::XmlElement>();
+		// image_element.SetAttribute(
+		// 	L"src", winrt::hstring(L"file:///[something]/blur.ico")
+		// );
+		// image_element.SetAttribute(L"alt", winrt::hstring(L"Blur icon"));
+
 		auto toast = ToastNotification(toast_xml);
 
 		if (on_click) {
 			toast.Activated([](ToastNotification const&, auto const&) {
+				SDL_RaiseWindow(sdl::window); // probably won't work.
+
 				if (g_click_callback)
 					g_click_callback();
 			});
@@ -54,7 +80,10 @@ bool desktop_notification::has_permission() {
 }
 
 void desktop_notification::cleanup() {
-	// Nothing to cleanup for Windows toast notifications
+	if (!g_initialised)
+		return;
+
+	g_initialised = false;
 }
 
 #elif __linux__

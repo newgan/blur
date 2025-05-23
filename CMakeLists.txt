@@ -104,19 +104,19 @@ target_precompile_headers(blur-cli PRIVATE src/cli/cli_pch.h)
 setup_target(blur-cli)
 
 # gui
-add_executable(blur-gui WIN32 ${COMMON_SOURCES} ${GUI_SOURCES} ${IMGUI_SOURCES}
+add_executable(blur WIN32 ${COMMON_SOURCES} ${GUI_SOURCES} ${IMGUI_SOURCES}
                               ${RESOURCES})
 
 # imgui
-target_include_directories(blur-gui
+target_include_directories(blur
                            PRIVATE ${PROJECT_SOURCE_DIR}/dependencies/imgui)
-target_compile_definitions(blur-gui PRIVATE IMGUI_IMPL_OPENGL_LOADER_CUSTOM)
+target_compile_definitions(blur PRIVATE IMGUI_IMPL_OPENGL_LOADER_CUSTOM)
 
 # stb
-target_include_directories(blur-gui
+target_include_directories(blur
                            PRIVATE ${PROJECT_SOURCE_DIR}/dependencies/stb)
 
-target_link_libraries(blur-gui PRIVATE SDL3::SDL3 SDL3_image::SDL3_image
+target_link_libraries(blur PRIVATE SDL3::SDL3 SDL3_image::SDL3_image
                                        Freetype::Freetype glad::glad)
 
 if(APPLE)
@@ -131,10 +131,10 @@ if(APPLE)
     PROPERTIES COMPILE_FLAGS "-x objective-c++")
 
   # Add the .mm file for macOS notifications
-  target_sources(blur-gui PRIVATE src/gui/desktop_notification_mac.mm)
+  target_sources(blur PRIVATE src/gui/desktop_notification_mac.mm)
 
   target_link_libraries(
-    blur-gui
+    blur
     PRIVATE "-framework CoreVideo" "-framework CoreGraphics"
             "-framework Foundation" "-framework AppKit"
             "-framework UserNotifications")
@@ -142,7 +142,7 @@ if(APPLE)
   set(MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/src/Info.plist")
 
   set_target_properties(
-    blur-gui
+    blur
     PROPERTIES MACOSX_BUNDLE TRUE
                MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/src/Info.plist
                MACOSX_BUNDLE_BUNDLE_NAME "Blur"
@@ -166,27 +166,27 @@ if(APPLE)
                               PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
   # Link the .icns file to the target
-  target_sources(blur-gui PRIVATE ${CMAKE_SOURCE_DIR}/resources/blur.icns)
+  target_sources(blur PRIVATE ${CMAKE_SOURCE_DIR}/resources/blur.icns)
 
   # Add a post-build step that will run after the bundle is created
   add_custom_command(
-    TARGET blur-gui
+    TARGET blur
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E echo "Copying resources to bundle..."
     # Make sure the destination directories exist
     COMMAND ${CMAKE_COMMAND} -E make_directory
-            "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/"
+            "$<TARGET_BUNDLE_DIR:blur>/Contents/Resources/"
     COMMAND ${CMAKE_COMMAND} -E make_directory
-            "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/vapoursynth"
+            "$<TARGET_BUNDLE_DIR:blur>/Contents/Resources/vapoursynth"
     # Copy ci/out directory if it exists
     COMMAND ${CMAKE_COMMAND} -E echo "Copying ci/out files..."
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/ci/out"
-            "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/"
+            "$<TARGET_BUNDLE_DIR:blur>/Contents/Resources/"
     # Copy vapoursynth scripts
     COMMAND ${CMAKE_COMMAND} -E echo "Copying vapoursynth files..."
     COMMAND
       ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/src/vapoursynth"
-      "$<TARGET_BUNDLE_DIR:blur-gui>/Contents/Resources/lib"
+      "$<TARGET_BUNDLE_DIR:blur>/Contents/Resources/lib"
     # Verify the copy worked
     COMMAND ${CMAKE_COMMAND} -E echo "Resource copying complete"
     # The VERBATIM flag ensures command arguments are correctly escaped
@@ -195,14 +195,20 @@ elseif(UNIX)
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(LIBNOTIFY REQUIRED libnotify)
 
-  target_include_directories(blur-gui PRIVATE ${LIBNOTIFY_INCLUDE_DIRS})
-  target_link_libraries(blur-gui PRIVATE X11 Xext Xrandr ${LIBNOTIFY_LIBRARIES})
+  target_include_directories(blur PRIVATE ${LIBNOTIFY_INCLUDE_DIRS})
+  target_link_libraries(blur PRIVATE X11 Xext Xrandr ${LIBNOTIFY_LIBRARIES})
 elseif(WIN32)
-  target_link_libraries(blur-gui PRIVATE Shcore)
+  find_package(cppwinrt CONFIG REQUIRED)
+
+  target_link_libraries(blur PRIVATE
+      Shcore
+      Microsoft::CppWinRT
+      windowsapp
+  )
 endif()
 
-target_precompile_headers(blur-gui PRIVATE src/gui/gui_pch.h)
-setup_target(blur-gui)
+target_precompile_headers(blur PRIVATE src/gui/gui_pch.h)
+setup_target(blur)
 
 # tests
 enable_testing()

@@ -21,7 +21,8 @@
         "jpeg"
       ]
     },
-    "gtest"
+    "gtest",
+    "cppwinrt"
   ],
   "vcpkg-configuration": {
     "default-registry": {
