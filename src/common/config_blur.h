@@ -7,7 +7,7 @@ struct AdvancedSettings {
 	std::string ffmpeg_override;
 	bool debug = false;
 
-	float blur_weighting_gaussian_std_dev = 2.f;
+	float blur_weighting_gaussian_std_dev = 1.f;
 	bool blur_weighting_triangle_reverse = false;
 	std::string blur_weighting_bound = "[0,2]";
 
