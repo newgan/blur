@@ -87,86 +87,142 @@ void desktop_notification::cleanup() {
 }
 
 #elif __linux__
+#	include "common/blur.h"
 #	include <libnotify/notify.h>
 
-static std::string g_app_name;
-static desktop_notification::ClickCallback g_click_callback;
-static bool g_is_initialised = false;
+namespace {
+	bool g_initialized = false;
+	std::string g_app_name;
+	std::unordered_map<NotifyNotification*, ClickCallback> g_click_callbacks;
+	std::mutex g_callbacks_mutex;
 
-static void on_notification_closed(NotifyNotification* notification, gpointer user_data) {
-	g_object_unref(G_OBJECT(notification));
-}
+	// Callback function for notification actions
+	void on_notification_action(NotifyNotification* notification, char* action, gpointer user_data) {
+		std::lock_guard<std::mutex> lock(g_callbacks_mutex);
+		auto it = g_click_callbacks.find(notification);
+		if (it != g_click_callbacks.end() && it->second) {
+			it->second();
+		}
+	}
 
-static void on_notification_activated(NotifyNotification* notification, char* action, gpointer user_data) {
-	if (g_click_callback) {
-		g_click_callback();
+	// Callback for when notification is closed
+	void on_notification_closed(NotifyNotification* notification, gpointer user_data) {
+		std::lock_guard<std::mutex> lock(g_callbacks_mutex);
+		g_click_callbacks.erase(notification);
 	}
 }
 
 bool desktop_notification::initialise(const std::string& app_name) {
-	if (g_is_initialised) {
+	if (g_initialized) {
 		return true;
 	}
 
+	if (!notify_init(app_name.c_str())) {
+		return false;
+	}
+
+	g_initialized = true;
 	g_app_name = app_name;
-	g_is_initialised = notify_init(app_name.c_str());
-	return g_is_initialised;
+	return true;
 }
 
 bool desktop_notification::show(const std::string& title, const std::string& message, ClickCallback on_click) {
-	if (!g_is_initialised) {
-		if (!initialise(g_app_name.empty() ? "App" : g_app_name)) {
+	// Auto-initialize if not already done
+	if (!g_initialized) {
+		if (!initialise("Desktop Notification")) {
 			return false;
 		}
 	}
 
-	if (!notify_is_initted())
+	// Create the notification
+	NotifyNotification* notification = notify_notification_new(
+		title.c_str(),
+		message.c_str(),
+		nullptr // icon - use default
+	);
+
+	if (!notification) {
 		return false;
-
-	g_click_callback = on_click;
-
-	NotifyNotification* notification = notify_notification_new(title.c_str(), message.c_str(), nullptr);
-	if (!notification)
-		return false;
-
-	notify_notification_set_timeout(notification, 5000); // 5 seconds
-
-	if (on_click) {
-		notify_notification_add_action(
-			notification, "default", "Open", NOTIFY_ACTION_CALLBACK(on_notification_activated), nullptr, nullptr
-		);
 	}
 
-	g_signal_connect(notification, "closed", G_CALLBACK(on_notification_closed), nullptr);
+	// Set up click callback if provided
+	if (on_click) {
+		std::lock_guard<std::mutex> lock(g_callbacks_mutex);
+		g_click_callbacks[notification] = on_click;
 
+		// Add a default action (this is triggered when the notification body is clicked)
+		notify_notification_add_action(
+			notification, "default", "Click", (NotifyActionCallback)on_notification_action, nullptr, nullptr
+		);
+
+		// Set up close callback to clean up our callback storage
+		g_signal_connect(notification, "closed", G_CALLBACK(on_notification_closed), nullptr);
+	}
+
+	// Set timeout (in milliseconds, -1 for default, 0 for no timeout)
+	notify_notification_set_timeout(notification, NOTIFY_EXPIRES_DEFAULT);
+
+	// Show the notification
 	GError* error = nullptr;
-	bool success = notify_notification_show(notification, &error);
+	gboolean result = notify_notification_show(notification, &error);
 
-	if (error) {
-		g_error_free(error);
+	if (!result) {
+		if (error) {
+			g_error_free(error);
+		}
+
+		// Clean up on failure
+		if (on_click) {
+			std::lock_guard<std::mutex> lock(g_callbacks_mutex);
+			g_click_callbacks.erase(notification);
+		}
 		g_object_unref(G_OBJECT(notification));
 		return false;
 	}
 
-	return success;
+	// Don't unref immediately if we have callbacks, as they need the notification object
+	if (!on_click) {
+		g_object_unref(G_OBJECT(notification));
+	}
+
+	return true;
 }
 
 bool desktop_notification::is_supported() {
-	return notify_is_initted();
+	// libnotify is available on most Linux desktop environments
+	// We can check if we can initialize it
+	if (g_initialized) {
+		return true;
+	}
+
+	// Try a quick initialization test
+	if (notify_init("test")) {
+		if (!g_initialized) {
+			notify_uninit();
+		}
+		return true;
+	}
+	return false;
 }
 
 bool desktop_notification::has_permission() {
-	return notify_is_initted();
+	// On Linux, notification permissions are typically handled at the system level
+	// If libnotify can initialize, we generally have permission
+	return is_supported();
 }
 
 void desktop_notification::cleanup() {
-	if (!g_is_initialised) {
-		return;
-	}
-	if (notify_is_initted()) {
+	if (g_initialized) {
+		// Clear all pending callbacks
+		{
+			std::lock_guard<std::mutex> lock(g_callbacks_mutex);
+			g_click_callbacks.clear();
+		}
+
 		notify_uninit();
+		g_initialized = false;
+		g_app_name.clear();
 	}
-	g_is_initialised = false;
 }
 
 #endif

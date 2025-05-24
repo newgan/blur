@@ -105,7 +105,7 @@ setup_target(blur-cli)
 
 # gui
 add_executable(blur WIN32 ${COMMON_SOURCES} ${GUI_SOURCES} ${IMGUI_SOURCES}
-                              ${RESOURCES})
+                          ${RESOURCES})
 
 # imgui
 target_include_directories(blur
@@ -113,11 +113,10 @@ target_include_directories(blur
 target_compile_definitions(blur PRIVATE IMGUI_IMPL_OPENGL_LOADER_CUSTOM)
 
 # stb
-target_include_directories(blur
-                           PRIVATE ${PROJECT_SOURCE_DIR}/dependencies/stb)
+target_include_directories(blur PRIVATE ${PROJECT_SOURCE_DIR}/dependencies/stb)
 
 target_link_libraries(blur PRIVATE SDL3::SDL3 SDL3_image::SDL3_image
-                                       Freetype::Freetype glad::glad)
+                                   Freetype::Freetype glad::glad)
 
 if(APPLE)
   # Disable precompiled headers for the .mm file and .cpp file
@@ -194,17 +193,17 @@ if(APPLE)
 elseif(UNIX)
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(LIBNOTIFY REQUIRED libnotify)
+  pkg_check_modules(GLIB REQUIRED glib-2.0)
 
-  target_include_directories(blur PRIVATE ${LIBNOTIFY_INCLUDE_DIRS})
-  target_link_libraries(blur PRIVATE X11 Xext Xrandr ${LIBNOTIFY_LIBRARIES})
+  target_include_directories(blur PRIVATE ${GLIB_INCLUDE_DIRS}
+                                          ${LIBNOTIFY_INCLUDE_DIRS})
+  target_link_libraries(blur PRIVATE ${GLIB_LIBRARIES} ${LIBNOTIFY_LIBRARIES})
+
+  target_link_libraries(blur PRIVATE X11 Xext Xrandr)
 elseif(WIN32)
   find_package(cppwinrt CONFIG REQUIRED)
 
-  target_link_libraries(blur PRIVATE
-      Shcore
-      Microsoft::CppWinRT
-      windowsapp
-  )
+  target_link_libraries(blur PRIVATE Shcore Microsoft::CppWinRT windowsapp)
 endif()
 
 target_precompile_headers(blur PRIVATE src/gui/gui_pch.h)
