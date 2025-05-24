@@ -4,6 +4,7 @@ using json = nlohmann::json;
 namespace bp = boost::process;
 
 const std::string WINDOWS_INSTALLER_NAME = "blur-Windows-Installer-x64.exe";
+const std::vector<std::string> WINDOWS_INSTALLER_ARGS = { "/UPDATE" };
 const std::string MACOS_INSTALLER_NAME = "blur-macOS-Release-arm64.dmg";
 
 namespace {
@@ -217,7 +218,7 @@ bool updates::update_to_tag(
 		u::log("Download complete, launching installer");
 
 #ifdef _WIN32
-		bp::spawn(installer_path.string());
+		bp::spawn(installer_path.string(), WINDOWS_INSTALLER_ARGS);
 #elif defined(__APPLE__)
 		bp::spawn("/usr/bin/open", installer_path.string());
 #endif

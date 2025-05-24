@@ -31,7 +31,7 @@ SolidCompression=yes
 WizardStyle=modern
 WizardSmallImageFile=.\resources\greyblur.bmp
 WizardImageFile=.\resources\greyblur.bmp
-UsePreviousAppDir=no
+UsePreviousAppDir=yes
 ChangesEnvironment=true
 
 [Languages]
@@ -54,22 +54,82 @@ Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\blur.exe"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\blur.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{tmp}\VC_redist.x64.exe"; Parameters: "/install /passive /norestart"; StatusMsg: "Installing VC++ Redistributables..."
-
-; Filename: "{app}\lib\vapoursynth\python.exe"; Parameters: "pip install -t . numpy"; StatusMsg: "Installing numpy..."
-; Filename: "{app}\lib\vapoursynth\python.exe"; Parameters: "vsrepo.py -d update"
-; Filename: "{app}\lib\vapoursynth\python.exe"; Parameters: "vsrepo.py -d install ffms2 havsfunc mvsfunc adjust mvtools"
-Filename: "{app}\blur.exe"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent unchecked
+Filename: "{tmp}\VC_redist.x64.exe"; Parameters: "/install /passive /norestart"; StatusMsg: "Installing VC++ Redistributables..."; Check: not IsUpdateMode
+Filename: "{app}\blur.exe"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
+var
+  UpdateMode: Boolean;
+  ExistingDir: String;
+
+function IsUpdateMode: Boolean;
+begin
+  Result := UpdateMode;
+end;
+
+function InitializeSetup(): Boolean;
+begin
+  UpdateMode := False;
+
+  // Check for /UPDATE command line parameter
+  if Pos('/UPDATE', UpperCase(GetCmdTail)) > 0 then
+  begin
+    UpdateMode := True;
+  end;
+
+  Result := True;
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := False;
+
+  if UpdateMode then
+  begin
+    // Skip most pages except the finish page for updates
+    case PageID of
+      wpWelcome, wpLicense, wpPassword, wpInfoBefore, wpUserInfo,
+      wpSelectDir, wpSelectComponents, wpSelectProgramGroup,
+      wpSelectTasks, wpReady, wpInfoAfter:
+        Result := True;
+    end;
+  end;
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  Result := True;
+
+  if UpdateMode then
+  begin
+    // Auto-advance through pages during update
+    case CurPageID of
+      wpSelectDir:
+        begin
+          // Use existing installation directory if found
+          if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{#SetupSetting("AppId")}', 'InstallLocation', ExistingDir) then
+          begin
+            WizardForm.DirEdit.Text := ExistingDir;
+          end;
+        end;
+
+      wpSelectTasks:
+        begin
+          // Preserve existing task selections from registry or use defaults
+          // You can add logic here to remember previous selections
+        end;
+    end;
+  end;
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
-    if (CurStep = ssPostInstall) and WizardIsTaskSelected('envPath')
-    then EnvAddPath(ExpandConstant('{app}'));
+  if (CurStep = ssPostInstall) and WizardIsTaskSelected('envPath') then
+    EnvAddPath(ExpandConstant('{app}'));
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
-    if CurUninstallStep = usPostUninstall
-    then EnvRemovePath(ExpandConstant('{app}'));
+  if CurUninstallStep = usPostUninstall then
+    EnvRemovePath(ExpandConstant('{app}'));
 end;
