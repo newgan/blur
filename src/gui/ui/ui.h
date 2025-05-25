@@ -11,9 +11,9 @@ namespace ui {
 		int bottom = 0;
 		int left = 0;
 
-		Padding(int t, int r, int b, int l) : top(t), right(r), bottom(b), left(l) {}
+		Padding(int top, int right, int bottom, int left) : top(top), right(right), bottom(bottom), left(left) {}
 
-		Padding(int t, int lr) : top(t), right(lr), bottom(t), left(lr) {}
+		Padding(int vertical, int horizontal) : top(vertical), right(horizontal), bottom(vertical), left(horizontal) {}
 
 		Padding(int all) : top(all), right(all), bottom(all), left(all) {}
 	};
