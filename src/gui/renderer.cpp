@@ -1749,7 +1749,7 @@ void gui::renderer::on_render_finished(Render* render, const RenderResult& resul
 
 		auto app_config = config_app::get_app_config();
 		if (app_config.render_success_notifications) {
-			desktop_notification::show("Render Complete", "Video render completed successfully");
+			desktop_notification::show("Blur render complete", "Render completed successfully");
 		}
 	}
 	else {
@@ -1779,7 +1779,7 @@ void gui::renderer::on_render_finished(Render* render, const RenderResult& resul
 
 		auto app_config = config_app::get_app_config();
 		if (app_config.render_failure_notifications) {
-			desktop_notification::show("Render Failed", std::format("Render failed: {}", result.error_message));
+			desktop_notification::show("Blur render failed", result.error_message);
 		}
 	}
 }
