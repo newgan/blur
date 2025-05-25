@@ -1779,7 +1779,7 @@ void gui::renderer::on_render_finished(Render* render, const RenderResult& resul
 
 		auto app_config = config_app::get_app_config();
 		if (app_config.render_failure_notifications) {
-			desktop_notification::show("Blur render failed", result.error_message);
+			desktop_notification::show("Blur render failed", u::truncate_with_ellipsis(result.error_message, 100));
 		}
 	}
 }

@@ -157,6 +157,7 @@ namespace u {
 	std::wstring towstring(const std::string& str);
 	std::string tostring(const std::wstring& wstr);
 	std::string to_lower(const std::string& str);
+	std::string truncate_with_ellipsis(const std::string& input, std::size_t max_length);
 
 	std::optional<std::filesystem::path> get_program_path(const std::string& program_name);
 

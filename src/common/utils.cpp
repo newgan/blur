@@ -93,6 +93,17 @@ std::string u::to_lower(const std::string& str) {
 	return out;
 }
 
+std::string u::truncate_with_ellipsis(const std::string& input, std::size_t max_length) {
+	const std::string ellipsis = "...";
+	if (input.length() > max_length) {
+		if (max_length <= ellipsis.length()) {
+			return ellipsis.substr(0, max_length); // handle very small max_length
+		}
+		return input.substr(0, max_length - ellipsis.length()) + ellipsis;
+	}
+	return input;
+}
+
 std::optional<std::filesystem::path> u::get_program_path(const std::string& program_name) {
 	namespace bp = boost::process;
 	namespace fs = boost::filesystem;
