@@ -2,7 +2,6 @@
 
 #include <imgui.h>
 #include <misc/freetype/imgui_freetype.h>
-#include <span>
 
 bool render::Font::init(
 	std::span<const unsigned char> data, float size, ImFontConfig* font_cfg, const ImWchar* glyph_ranges
