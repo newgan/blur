@@ -1382,6 +1382,7 @@ void gui::renderer::components::configs::screen(
 			loading_config = true;
 
 			std::thread([] {
+				ui::reset_tied_sliders();
 				settings = config_blur::parse_global_config();
 				on_load();
 				loading_config = false;
@@ -1412,6 +1413,7 @@ void gui::renderer::components::configs::screen(
 
 		ui::set_next_same_line(nav_container);
 		ui::add_button("reset changes button", nav_container, "Reset changes", fonts::dejavu, [&] {
+			ui::reset_tied_sliders();
 			settings = current_global_settings;
 			on_load();
 		});
@@ -1425,6 +1427,7 @@ void gui::renderer::components::configs::screen(
 	if (settings != modified_default) {
 		ui::set_next_same_line(nav_container);
 		ui::add_button("restore defaults button", nav_container, "Restore defaults", fonts::dejavu, [] {
+			ui::reset_tied_sliders();
 			settings = config_blur::DEFAULT_CONFIG; // ^ actually restore defaults tho
 			parse_interp();
 		});

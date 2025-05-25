@@ -550,4 +550,6 @@ namespace ui {
 
 	void on_frame_start();
 	void on_frame_end();
+
+	void reset_tied_sliders();
 }

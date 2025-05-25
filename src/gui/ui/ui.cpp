@@ -429,3 +429,7 @@ void ui::on_frame_start() {
 void ui::on_frame_end() {
 	texture_cache::remove_old();
 }
+
+void ui::reset_tied_sliders() {
+	slider_observers.clear();
+}
