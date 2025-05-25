@@ -78,39 +78,42 @@ void ui::render_weighting_graph(const Container& container, const AnimatedElemen
 		points.emplace_back(x, y);
 	}
 
-	// draw points
-	for (const auto& point : points) {
-		render::circle_filled(point, 1.5f, gfx::Color(255, 255, 255, anim * 255));
-	}
-
 	// draw connections
 	for (size_t i = 1; i < points.size(); i++) {
 		render::line(points[i - 1], points[i], gfx::Color(100, 100, 100, anim * 255));
 	}
 
-	gfx::Color grid_line_color(150, 150, 150, anim * 80);
+	if (graph_data.accurate_fps) {
+		// draw points
+		for (const auto& point : points) {
+			render::circle_filled(point, 1.5f, gfx::Color(255, 255, 255, anim * 255));
+		}
 
-	for (const auto& pt : points) {
-		gfx::Point start{ pt.x, graph_rect.y };
-		gfx::Point end{ pt.x, graph_rect.y2() };
+		// draw frame lines
+		gfx::Color grid_line_color(150, 150, 150, anim * 80);
 
-		gfx::Rect line_rect(pt, end);
-		line_rect.w = 1;
+		for (const auto& pt : points) {
+			gfx::Point start{ pt.x, graph_rect.y };
+			gfx::Point end{ pt.x, graph_rect.y2() };
 
-		gfx::Rect upper = line_rect;
-		upper.h /= 3;
+			gfx::Rect line_rect(pt, end);
+			line_rect.w = 1;
 
-		render::rect_filled_gradient(
-			upper, render::GradientDirection::GRADIENT_DOWN, { grid_line_color.adjust_alpha(0.3f), grid_line_color }
-		);
+			gfx::Rect upper = line_rect;
+			upper.h /= 3;
 
-		gfx::Rect lower = line_rect;
-		lower.y = upper.y2();
-		lower.h = line_rect.h - upper.h;
+			render::rect_filled_gradient(
+				upper, render::GradientDirection::GRADIENT_DOWN, { grid_line_color.adjust_alpha(0.3f), grid_line_color }
+			);
 
-		render::rect_filled_gradient(
-			lower, render::GradientDirection::GRADIENT_DOWN, { grid_line_color, grid_line_color.adjust_alpha(0.f) }
-		);
+			gfx::Rect lower = line_rect;
+			lower.y = upper.y2();
+			lower.h = line_rect.h - upper.h;
+
+			render::rect_filled_gradient(
+				lower, render::GradientDirection::GRADIENT_DOWN, { grid_line_color, grid_line_color.adjust_alpha(0.f) }
+			);
+		}
 	}
 
 	// render::rect_stroke(graph_rect, grid_line_color);
@@ -137,7 +140,7 @@ void ui::render_weighting_graph(const Container& container, const AnimatedElemen
 	render::text(
 		{ graph_rect.center().x, graph_rect.y2() },
 		label_color,
-		std::format("blur frame ({})", count),
+		graph_data.accurate_fps ? std::format("blur frame ({})", count) : "",
 		fonts::dejavu,
 		FONT_CENTERED_X | FONT_BOTTOM_ALIGN
 	);
@@ -147,7 +150,7 @@ void ui::render_weighting_graph(const Container& container, const AnimatedElemen
 }
 
 ui::AnimatedElement* ui::add_weighting_graph(
-	const std::string& id, Container& container, const std::vector<double>& weights
+	const std::string& id, Container& container, const std::vector<double>& weights, bool accurate_fps
 ) {
 	Element element(
 		id,
@@ -157,6 +160,7 @@ ui::AnimatedElement* ui::add_weighting_graph(
 		),
 		WeightingGraphElementData{
 			.weights = weights,
+			.accurate_fps = accurate_fps,
 		},
 		render_weighting_graph
 	);

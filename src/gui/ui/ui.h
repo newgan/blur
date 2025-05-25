@@ -217,9 +217,10 @@ namespace ui {
 
 	struct WeightingGraphElementData {
 		std::vector<double> weights;
+		bool accurate_fps;
 
 		bool operator==(const WeightingGraphElementData& other) const {
-			return weights == other.weights;
+			return weights == other.weights && accurate_fps == other.accurate_fps;
 		}
 	};
 
@@ -599,7 +600,7 @@ namespace ui {
 	);
 
 	AnimatedElement* add_weighting_graph(
-		const std::string& id, Container& container, const std::vector<double>& weights
+		const std::string& id, Container& container, const std::vector<double>& weights, bool accurate_fps
 	);
 
 	AnimatedElement* add_tabs(

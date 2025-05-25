@@ -1053,19 +1053,17 @@ void gui::renderer::components::configs::config_preview(ui::Container& container
 void gui::renderer::components::configs::preview(
 	ui::Container& header_container, ui::Container& content_container, BlurSettings& settings
 ) {
-	int interp_fps{};
+	int interp_fps = 1200;
+
 	std::istringstream iss(settings.interpolated_fps);
-	if ((iss >> interp_fps) && iss.eof()) {
-		ui::add_tabs("preview tab", header_container, TABS, selected_tab, fonts::dejavu, [] {
-			old_tab.clear();
-		});
-	}
-	else {
-		selected_tab = TABS[1];
-		ui::add_tabs("preview tab", header_container, TABS, selected_tab, fonts::dejavu, [] {
-			// TODO BRO
-		});
-	}
+	int temp_fps{};
+	bool parsed_interp_fps = (iss >> temp_fps) && iss.eof();
+	if (parsed_interp_fps)
+		interp_fps = temp_fps;
+
+	ui::add_tabs("preview tab", header_container, TABS, selected_tab, fonts::dejavu, [] {
+		old_tab.clear();
+	});
 
 	if (selected_tab == "output video") {
 		config_preview(content_container, settings);
@@ -1078,7 +1076,7 @@ void gui::renderer::components::configs::preview(
 
 		auto weights_res = weighting::get_weights(weight_settings, interp_fps);
 		if (weights_res.error.empty()) {
-			ui::add_weighting_graph("weighting graph", content_container, weights_res.weights);
+			ui::add_weighting_graph("weighting graph", content_container, weights_res.weights, parsed_interp_fps);
 		}
 		else {
 			ui::add_text(
