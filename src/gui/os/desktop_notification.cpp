@@ -85,88 +85,108 @@ void desktop_notification::cleanup() {
 
 	g_initialised = false;
 }
-
 #elif __linux__
-#	include <libnotify/notify.h>
+#	include "desktop_notification.h"
+#	include <sdbus-c++/sdbus-c++.h>
+#	include "common/utils.h"
 
-static std::string g_app_name;
-static desktop_notification::ClickCallback g_click_callback;
-static bool g_is_initialised = false;
-
-static void on_notification_closed(NotifyNotification* notification, gpointer user_data) {
-	g_object_unref(G_OBJECT(notification));
+namespace {
+	std::unique_ptr<sdbus::IConnection> g_connection;
+	std::unique_ptr<sdbus::IProxy> g_proxy;
+	std::string g_app_name;
+	bool g_initialized = false;
 }
 
-static void on_notification_activated(NotifyNotification* notification, char* action, gpointer user_data) {
-	if (g_click_callback) {
-		g_click_callback();
-	}
-}
+static constexpr const char* SERVICE = "org.freedesktop.Notifications";
+static constexpr const char* PATH = "/org/freedesktop/Notifications";
+static constexpr const char* INTERFACE = "org.freedesktop.Notifications";
 
 bool desktop_notification::initialise(const std::string& app_name) {
-	if (g_is_initialised) {
+	if (g_initialized) {
 		return true;
 	}
 
-	g_app_name = app_name;
-	g_is_initialised = notify_init(app_name.c_str());
-	return g_is_initialised;
+	try {
+		g_app_name = app_name;
+
+		// Create connection and proxy with proper types
+		g_connection = sdbus::createSessionBusConnection();
+		g_proxy = sdbus::createProxy(*g_connection, sdbus::ServiceName{ SERVICE }, sdbus::ObjectPath{ PATH });
+
+		g_initialized = true;
+		return true;
+	}
+	catch (const std::exception& e) {
+		u::log_error("Failed to initialise desktop notifications: {}", e.what());
+		return false;
+	}
 }
 
-bool desktop_notification::show(const std::string& title, const std::string& message, ClickCallback on_click) {
-	if (!g_is_initialised) {
-		if (!initialise(g_app_name.empty() ? "App" : g_app_name)) {
+bool desktop_notification::show(
+	const std::string& title, const std::string& message, ClickCallback on_click
+) { // TODO: on_click
+	if (!g_initialized) {
+		if (!initialise(APPLICATION_NAME)) {
+			u::log_error("Desktop notifications not initialised");
 			return false;
 		}
 	}
 
-	if (!notify_is_initted())
-		return false;
+	try {
+		std::vector<std::string> actions;
+		// if (on_click) {
+		// 	actions = { "default", "Click" };
+		// }
 
-	g_click_callback = on_click;
+		uint32_t notification_id;
 
-	NotifyNotification* notification = notify_notification_new(title.c_str(), message.c_str(), nullptr);
-	if (!notification)
-		return false;
+		g_proxy->callMethod("Notify")
+			.onInterface(INTERFACE)
+			.withArguments(
+				g_app_name,                              // app_name
+				uint32_t(0),                             // replaces_id
+				std::string(""),                         // app_icon
+				title,                                   // summary
+				message,                                 // body
+				actions,                                 // actions
+				std::map<std::string, sdbus::Variant>{}, // hints
+				5000                                     // timeout (ms)
+			)
+			.storeResultsTo(notification_id);
 
-	notify_notification_set_timeout(notification, 5000); // 5 seconds
-
-	if (on_click) {
-		notify_notification_add_action(
-			notification, "default", "Open", NOTIFY_ACTION_CALLBACK(on_notification_activated), nullptr, nullptr
-		);
+		return true;
 	}
-
-	g_signal_connect(notification, "closed", G_CALLBACK(on_notification_closed), nullptr);
-
-	GError* error = nullptr;
-	bool success = notify_notification_show(notification, &error);
-
-	if (error) {
-		g_error_free(error);
-		g_object_unref(G_OBJECT(notification));
+	catch (const std::exception& e) {
+		u::log_error("Failed to show desktop notification: {}", e.what());
 		return false;
 	}
-
-	return success;
 }
 
 bool desktop_notification::is_supported() {
-	return notify_is_initted();
+	try {
+		auto conn = sdbus::createSessionBusConnection();
+		auto proxy = sdbus::createProxy(*conn, sdbus::ServiceName{ SERVICE }, sdbus::ObjectPath{ PATH });
+
+		auto method = proxy->callMethod("GetCapabilities");
+		method.onInterface(INTERFACE);
+
+		return true;
+	}
+	catch (...) {
+		return false;
+	}
 }
 
 bool desktop_notification::has_permission() {
-	return notify_is_initted();
+	return is_supported(); // On Linux, D-Bus access implies permission
 }
 
 void desktop_notification::cleanup() {
-	if (!g_is_initialised) {
+	if (!g_initialized)
 		return;
-	}
-	if (notify_is_initted()) {
-		notify_uninit();
-	}
-	g_is_initialised = false;
-}
 
+	g_proxy.reset();
+	g_connection.reset();
+	g_initialized = false;
+}
 #endif
