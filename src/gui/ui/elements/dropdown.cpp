@@ -152,10 +152,12 @@ void ui::render_dropdown(const Container& container, const AnimatedElement& elem
 		gfx::Color option_color(7, 7, 7, anim * 255);
 		gfx::Color option_border_color(border_shade, border_shade, border_shade, anim * 255);
 
-		render::rounded_rect_filled(pos.options_rect, option_color, DROPDOWN_ROUNDING);
-		render::rounded_rect_stroke(pos.options_rect, option_border_color, DROPDOWN_ROUNDING);
+		render::late_draw_calls.emplace_back([pos, option_color, option_border_color] {
+			render::rounded_rect_filled(pos.options_rect, option_color, DROPDOWN_ROUNDING);
+			render::rounded_rect_stroke(pos.options_rect, option_border_color, DROPDOWN_ROUNDING);
 
-		render::push_clip_rect(pos.options_rect);
+			render::push_clip_rect(pos.options_rect);
+		});
 
 		// Render options
 		gfx::Point option_text_pos = pos.options_rect.origin();
@@ -170,12 +172,18 @@ void ui::render_dropdown(const Container& container, const AnimatedElement& elem
 			gfx::Color option_text_colour =
 				selected ? selected_text_color : gfx::Color::lerp(text_color, hover_text_color, option_hover_anim);
 
-			render::text(option_text_pos, option_text_colour, option, *dropdown_data.font);
+			render::late_draw_calls.emplace_back(
+				[option_text_pos, option_text_colour, option, font = *dropdown_data.font] {
+					render::text(option_text_pos, option_text_colour, option, font);
+				}
+			);
 
 			option_text_pos.y += pos.option_line_height;
 		}
 
-		render::pop_clip_rect();
+		render::late_draw_calls.emplace_back([] {
+			render::pop_clip_rect();
+		});
 	}
 }
 
