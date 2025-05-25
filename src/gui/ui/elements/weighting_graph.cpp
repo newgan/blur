@@ -53,12 +53,19 @@ void ui::render_weighting_graph(const Container& container, const AnimatedElemen
 
 	const gfx::Rect& rect = element.element->rect;
 
-	if (graph_data.weights.empty())
-		return;
+	size_t count = graph_data.weights.size();
 
-	int count = static_cast<int>(graph_data.weights.size());
-	if (count < 2)
+	if (count < 2) {
+		render::text(
+			rect.center(),
+			gfx::Color(180, 180, 180, anim * 255),
+			"no blur frames",
+			fonts::dejavu,
+			FONT_CENTERED_X | FONT_CENTERED_Y
+		);
+
 		return;
+	}
 
 	gfx::Rect graph_rect = rect;
 
