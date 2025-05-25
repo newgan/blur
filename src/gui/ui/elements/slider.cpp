@@ -310,7 +310,7 @@ bool ui::update_slider(const Container& container, AnimatedElement& element) {
 	return false;
 }
 
-ui::Element& ui::add_slider(
+ui::AnimatedElement* ui::add_slider(
 	const std::string& id,
 	Container& container,
 	const std::variant<int, float>& min_value,
@@ -345,7 +345,7 @@ ui::Element& ui::add_slider(
 		update_slider
 	);
 
-	return *add_element(
+	return add_element(
 		container,
 		std::move(element),
 		container.element_gap,
@@ -356,7 +356,7 @@ ui::Element& ui::add_slider(
 	);
 }
 
-ui::Element& ui::add_slider_tied(
+ui::AnimatedElement* ui::add_slider_tied(
 	const std::string& id,
 	Container& container,
 	const std::variant<int, float>& min_value,
@@ -399,7 +399,7 @@ ui::Element& ui::add_slider_tied(
 		update_slider
 	);
 
-	return *add_element(
+	return add_element(
 		container,
 		std::move(element),
 		container.element_gap,

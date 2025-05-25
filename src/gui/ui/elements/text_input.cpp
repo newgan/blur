@@ -603,7 +603,7 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 	return active;
 }
 
-ui::Element& ui::add_text_input(
+ui::AnimatedElement* ui::add_text_input(
 	const std::string& id,
 	Container& container,
 	std::string& text, // Reference to the external string
@@ -634,7 +634,7 @@ ui::Element& ui::add_text_input(
 		update_text_input
 	);
 
-	return *add_element(
+	return add_element(
 		container,
 		std::move(element),
 		container.element_gap,

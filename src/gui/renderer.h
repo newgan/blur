@@ -36,7 +36,8 @@ namespace gui::renderer {
 
 	inline ui::Container main_container;
 	inline ui::Container config_container;
-	inline ui::Container config_preview_container;
+	inline ui::Container config_preview_header_container;
+	inline ui::Container config_preview_content_container;
 	inline ui::Container option_information_container;
 	inline ui::Container notification_container;
 	inline ui::Container nav_container;
@@ -54,6 +55,11 @@ namespace gui::renderer {
 		void main_screen(ui::Container& container, float delta_time);
 
 		namespace configs { // naming it configs to avoid conflict with common lol
+			inline const std::vector<std::string> TABS = { "output video", "weightings" };
+			inline std::string selected_tab = TABS[0];
+			inline std::string old_tab;
+			inline std::string hovered_weighting;
+
 			inline BlurSettings settings;
 			inline BlurSettings current_global_settings;
 
@@ -75,7 +81,8 @@ namespace gui::renderer {
 			void set_pre_interpolated_fps();
 
 			void options(ui::Container& container, BlurSettings& settings);
-			void preview(ui::Container& container, BlurSettings& settings);
+			void config_preview(ui::Container& container, BlurSettings& settings);
+			void preview(ui::Container& header_container, ui::Container& content_container, BlurSettings& settings);
 			void option_information(ui::Container& container, BlurSettings& settings);
 
 			void parse_interp();
@@ -84,7 +91,8 @@ namespace gui::renderer {
 
 			void screen(
 				ui::Container& container,
-				ui::Container& preview_container,
+				ui::Container& preview_header_container,
+				ui::Container& preview_content_container,
 				ui::Container& option_information_container,
 				float delta_time
 			);

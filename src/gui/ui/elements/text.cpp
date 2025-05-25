@@ -54,7 +54,7 @@ void ui::render_text(const Container& container, const AnimatedElement& element)
 	}
 }
 
-ui::Element& ui::add_text(
+ui::AnimatedElement* ui::add_text(
 	const std::string& id,
 	Container& container,
 	const std::string& text,
@@ -67,7 +67,7 @@ ui::Element& ui::add_text(
 	return add_text(id, container, lines, color, font, flags);
 }
 
-ui::Element& ui::add_text(
+ui::AnimatedElement* ui::add_text(
 	const std::string& id,
 	Container& container,
 	std::vector<std::string> lines,
@@ -83,14 +83,19 @@ ui::Element& ui::add_text(
 		id,
 		ElementType::TEXT,
 		gfx::Rect(container.current_position, gfx::Size(container.get_usable_rect().w, text_height)),
-		TextElementData{ .lines = lines, .color = color, .font = &font, .flags = flags },
+		TextElementData{
+			.lines = lines,
+			.color = color,
+			.font = &font,
+			.flags = flags,
+		},
 		render_text
 	);
 
-	return *add_element(container, std::move(element), container.element_gap);
+	return add_element(container, std::move(element), container.element_gap);
 }
 
-ui::Element& ui::add_text_fixed(
+ui::AnimatedElement* ui::add_text_fixed(
 	const std::string& id,
 	Container& container,
 	const gfx::Point& position,
@@ -104,7 +109,7 @@ ui::Element& ui::add_text_fixed(
 	return add_text_fixed(id, container, position, lines, color, font, flags);
 }
 
-ui::Element& ui::add_text_fixed(
+ui::AnimatedElement* ui::add_text_fixed(
 	const std::string& id,
 	Container& container,
 	const gfx::Point& position,
@@ -132,5 +137,5 @@ ui::Element& ui::add_text_fixed(
 		true
 	);
 
-	return *add_element(container, std::move(element), container.element_gap);
+	return add_element(container, std::move(element), container.element_gap);
 }

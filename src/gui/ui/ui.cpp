@@ -80,7 +80,7 @@ void ui::reset_container(
 	container.last_margin_bottom = 0;
 }
 
-ui::Element* ui::add_element(
+ui::AnimatedElement* ui::add_element(
 	Container& container,
 	Element&& _element,
 	int margin_bottom,
@@ -101,18 +101,18 @@ ui::Element* ui::add_element(
 		}
 	}
 
-	auto* element = add_element(container, std::move(_element), animations);
+	auto* animated_element = add_element(container, std::move(_element), animations);
 
 	// reset x in case it was same line
 	container.current_position.x = container.get_usable_rect().x;
 
-	container.current_position.y += element->rect.h + margin_bottom;
+	container.current_position.y += animated_element->element->rect.h + margin_bottom;
 	container.last_margin_bottom = margin_bottom;
 
-	return element;
+	return animated_element;
 }
 
-ui::Element* ui::add_element(
+ui::AnimatedElement* ui::add_element(
 	Container& container, Element&& _element, const std::unordered_map<size_t, AnimationState>& animations
 ) {
 	auto& animated_element = container.elements[_element.id];
@@ -120,20 +120,22 @@ ui::Element* ui::add_element(
 	_element.orig_rect = _element.rect;
 
 	if (animated_element.element) {
-		if (animated_element.element->data != _element.data) {
+		if (animated_element.element->update(_element)) {
 			container.updated = true;
+		}
+		else {
+			animated_element.element->rect = _element.rect;
 		}
 	}
 	else {
 		u::log("first added {}", _element.id);
+		animated_element.element = std::make_unique<ui::Element>(std::move(_element));
 		animated_element.animations = animations;
 	}
 
-	animated_element.element = std::make_unique<ui::Element>(std::move(_element));
-
 	container.current_element_ids.push_back(animated_element.element->id);
 
-	return animated_element.element.get();
+	return &animated_element;
 }
 
 void ui::add_spacing(Container& container, int spacing) {
@@ -235,21 +237,6 @@ void ui::set_cursor(SDL_SystemCursor cursor) {
 	desired_cursor = cursor;
 }
 
-std::vector<decltype(ui::Container::elements)::iterator> ui::get_sorted_container_elements(Container& container) {
-	std::vector<decltype(container.elements)::iterator> sorted_elements;
-	sorted_elements.reserve(container.elements.size());
-
-	for (auto it = container.elements.begin(); it != container.elements.end(); ++it) {
-		sorted_elements.push_back(it);
-	}
-
-	std::ranges::stable_sort(sorted_elements, [](const auto& lhs, const auto& rhs) {
-		return lhs->second.z_index > rhs->second.z_index;
-	});
-
-	return sorted_elements;
-}
-
 bool ui::set_hovered_element(AnimatedElement& element) {
 	if (hovered_element_internal)
 		return false;
@@ -265,13 +252,8 @@ std::string ui::get_hovered_id() {
 bool ui::update_container_input(Container& container) {
 	bool updated = false;
 
-	auto sorted_elements = get_sorted_container_elements(container);
-
 	// update all elements
-	for (auto& it : sorted_elements) {
-		const auto& id = it->first;
-		auto& element = it->second;
-
+	for (auto& [id, element] : container.elements) {
 		bool stale = std::ranges::find(container.current_element_ids, id) == container.current_element_ids.end();
 		if (stale)
 			continue;
@@ -406,12 +388,7 @@ void ui::render_container(Container& container) {
 
 	// render::push_clip_rect(container.rect); todo: fade or some shit but straight clipping looks poo
 
-	auto sorted_elements = get_sorted_container_elements(container);
-
-	for (auto& it : std::ranges::reverse_view(sorted_elements)) {
-		const auto& id = it->first;
-		auto& element = it->second;
-
+	for (auto& [id, element] : container.elements) {
 		element.element->render_fn(container, element);
 	}
 

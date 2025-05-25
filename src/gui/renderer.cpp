@@ -4,6 +4,7 @@
 #include "common/rendering.h"
 #include "common/rendering_frame.h"
 
+#include "common/weighting.h"
 #include "gui/ui/keys.h"
 #include "sdl.h"
 #include "tasks.h"
@@ -61,7 +62,7 @@ void gui::renderer::components::render(
 			std::to_string(render_status.current_frame)
 		);
 		if (element) {
-			bar_width = (*element)->rect.w;
+			bar_width = (*element)->element->rect.w;
 		}
 	}
 
@@ -323,7 +324,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 		);
 
 		ui::add_slider("output fps", container, 1, 120, &settings.blur_output_fps, "output fps: {} fps", fonts::dejavu);
-		ui::add_dropdown(
+		auto* weighting_dropdown = ui::add_dropdown(
 			"blur weighting",
 			container,
 			"blur weighting",
@@ -340,6 +341,25 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			settings.blur_weighting,
 			fonts::dejavu
 		);
+
+		if (weighting_dropdown->animations.at(ui::hasher("expand")).goal > 0) {
+			if (old_tab.empty()) {
+				old_tab = selected_tab;
+				selected_tab = "weightings";
+			}
+
+			const auto& dropdown_data = std::get<ui::DropdownElementData>(weighting_dropdown->element->data);
+			hovered_weighting = dropdown_data.hovered_option;
+		}
+		else {
+			hovered_weighting.clear();
+
+			if (!old_tab.empty()) {
+				selected_tab = old_tab;
+				old_tab.clear();
+			}
+		}
+
 		ui::add_slider("blur gamma", container, 1.f, 10.f, &settings.blur_gamma, "blur gamma: {:.2f}", fonts::dejavu);
 	}
 
@@ -380,7 +400,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 				"interpolated fps",
 				container,
 				1,
-				2400,
+				settings.blur_output_fps * 50,
 				&interpolated_fps,
 				"interpolated fps: {} fps",
 				fonts::dejavu,
@@ -832,7 +852,7 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 }
 
 // NOLINTBEGIN(readability-function-cognitive-complexity) todo: refactor
-void gui::renderer::components::configs::preview(ui::Container& container, BlurSettings& settings) {
+void gui::renderer::components::configs::config_preview(ui::Container& container, BlurSettings& settings) {
 	static BlurSettings previewed_settings;
 	static bool first = true;
 
@@ -952,17 +972,6 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 
 	try {
 		if (!preview_path.empty() && std::filesystem::exists(preview_path) && !error) {
-			container.push_element_gap(6);
-			ui::add_text(
-				"preview header",
-				container,
-				"Config preview",
-				gfx::Color::white(MUTED_SHADE),
-				fonts::dejavu,
-				FONT_CENTERED_X
-			);
-			container.pop_element_gap();
-
 			auto element = ui::add_image(
 				"config preview image",
 				container,
@@ -1039,26 +1048,75 @@ void gui::renderer::components::configs::preview(ui::Container& container, BlurS
 		// i have no idea. std::filesystem::exists threw?
 		u::log_error("std::filesystem::exists threw");
 	}
+}
 
-	ui::add_separator("config preview separator", container, ui::SeparatorStyle::FADE_BOTH);
+void gui::renderer::components::configs::preview(
+	ui::Container& header_container, ui::Container& content_container, BlurSettings& settings
+) {
+	int interp_fps{};
+	std::istringstream iss(settings.interpolated_fps);
+	if ((iss >> interp_fps) && iss.eof()) {
+		ui::add_tabs("preview tab", header_container, TABS, selected_tab, fonts::dejavu, [] {
+			old_tab.clear();
+		});
+	}
+	else {
+		selected_tab = TABS[1];
+		ui::add_tabs("preview tab", header_container, TABS, selected_tab, fonts::dejavu, [] {
+			// TODO BRO
+		});
+	}
+
+	if (selected_tab == "output video") {
+		config_preview(content_container, settings);
+	}
+	else {
+		auto weight_settings = settings;
+
+		if (!hovered_weighting.empty())
+			weight_settings.blur_weighting = hovered_weighting;
+
+		auto weights_res = weighting::get_weights(weight_settings, interp_fps);
+		if (weights_res.error.empty()) {
+			ui::add_weighting_graph("weighting graph", content_container, weights_res.weights);
+		}
+		else {
+			ui::add_text(
+				"weighting error",
+				content_container,
+				weights_res.error,
+				gfx::Color(255, 50, 50, 255),
+				fonts::dejavu,
+				FONT_CENTERED_X | FONT_OUTLINE
+			);
+		}
+	}
+
+	ui::add_separator("config preview separator", content_container, ui::SeparatorStyle::FADE_BOTH);
 
 	auto validation_res = config_blur::validate(settings, false);
 	if (!validation_res.success) {
 		ui::add_text(
 			"config validation error/s",
-			container,
+			content_container,
 			validation_res.error,
 			gfx::Color(255, 50, 50, 255),
 			fonts::dejavu,
 			FONT_CENTERED_X | FONT_OUTLINE
 		);
 
-		ui::add_button("fix config button", container, "Reset invalid config options to defaults", fonts::dejavu, [&] {
-			config_blur::validate(settings, true);
-		});
+		ui::add_button(
+			"fix config button",
+			content_container,
+			"Reset invalid config options to defaults",
+			fonts::dejavu,
+			[&] {
+				config_blur::validate(settings, true);
+			}
+		);
 	}
 
-	ui::add_button("open config folder", container, "Open config folder", fonts::dejavu, [] {
+	ui::add_button("open config folder", content_container, "Open config folder", fonts::dejavu, [] {
 		// Convert path to a file:// URL for SDL_OpenURL
 		std::string file_url = "file://" + blur.settings_path.string();
 		if (!SDL_OpenURL(file_url.c_str())) {
@@ -1134,16 +1192,15 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 				"FPS to interpolate input video to (before blurring)",
 			},
 		},
+#ifndef __APPLE__ // TODO: apple rife issue
 		{
 			"interpolation method dropdown",
 			{
 				"Quality: rife > svp",
 				"Speed: svp > rife",
-#ifdef __APPLE__
-				"SVP is faster, but requires that SVP Manager be open or a red border will appear",
-#endif
 			},
 		},
+#endif
 		// pre-interp settings
 		{
 			"section pre-interpolation checkbox",
@@ -1225,8 +1282,12 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 		{
 			"deduplicate method dropdown",
 			{
+#ifndef __APPLE__ // TODO: apple rife issue
 				"Quality: rife > svp",
 				"Speed: old > svp > rife",
+#else
+				"Old is faster, but less accurate",
+#endif
 			},
 		},
 		{
@@ -1243,24 +1304,24 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 		},
 
 		// Timescale settings
-		{
-			"section timescale checkbox",
-			{
-				"Enable video timescale manipulation",
-			},
-		},
-		{
-			"input timescale",
-			{
-				"Timescale of the input video file",
-			},
-		},
-		{
-			"output timescale",
-			{
-				"Timescale of the output video file",
-			},
-		},
+		// {
+		// 	"section timescale checkbox",
+		// 	{
+		// 		"Enable video timescale manipulation",
+		// 	},
+		// },
+		// {
+		// 	"input timescale",
+		// 	{
+		// 		"Timescale of the input video file",
+		// 	},
+		// },
+		// {
+		// 	"output timescale",
+		// 	{
+		// 		"Timescale of the output video file",
+		// 	},
+		// },
 		{
 			"adjust timescaled audio pitch checkbox",
 			{
@@ -1308,14 +1369,7 @@ void gui::renderer::components::configs::option_information(ui::Container& conta
 	if (!option_explanations.contains(hovered))
 		return;
 
-	ui::add_text(
-		"hovered option info",
-		container,
-		option_explanations.at(hovered),
-		gfx::Color::white(),
-		fonts::dejavu,
-		FONT_CENTERED_X | FONT_OUTLINE
-	);
+	ui::add_hint("hovered option info", container, option_explanations.at(hovered), gfx::Color::white(), fonts::dejavu);
 }
 
 // NOLINTEND(readability-function-cognitive-complexity)
@@ -1372,7 +1426,8 @@ void gui::renderer::components::configs::on_load() {
 
 void gui::renderer::components::configs::screen(
 	ui::Container& config_container,
-	ui::Container& preview_container,
+	ui::Container& preview_header_container,
+	ui::Container& preview_content_container,
 	ui::Container& option_information_container,
 	float delta_time
 ) {
@@ -1434,7 +1489,7 @@ void gui::renderer::components::configs::screen(
 	}
 
 	options(config_container, settings);
-	preview(preview_container, settings);
+	preview(preview_header_container, preview_content_container, settings);
 	option_information(option_information_container, settings);
 }
 
@@ -1518,12 +1573,27 @@ bool gui::renderer::redraw_window(bool rendered_last, bool force_render) {
 	config_preview_container_rect.x = config_container_rect.x2() + config_page_container_gap;
 	config_preview_container_rect.w -= config_container_rect.w + config_page_container_gap;
 
+	gfx::Rect config_preview_header_container_rect = config_preview_container_rect;
+	config_preview_header_container_rect.h = 80;
+
 	ui::reset_container(
-		config_preview_container,
+		config_preview_header_container,
 		sdl::window,
-		config_preview_container_rect,
+		config_preview_header_container_rect,
 		fonts::dejavu.height(),
-		ui::Padding{ PAD_Y, PAD_X, bottom_pad, PAD_X }
+		ui::Padding{ PAD_Y, PAD_X }
+	);
+
+	gfx::Rect config_preview_content_container_rect = config_preview_container_rect;
+	config_preview_content_container_rect.y = config_preview_header_container_rect.y2();
+	config_preview_content_container_rect.h -= config_preview_header_container_rect.h;
+
+	ui::reset_container(
+		config_preview_content_container,
+		sdl::window,
+		config_preview_content_container_rect,
+		fonts::dejavu.height(),
+		ui::Padding{ 0, PAD_X, bottom_pad, PAD_X }
 	);
 
 	ui::reset_container(
@@ -1593,10 +1663,15 @@ bool gui::renderer::redraw_window(bool rendered_last, bool force_render) {
 			});
 
 			components::configs::screen(
-				config_container, config_preview_container, option_information_container, delta_time
+				config_container,
+				config_preview_header_container,
+				config_preview_content_container,
+				option_information_container,
+				delta_time
 			);
 
-			ui::center_elements_in_container(config_preview_container);
+			ui::center_elements_in_container(config_preview_header_container);
+			ui::center_elements_in_container(config_preview_content_container);
 			ui::center_elements_in_container(option_information_container, true, false);
 
 			break;
@@ -1613,7 +1688,8 @@ bool gui::renderer::redraw_window(bool rendered_last, bool force_render) {
 
 	want_to_render |= ui::update_container_frame(main_container, delta_time);
 	want_to_render |= ui::update_container_frame(config_container, delta_time);
-	want_to_render |= ui::update_container_frame(config_preview_container, delta_time);
+	want_to_render |= ui::update_container_frame(config_preview_header_container, delta_time);
+	want_to_render |= ui::update_container_frame(config_preview_content_container, delta_time);
 	want_to_render |= ui::update_container_frame(option_information_container, delta_time);
 	ui::on_update_frame_end();
 
@@ -1659,9 +1735,11 @@ bool gui::renderer::redraw_window(bool rendered_last, bool force_render) {
 		}
 #endif
 
+		// front -> back
 		ui::render_container(main_container);
 		ui::render_container(config_container);
-		ui::render_container(config_preview_container);
+		ui::render_container(config_preview_content_container);
+		ui::render_container(config_preview_header_container);
 		ui::render_container(option_information_container);
 		ui::render_container(nav_container);
 		ui::render_container(notification_container);

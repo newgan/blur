@@ -36,7 +36,7 @@ void ui::render_bar(const Container& container, const AnimatedElement& element) 
 	}
 }
 
-ui::Element& ui::add_bar(
+ui::AnimatedElement* ui::add_bar(
 	const std::string& id,
 	Container& container,
 	float percent_fill,
@@ -62,5 +62,5 @@ ui::Element& ui::add_bar(
 		render_bar
 	);
 
-	return *add_element(container, std::move(element), container.element_gap);
+	return add_element(container, std::move(element), container.element_gap);
 }

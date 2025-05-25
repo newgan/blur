@@ -82,7 +82,6 @@ namespace {
 		}
 		return 0.0f;
 	}
-
 }
 
 void ui::render_dropdown(const Container& container, const AnimatedElement& element) {
@@ -189,7 +188,7 @@ void ui::render_dropdown(const Container& container, const AnimatedElement& elem
 
 // NOLINTBEGIN(readability-function-cognitive-complexity)
 bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
-	const auto& dropdown_data = std::get<DropdownElementData>(element.element->data);
+	auto& dropdown_data = std::get<DropdownElementData>(element.element->data);
 
 	auto& hover_anim = element.animations.at(hasher("hover"));
 	auto& expand_anim = element.animations.at(hasher("expand"));
@@ -242,6 +241,11 @@ bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
 					hovered_option_index = -1;
 				}
 			}
+
+			if (hovered_option_index != -1)
+				dropdown_data.hovered_option = dropdown_data.options[hovered_option_index];
+			else
+				dropdown_data.hovered_option = "";
 
 			// Update all option animations
 			for (size_t i = 0; i < dropdown_data.options.size(); i++) {
@@ -305,7 +309,7 @@ bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
 
 // NOLINTEND(readability-function-cognitive-complexity)
 
-ui::Element& ui::add_dropdown(
+ui::AnimatedElement* ui::add_dropdown(
 	const std::string& id,
 	Container& container,
 	const std::string& label,
@@ -334,12 +338,13 @@ ui::Element& ui::add_dropdown(
 			.selected = &selected,
 			.font = &font,
 			.on_change = std::move(on_change),
+			.hovered_option = "",
 		},
 		render_dropdown,
 		update_dropdown
 	);
 
-	return *add_element(
+	return add_element(
 		container,
 		std::move(element),
 		container.element_gap,

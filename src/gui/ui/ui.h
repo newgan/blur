@@ -28,7 +28,10 @@ namespace ui {
 		TEXT_INPUT,
 		CHECKBOX,
 		DROPDOWN,
-		SEPARATOR
+		SEPARATOR,
+		WEIGHTING_GRAPH,
+		TABS,
+		HINT,
 	};
 
 	struct BarElementData {
@@ -205,8 +208,51 @@ namespace ui {
 		const render::Font* font;
 		std::optional<std::function<void(std::string*)>> on_change;
 
+		std::string hovered_option;
+
 		bool operator==(const DropdownElementData& other) const {
 			return label == other.label && options == other.options && selected == other.selected && font == other.font;
+		}
+	};
+
+	struct WeightingGraphElementData {
+		std::vector<double> weights;
+
+		bool operator==(const WeightingGraphElementData& other) const {
+			return weights == other.weights;
+		}
+	};
+
+	struct TabsElementData {
+		std::vector<std::string> options;
+
+		std::string* selected;
+		const render::Font* font;
+		std::optional<std::function<void()>> on_select;
+
+		std::vector<gfx::Rect> option_offset_rects;
+
+		bool operator==(const TabsElementData& other) const {
+			return options == other.options && selected == other.selected && font == other.font;
+		}
+	};
+
+	struct Paragraph {
+		std::vector<std::string> lines;
+		bool is_last = false;
+
+		bool operator==(const Paragraph& other) const {
+			return lines == other.lines && is_last == other.is_last;
+		}
+	};
+
+	struct HintElementData {
+		std::vector<Paragraph> paragraphs;
+		gfx::Color color;
+		const render::Font* font;
+
+		bool operator==(const HintElementData& other) const {
+			return paragraphs == other.paragraphs && color == other.color && font == other.font;
 		}
 	};
 
@@ -220,7 +266,10 @@ namespace ui {
 		TextInputElementData,
 		CheckboxElementData,
 		DropdownElementData,
-		SeparatorElementData>;
+		SeparatorElementData,
+		WeightingGraphElementData,
+		TabsElementData,
+		HintElementData>;
 
 	struct AnimationState {
 		float speed;
@@ -239,7 +288,9 @@ namespace ui {
 
 		bool update(float delta_time) {
 			float old_current = current;
-			current = std::clamp(u::lerp(current, goal, speed * delta_time, 0.001f), 0.f, 1.f);
+			current = std::clamp(
+				u::lerp(current, goal, speed * delta_time, 0.001f), std::min(current, goal), std::max(current, goal)
+			);
 
 			complete = current == goal;
 
@@ -272,6 +323,22 @@ namespace ui {
 		)
 			: id(std::move(id)), type(type), rect(rect), data(std::move(data)), render_fn(std::move(render_fn)),
 			  update_fn(std::move(update_fn)), fixed(fixed), orig_rect(rect) {}
+
+		bool update(const Element& other) {
+			this->id = other.id;
+			this->type = other.type;
+			this->rect = other.rect;
+			this->render_fn = other.render_fn;
+			this->update_fn = other.update_fn;
+			this->fixed = other.fixed;
+			this->orig_rect = other.orig_rect;
+
+			bool updated = this->data != other.data;
+			if (updated) {
+				this->data = other.data;
+			}
+			return updated;
+		}
 	};
 
 	struct AnimatedElement {
@@ -367,6 +434,13 @@ namespace ui {
 
 	void render_separator(const Container& container, const AnimatedElement& element);
 
+	void render_weighting_graph(const Container& container, const AnimatedElement& element);
+
+	void render_tabs(const Container& container, const AnimatedElement& element);
+	bool update_tabs(const Container& container, AnimatedElement& element);
+
+	void render_hint(const Container& container, const AnimatedElement& element);
+
 	void reset_container(
 		Container& container,
 		SDL_Window* window,
@@ -377,20 +451,20 @@ namespace ui {
 		std::optional<gfx::Color> background_color = {}
 	);
 
-	Element* add_element(
+	AnimatedElement* add_element(
 		Container& container,
 		Element&& _element,
 		int margin_bottom,
 		const std::unordered_map<size_t, AnimationState>& animations = { { hasher("main"), DEFAULT_ANIMATION } }
 	);
-	Element* add_element(
+	AnimatedElement* add_element(
 		Container& container,
 		Element&& _element,
 		const std::unordered_map<size_t, AnimationState>& animations = { { hasher("main"), DEFAULT_ANIMATION } }
 	);
 
 	// elements
-	Element& add_bar(
+	AnimatedElement* add_bar(
 		const std::string& id,
 		Container& container,
 		float percent_fill,
@@ -402,7 +476,7 @@ namespace ui {
 		std::optional<const render::Font*> font = {}
 	);
 
-	Element& add_text(
+	AnimatedElement* add_text(
 		const std::string& id,
 		Container& container,
 		const std::string& text,
@@ -411,7 +485,7 @@ namespace ui {
 		unsigned int flags = EFontFlags::FONT_NONE
 	);
 
-	Element& add_text(
+	AnimatedElement* add_text(
 		const std::string& id,
 		Container& container,
 		std::vector<std::string> lines,
@@ -420,7 +494,7 @@ namespace ui {
 		unsigned int flags = EFontFlags::FONT_NONE
 	);
 
-	Element& add_text_fixed(
+	AnimatedElement* add_text_fixed(
 		const std::string& id,
 		Container& container,
 		const gfx::Point& position,
@@ -430,7 +504,7 @@ namespace ui {
 		unsigned int flags = EFontFlags::FONT_NONE
 	);
 
-	Element& add_text_fixed(
+	AnimatedElement* add_text_fixed(
 		const std::string& id,
 		Container& container,
 		const gfx::Point& position,
@@ -440,7 +514,7 @@ namespace ui {
 		unsigned int flags = EFontFlags::FONT_NONE
 	);
 
-	std::optional<Element*> add_image(
+	std::optional<AnimatedElement*> add_image(
 		const std::string& id,
 		Container& container,
 		const std::filesystem::path& image_path,
@@ -449,7 +523,7 @@ namespace ui {
 		gfx::Color image_color = gfx::Color::white()
 	); // use image_id to distinguish images that have the same filename and reload it (e.g. if its updated)
 
-	Element& add_button(
+	AnimatedElement* add_button(
 		const std::string& id,
 		Container& container,
 		const std::string& text,
@@ -457,7 +531,7 @@ namespace ui {
 		std::optional<std::function<void()>> on_press = {}
 	);
 
-	Element& add_notification(
+	AnimatedElement* add_notification(
 		const std::string& id,
 		Container& container,
 		const std::string& text,
@@ -467,7 +541,7 @@ namespace ui {
 		std::optional<std::function<void(const std::string& id)>> on_close = {}
 	);
 
-	Element& add_slider(
+	AnimatedElement* add_slider(
 		const std::string& id,
 		Container& container,
 		const std::variant<int, float>& min_value,
@@ -480,7 +554,7 @@ namespace ui {
 		const std::string& tooltip = ""
 	);
 
-	ui::Element& add_slider_tied(
+	AnimatedElement* add_slider_tied(
 		const std::string& id,
 		Container& container,
 		const std::variant<int, float>& min_value,
@@ -496,7 +570,7 @@ namespace ui {
 		const std::string& tooltip = ""
 	);
 
-	Element& add_text_input(
+	AnimatedElement* add_text_input(
 		const std::string& id,
 		Container& container,
 		std::string& text,
@@ -505,7 +579,7 @@ namespace ui {
 		std::optional<std::function<void(const std::string&)>> on_change = {}
 	);
 
-	Element& add_checkbox(
+	AnimatedElement* add_checkbox(
 		const std::string& id,
 		Container& container,
 		const std::string& label,
@@ -514,7 +588,7 @@ namespace ui {
 		std::optional<std::function<void(bool)>> on_change = {}
 	);
 
-	Element& add_dropdown(
+	AnimatedElement* add_dropdown(
 		const std::string& id,
 		Container& container,
 		const std::string& label,
@@ -524,7 +598,28 @@ namespace ui {
 		std::optional<std::function<void(std::string*)>> on_change = {}
 	);
 
-	Element& add_separator(const std::string& id, Container& container, SeparatorStyle style);
+	AnimatedElement* add_weighting_graph(
+		const std::string& id, Container& container, const std::vector<double>& weights
+	);
+
+	AnimatedElement* add_tabs(
+		const std::string& id,
+		Container& container,
+		const std::vector<std::string>& options,
+		std::string& selected,
+		const render::Font& font,
+		std::optional<std::function<void()>> on_select = {}
+	);
+
+	AnimatedElement* add_hint(
+		const std::string& id,
+		Container& container,
+		std::vector<std::string> paragraphs,
+		gfx::Color color,
+		const render::Font& font
+	);
+
+	AnimatedElement* add_separator(const std::string& id, Container& container, SeparatorStyle style);
 
 	void add_spacing(Container& container, int spacing);
 
