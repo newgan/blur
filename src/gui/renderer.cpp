@@ -1453,14 +1453,15 @@ bool gui::renderer::redraw_window(bool rendered_last, bool force_render) {
 #if DEBUG_RENDER
 	float fps = -1.f;
 #endif
-	float delta_time = NAN;
+	float delta_time =
+		sdl::vsync_frame_time_ms / 1000.f; // TODO: TEMP: using vsync fps as deltatime to avoid jumping issues. let's
+	                                       // see if it causes any issues. it should be fine...
 
 	if (!rendered_last) {
-		delta_time = sdl::DEFAULT_DELTA_TIME;
+		// delta_time = sdl::DEFAULT_DELTA_TIME;
 	}
 	else {
-		float time_since_last_frame =
-			std::chrono::duration<float>(std::chrono::steady_clock::now() - last_frame_time).count();
+		float time_since_last_frame = std::chrono::duration<float>(now - last_frame_time).count();
 
 #if DEBUG_RENDER
 		fps = 1.f / time_since_last_frame;
@@ -1471,8 +1472,12 @@ bool gui::renderer::redraw_window(bool rendered_last, bool force_render) {
 // fps = (fps * FPS_SMOOTHING) + (current_fps * (1.0f - FPS_SMOOTHING));
 #endif
 
-		delta_time = std::min(time_since_last_frame, sdl::MIN_DELTA_TIME);
+		// delta_time = std::min(time_since_last_frame, 1.f / sdl::MIN_FPS);
 	}
+
+	// #if DEBUG_RENDER
+	// 	u::log("delta time: {}, rendered last: {}", delta_time, rendered_last);
+	// #endif
 
 	last_frame_time = now;
 

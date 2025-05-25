@@ -164,7 +164,7 @@ void sdl::update_vsync() {
 		const SDL_DisplayMode* mode = SDL_GetCurrentDisplayMode(display_index);
 		if (mode) {
 			double rate = mode->refresh_rate;
-			vsync_frame_time = float(1.f / (rate + VSYNC_EXTRA_FPS)) * 1000.f;
+			vsync_frame_time_ms = float(1.f / (rate + VSYNC_EXTRA_FPS)) * 1000.f;
 			u::log("switched screen, updated vsync_frame_time. refresh rate: {:.2f} hz", rate);
 		}
 	}
