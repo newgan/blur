@@ -227,6 +227,8 @@ bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
 		}
 	}
 
+	dropdown_data.hovered_option = "";
+
 	if (!activated && active) {
 		if (pos.options_rect.contains(keys::mouse_pos)) {
 			set_cursor(SDL_SYSTEM_CURSOR_POINTER);
@@ -244,8 +246,6 @@ bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
 
 			if (hovered_option_index != -1)
 				dropdown_data.hovered_option = dropdown_data.options[hovered_option_index];
-			else
-				dropdown_data.hovered_option = "";
 
 			// Update all option animations
 			for (size_t i = 0; i < dropdown_data.options.size(); i++) {

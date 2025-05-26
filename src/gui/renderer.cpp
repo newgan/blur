@@ -342,18 +342,16 @@ void gui::renderer::components::configs::options(ui::Container& container, BlurS
 			fonts::dejavu
 		);
 
+		const auto& dropdown_data = std::get<ui::DropdownElementData>(weighting_dropdown->element->data);
+		hovered_weighting = dropdown_data.hovered_option;
+
 		if (weighting_dropdown->animations.at(ui::hasher("expand")).goal > 0) {
 			if (old_tab.empty()) {
 				old_tab = selected_tab;
 				selected_tab = "weightings";
 			}
-
-			const auto& dropdown_data = std::get<ui::DropdownElementData>(weighting_dropdown->element->data);
-			hovered_weighting = dropdown_data.hovered_option;
 		}
 		else {
-			hovered_weighting.clear();
-
 			if (!old_tab.empty()) {
 				selected_tab = old_tab;
 				old_tab.clear();
