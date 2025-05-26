@@ -1,6 +1,5 @@
 #include "../ui.h"
 #include "../../render/render.h"
-#include "../../renderer.h"
 #include "../keys.h"
 
 const gfx::Size NOTIFICATION_TEXT_PADDING = { 10, 7 };

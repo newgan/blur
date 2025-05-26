@@ -81,19 +81,19 @@ void ui::render_hint(const Container& container, const AnimatedElement& element)
 ui::AnimatedElement* ui::add_hint(
 	const std::string& id,
 	Container& container,
-	std::vector<std::string> lines,
+	const std::vector<std::string>& paragraphs,
 	gfx::Color color,
 	const render::Font& font
 ) {
-	auto paragraphs = wrap_paragraphs(container, lines, font);
-	int text_height = calculate_total_height(container, paragraphs, font);
+	auto wrapped_paragraphs = wrap_paragraphs(container, paragraphs, font);
+	int text_height = calculate_total_height(container, wrapped_paragraphs, font);
 
 	Element element(
 		id,
 		ElementType::HINT,
 		gfx::Rect(container.current_position, gfx::Size(container.get_usable_rect().w, text_height) + HINT_PADDING * 2),
 		HintElementData{
-			.paragraphs = paragraphs,
+			.paragraphs = wrapped_paragraphs,
 			.color = color,
 			.font = &font,
 		},

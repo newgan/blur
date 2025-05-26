@@ -1,5 +1,4 @@
 #include "configs.h"
-#include "../../renderer.h"
 
 #include "common/rendering_frame.h"
 #include "common/weighting.h"

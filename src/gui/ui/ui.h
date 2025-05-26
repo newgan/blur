@@ -617,7 +617,7 @@ namespace ui {
 	AnimatedElement* add_hint(
 		const std::string& id,
 		Container& container,
-		std::vector<std::string> paragraphs,
+		const std::vector<std::string>& paragraphs,
 		gfx::Color color,
 		const render::Font& font
 	);
