@@ -7,7 +7,7 @@
 #define STB_TEXTEDIT_UNDOSTATECOUNT 99
 #define STB_TEXTEDIT_UNDOCHARCOUNT  999
 
-#define STB_TEXTEDIT_STRING          ui::helpers::text_input::TextInputState   // Use the forward-declared type
+#define STB_TEXTEDIT_STRING          ui::helpers::text_input::TextInputData    // Use the forward-declared type
 #define STB_TEXTEDIT_STRINGLEN(obj)  ((obj)->text ? (obj)->text->length() : 0) // Add safety check
 #define STB_TEXTEDIT_LAYOUTROW       textedit_layoutrow
 #define STB_TEXTEDIT_GETWIDTH        textedit_getwidth
@@ -45,12 +45,12 @@
 #include <stb_textedit.h>
 
 namespace ui::helpers::text_input {
-	struct TextInputState {
+	struct TextInputData {
 		std::string* text;
 		const render::Font* font;
 		std::optional<std::function<void(const std::string&)>> on_change;
 
-		bool operator==(const TextInputState& other) const {
+		bool operator==(const TextInputData& other) const {
 			return text == other.text && font == other.font;
 		}
 	};
@@ -66,16 +66,34 @@ namespace ui::helpers::text_input {
 	inline std::unordered_map<std::string, TextInputStateInternal> text_input_map;
 
 	float get_cursor_x(
-		const ui::helpers::text_input::TextInputState& input_data, int cursor_pos, const gfx::Point& text_start_pos
+		const ui::helpers::text_input::TextInputData& input_data, int cursor_pos, const gfx::Point& text_start_pos
 	);
 
-	void handle_text_input_event(TextInputState& input_data, TextInputStateInternal& state, const SDL_Event& event);
+	void handle_text_input_event(TextInputData& input_data, TextInputStateInternal& state, const SDL_Event& event);
 
 	bool has_selection(const STB_TexteditState& state);
 
 	void click(STB_TEXTEDIT_STRING* str, STB_TexteditState* state, float x, float y);
 	void drag(STB_TEXTEDIT_STRING* str, STB_TexteditState* state, float x, float y);
 	void clamp(STB_TEXTEDIT_STRING* str, STB_TexteditState* state);
+	void select_all(STB_TEXTEDIT_STRING* str, STB_TexteditState* state);
 
-	void add_text_edit(const std::string& id, TextInputState& input_data);
+	TextInputStateInternal& add_text_edit(const std::string& id, TextInputData& input_data);
+	bool has_text_edit(const std::string& id);
+	void remove_text_edit(const std::string& id);
+
+	bool has_active_text_edit(const std::string& id);
+
+	void render_text(
+		const TextInputData& input_data,
+		const TextInputStateInternal& state,
+		gfx::Point text_pos,
+		const gfx::Color& text_color,
+		const gfx::Rect& clip_rect,
+		const std::string& placeholder,
+		const gfx::Color& placeholder_color,
+		const gfx::Color& selection_colour,
+		const gfx::Color& composition_text_color,
+		const gfx::Color& composition_bg_color
+	);
 }

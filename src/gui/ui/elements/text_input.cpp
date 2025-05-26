@@ -5,16 +5,16 @@
 
 constexpr int LABEL_GAP = 10;
 constexpr float TEXT_INPUT_ROUNDING = 2.5f;
-constexpr int SCROLL_CURSOR_RIGHT_GAP = 15;
 constexpr gfx::Size TEXT_INPUT_PADDING(10, 5);
 constexpr gfx::Color BORDER_COLOR(70, 70, 70, 255);
 constexpr gfx::Color ACTIVE_BORDER_COLOR(90, 90, 90, 255);
 constexpr gfx::Color BG_COLOR(20, 20, 20, 200);
 constexpr gfx::Color TEXT_COLOR(255, 255, 255, 255);
 constexpr gfx::Color PLACEHOLDER_COLOR(150, 150, 150, 180);
+
+constexpr gfx::Color SELECTION_COLOR(100, 100, 200, 100);
 constexpr gfx::Color COMPOSITION_TEXT_COLOR(200, 200, 255, 255); // For IME
 constexpr gfx::Color COMPOSITION_BG_COLOR(60, 60, 60, 150);      // For IME
-constexpr gfx::Color SELECTION_COLOR(100, 100, 200, 100);
 
 namespace {
 	struct Positions {
@@ -65,98 +65,19 @@ void ui::render_text_input(const Container& container, const AnimatedElement& el
 	clip_rect.h -= TEXT_INPUT_PADDING.h * 2;
 	clip_rect.w = std::max(clip_rect.w, 0);
 	clip_rect.h = std::max(clip_rect.h, 0);
-	render::push_clip_rect(clip_rect, true);
 
-	// --- Render Text / Placeholder ---
-	const std::string& display_text = *input_data.state.text; // Assumes text ptr is valid
-	gfx::Color current_text_color = TEXT_COLOR.adjust_alpha(anim);
-	gfx::Point current_text_pos = pos.text_pos;
-
-	// Calculate the total width of the text to determine overflow
-	float text_width = input_data.state.font->calc_size(display_text).w;
-
-	// Horizontal Scrolling Logic: Shift text position if it's too wide
-	if (text_width > clip_rect.w) {
-		int cursor_x = helpers::text_input::get_cursor_x(input_data.state, state.edit_state.cursor, gfx::Point(0, 0));
-		int scroll_offset = std::max(0, cursor_x - (clip_rect.w - SCROLL_CURSOR_RIGHT_GAP));
-		current_text_pos.x = current_text_pos.x - scroll_offset;
-	}
-
-	// Handle vertical scrolling if needed (optional, depending on requirements)
-	// If text overflows vertically (height of text exceeds clip_rect height), we could add vertical scrolling logic
-
-	if (display_text.empty() && !state.active && !input_data.placeholder.empty()) {
-		gfx::Color current_placeholder_color = PLACEHOLDER_COLOR.adjust_alpha(anim);
-		render::text(current_text_pos, current_placeholder_color, input_data.placeholder, *input_data.state.font);
-	}
-	else {
-		// --- Render Selection ---
-		if (helpers::text_input::has_selection(state.edit_state)) {
-			int sel_start = state.edit_state.select_start;
-			int sel_end = state.edit_state.select_end;
-			if (sel_start > sel_end)
-				std::swap(sel_start, sel_end);
-
-			// Use helper from anonymous namespace
-			float x1 = helpers::text_input::get_cursor_x(input_data.state, sel_start, current_text_pos);
-			float x2 = helpers::text_input::get_cursor_x(input_data.state, sel_end, current_text_pos);
-
-			gfx::Rect selection_rect(
-				static_cast<int>(x1), current_text_pos.y, static_cast<int>(x2 - x1), input_data.state.font->height()
-			);
-
-			if (selection_rect.w > 0 && selection_rect.h > 0) {
-				render::rect_filled(selection_rect, SELECTION_COLOR.adjust_alpha(anim));
-			}
-		}
-
-		// Render actual text
-		render::text(current_text_pos, current_text_color, display_text, *input_data.state.font);
-
-		// --- Render IME Composition --- TODO: NEED TO TEST
-		if (state.active && !state.composition.empty()) {
-			float base_comp_x =
-				helpers::text_input::get_cursor_x(input_data.state, state.edit_state.cursor, current_text_pos);
-			gfx::Point comp_pos = { (int)base_comp_x, current_text_pos.y };
-			gfx::Size comp_size = input_data.state.font->calc_size(state.composition);
-			gfx::Rect comp_bg_rect(comp_pos.x, comp_pos.y, comp_size.w, comp_size.h);
-
-			render::rect_filled(comp_bg_rect, COMPOSITION_BG_COLOR.adjust_alpha(anim));
-			render::text(
-				comp_pos, COMPOSITION_TEXT_COLOR.adjust_alpha(anim), state.composition, *input_data.state.font
-			);
-			render::line(
-				{ comp_pos.x, comp_pos.y + comp_size.h },
-				{ comp_pos.x + comp_size.w, comp_pos.y + comp_size.h },
-				COMPOSITION_TEXT_COLOR.adjust_alpha(anim)
-			);
-
-			if (state.ime_cursor >= 0) {
-				std::string before_ime_cursor = state.composition.substr(0, state.ime_cursor);
-				float ime_cursor_x_offset = input_data.state.font->calc_size(before_ime_cursor).w;
-				render::line(
-					{ comp_pos.x + (int)ime_cursor_x_offset, comp_pos.y },
-					{ comp_pos.x + (int)ime_cursor_x_offset, comp_pos.y + input_data.state.font->height() },
-					COMPOSITION_TEXT_COLOR.adjust_alpha(anim),
-					false,
-					1.f
-				);
-			}
-		}
-
-		// --- Render Cursor ---
-		if (state.active) {
-			float cursor_x =
-				helpers::text_input::get_cursor_x(input_data.state, state.edit_state.cursor, current_text_pos);
-			gfx::Point p1(static_cast<int>(cursor_x), current_text_pos.y);
-			gfx::Point p2(static_cast<int>(cursor_x), current_text_pos.y + input_data.state.font->height());
-			// Ensure cursor is drawn within clip rect
-			if (p1.x >= clip_rect.x && p1.x <= clip_rect.x + clip_rect.w) {
-				render::line(p1, p2, current_text_color, false, 1.f);
-			}
-		}
-	}
-	render::pop_clip_rect();
+	helpers::text_input::render_text(
+		input_data.text_input,
+		state,
+		pos.text_pos,
+		TEXT_COLOR.adjust_alpha(anim),
+		clip_rect,
+		input_data.placeholder,
+		PLACEHOLDER_COLOR.adjust_alpha(anim),
+		SELECTION_COLOR.adjust_alpha(anim),
+		COMPOSITION_TEXT_COLOR.adjust_alpha(anim),
+		COMPOSITION_BG_COLOR.adjust_alpha(anim)
+	);
 }
 
 bool ui::update_text_input(const Container& container, AnimatedElement& element) {
@@ -185,12 +106,12 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 
 				SDL_Rect input_rect = { pos.input_rect.x, pos.input_rect.y, pos.input_rect.w, pos.input_rect.h };
 				SDL_StartTextInput(container.window);
-				SDL_SetTextInputArea(container.window, &input_rect, 10);
+				SDL_SetTextInputArea(container.window, &input_rect, 0);
 			}
 
 			// Use stb_textedit_click to set cursor position (relative to text start)
 			helpers::text_input::click(
-				&input_data.state,
+				&input_data.text_input,
 				&state.edit_state,
 				keys::mouse_pos.x - pos.text_pos.x,
 				keys::mouse_pos.y - pos.text_pos.y
@@ -219,7 +140,7 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 	if (active) {
 		while (!text_event_queue.empty()) {
 			auto& event = text_event_queue.front();
-			handle_text_input_event(input_data.state, state, event);
+			helpers::text_input::handle_text_input_event(input_data.text_input, state, event);
 			text_event_queue.erase(text_event_queue.begin());
 		}
 
@@ -229,7 +150,7 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 			// Check if drag started on this element (requires keys::drag_start_element_id or similar)
 			// if (keys::drag_start_element_id == element.element->id) {
 			helpers::text_input::drag(
-				&input_data.state,
+				&input_data.text_input,
 				&state.edit_state,
 				keys::mouse_pos.x - pos.text_pos.x,
 				keys::mouse_pos.y - pos.text_pos.y
@@ -238,7 +159,7 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 	}
 
 	// Clamp cursor/selection just in case
-	helpers::text_input::clamp(&input_data.state, &state.edit_state);
+	helpers::text_input::clamp(&input_data.text_input, &state.edit_state);
 
 	return active;
 }
@@ -251,7 +172,7 @@ ui::AnimatedElement* ui::add_text_input(
 	const render::Font& font,
 	std::optional<std::function<void(const std::string&)>> on_change
 ) {
-	helpers::text_input::TextInputState state;
+	helpers::text_input::TextInputData state;
 	state.text = &text;
 	state.font = &font;
 	state.on_change = std::move(on_change);
@@ -265,7 +186,7 @@ ui::AnimatedElement* ui::add_text_input(
 		ElementType::TEXT_INPUT,
 		gfx::Rect(container.current_position, input_size),
 		TextInputElementData{
-			.state = std::move(state),
+			.text_input = std::move(state),
 			.placeholder = placeholder,
 		},
 		render_text_input,

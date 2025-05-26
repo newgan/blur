@@ -1,5 +1,8 @@
 #include "text_input.h"
 #include "../keys.h"
+#include "../../render/render.h"
+
+constexpr int SCROLL_CURSOR_RIGHT_GAP = 15;
 
 namespace {
 	void textedit_layoutrow(StbTexteditRow* r, STB_TEXTEDIT_STRING* str, int n) {
@@ -159,7 +162,7 @@ namespace {
 #include <stb_textedit.h>
 
 float ui::helpers::text_input::get_cursor_x(
-	const ui::helpers::text_input::TextInputState& input_data, int cursor_pos, const gfx::Point& text_start_pos
+	const ui::helpers::text_input::TextInputData& input_data, int cursor_pos, const gfx::Point& text_start_pos
 ) {
 	if (!input_data.text || !input_data.font)
 		return text_start_pos.x;
@@ -186,8 +189,15 @@ void ui::helpers::text_input::clamp(STB_TEXTEDIT_STRING* str, STB_TexteditState*
 	stb_textedit_clamp(str, state);
 }
 
+void ui::helpers::text_input::select_all(STB_TEXTEDIT_STRING* str, STB_TexteditState* state) {
+	int text_length = str->text->length();
+	state->select_start = 0;
+	state->select_end = text_length;
+	state->cursor = state->select_start;
+}
+
 void ui::helpers::text_input::handle_text_input_event(
-	TextInputState& input_data, TextInputStateInternal& state, const SDL_Event& event
+	TextInputData& input_data, TextInputStateInternal& state, const SDL_Event& event
 ) {
 	switch (event.type) {
 		case SDL_EVENT_TEXT_INPUT: {
@@ -297,11 +307,7 @@ void ui::helpers::text_input::handle_text_input_event(
 					}
 					case SDL_SCANCODE_A: { // select all (Ctrl + A / Cmd + A)
 						if (is_ctrl || is_cmd) {
-							int text_length = input_data.text->length();
-							state.edit_state.select_start = 0;
-							state.edit_state.select_end = text_length;
-
-							state.edit_state.cursor = state.edit_state.select_start;
+							select_all(&input_data, &state.edit_state);
 						}
 						break;
 					}
@@ -338,11 +344,132 @@ void ui::helpers::text_input::handle_text_input_event(
 	stb_textedit_clamp(&input_data, &state.edit_state);
 }
 
-void ui::helpers::text_input::add_text_edit(const std::string& id, TextInputState& input_data) {
+ui::helpers::text_input::TextInputStateInternal& ui::helpers::text_input::add_text_edit(
+	const std::string& id, TextInputData& input_data
+) {
 	if (!text_input_map.contains(id)) {
 		TextInputStateInternal new_state;
 		stb_textedit_initialize_state(&new_state.edit_state, 1);
 		new_state.edit_state.single_line = 1;
-		text_input_map.emplace(id, std::move(new_state));
+		return text_input_map.emplace(id, std::move(new_state)).first->second;
 	}
+
+	return text_input_map.at(id);
+}
+
+bool ui::helpers::text_input::has_text_edit(const std::string& id) {
+	return text_input_map.contains(id);
+}
+
+void ui::helpers::text_input::remove_text_edit(const std::string& id) {
+	text_input_map.erase(id);
+}
+
+bool ui::helpers::text_input::has_active_text_edit(const std::string& id) {
+	if (!text_input_map.contains(id))
+		return false;
+
+	return text_input_map.at(id).active;
+}
+
+void ui::helpers::text_input::render_text(
+	const TextInputData& input_data,
+	const TextInputStateInternal& state,
+	gfx::Point text_pos,
+	const gfx::Color& text_color,
+	const gfx::Rect& clip_rect,
+	const std::string& placeholder,
+	const gfx::Color& placeholder_color,
+	const gfx::Color& selection_colour,
+	const gfx::Color& composition_text_color,
+	const gfx::Color& composition_bg_color
+) {
+	render::push_clip_rect(clip_rect, true);
+
+	// --- Render Text / Placeholder ---
+	const std::string& display_text = *input_data.text; // Assumes text ptr is valid
+
+	// Calculate the total width of the text to determine overflow
+	float text_width = input_data.font->calc_size(display_text).w;
+
+	// Horizontal Scrolling Logic: Shift text position if it's too wide
+	if (text_width > clip_rect.w) {
+		int cursor_x = helpers::text_input::get_cursor_x(input_data, state.edit_state.cursor, gfx::Point(0, 0));
+		int scroll_offset = std::max(0, cursor_x - (clip_rect.w - SCROLL_CURSOR_RIGHT_GAP));
+		text_pos.x = text_pos.x - scroll_offset;
+	}
+
+	// Handle vertical scrolling if needed (optional, depending on requirements)
+	// If text overflows vertically (height of text exceeds clip_rect height), we could add vertical scrolling logic
+
+	if (display_text.empty() && !state.active && !placeholder.empty()) {
+		render::text(text_pos, placeholder_color, placeholder, *input_data.font);
+		render::pop_clip_rect();
+		return;
+	}
+
+	// --- Render Selection ---
+	if (helpers::text_input::has_selection(state.edit_state)) {
+		int sel_start = state.edit_state.select_start;
+		int sel_end = state.edit_state.select_end;
+		if (sel_start > sel_end)
+			std::swap(sel_start, sel_end);
+
+		// Use helper from anonymous namespace
+		float x1 = helpers::text_input::get_cursor_x(input_data, sel_start, text_pos);
+		float x2 = helpers::text_input::get_cursor_x(input_data, sel_end, text_pos);
+
+		gfx::Rect selection_rect(
+			static_cast<int>(x1), text_pos.y, static_cast<int>(x2 - x1), input_data.font->height()
+		);
+
+		if (selection_rect.w > 0 && selection_rect.h > 0) {
+			render::rect_filled(selection_rect, selection_colour);
+		}
+	}
+
+	// Render actual text
+	render::text(text_pos, text_color, *input_data.text, *input_data.font);
+
+	// --- Render IME Composition --- TODO: NEED TO TEST
+	if (state.active && !state.composition.empty()) {
+		float base_comp_x = helpers::text_input::get_cursor_x(input_data, state.edit_state.cursor, text_pos);
+		gfx::Point comp_pos = { (int)base_comp_x, text_pos.y };
+		gfx::Size comp_size = input_data.font->calc_size(state.composition);
+		gfx::Rect comp_bg_rect(comp_pos.x, comp_pos.y, comp_size.w, comp_size.h);
+
+		render::rect_filled(comp_bg_rect, composition_bg_color);
+		render::text(comp_pos, composition_text_color, state.composition, *input_data.font);
+		render::line(
+			{ comp_pos.x, comp_pos.y + comp_size.h },
+			{ comp_pos.x + comp_size.w, comp_pos.y + comp_size.h },
+			composition_text_color
+		);
+
+		if (state.ime_cursor >= 0) {
+			std::string before_ime_cursor = state.composition.substr(0, state.ime_cursor);
+			float ime_cursor_x_offset = input_data.font->calc_size(before_ime_cursor).w;
+			render::line(
+				{ comp_pos.x + (int)ime_cursor_x_offset, comp_pos.y },
+				{ comp_pos.x + (int)ime_cursor_x_offset, comp_pos.y + input_data.font->height() },
+				composition_text_color,
+				false,
+				1.f
+			);
+		}
+	}
+
+	// --- Render Cursor ---
+	if (state.active) {
+		float cursor_x = helpers::text_input::get_cursor_x(input_data, state.edit_state.cursor, text_pos);
+		gfx::Point p1(static_cast<int>(cursor_x), text_pos.y);
+		gfx::Point p2(static_cast<int>(cursor_x), text_pos.y + input_data.font->height());
+		// Ensure cursor is drawn within clip rect
+		auto clip_rect = render::get_clip_rect();
+		if (p1.x >= clip_rect.x && p1.x <= clip_rect.x + clip_rect.w) {
+			render::line(p1, p2, text_color, false, 1.f);
+		}
+	}
+
+	render::pop_clip_rect();
 }

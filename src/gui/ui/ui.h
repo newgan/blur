@@ -172,20 +172,24 @@ namespace ui {
 		std::optional<std::variant<int*, float*>> tied_value;
 		std::string tied_text;
 
+		std::string editing_text;
+		helpers::text_input::TextInputData text_input;
+
 		bool operator==(const SliderElementData& other) const {
 			return min_value == other.min_value && max_value == other.max_value &&
 			       current_value == other.current_value && label_format == other.label_format && font == other.font &&
 			       precision == other.precision && tooltip == other.tooltip && is_tied_slider == other.is_tied_slider &&
 			       is_tied == other.is_tied && tied_value == other.tied_value && tied_text == other.tied_text;
+			// && text_input == other.text_input;
 		}
 	};
 
 	struct TextInputElementData {
-		helpers::text_input::TextInputState state;
+		helpers::text_input::TextInputData text_input;
 		std::string placeholder;
 
 		bool operator==(const TextInputElementData& other) const {
-			return state == other.state && placeholder == other.placeholder;
+			return text_input == other.text_input && placeholder == other.placeholder;
 		}
 	};
 
