@@ -2,7 +2,7 @@
 #include "../../render/render.h"
 
 constexpr float HINT_ROUNDING = 4.f;
-constexpr gfx::Size HINT_PADDING = { 8, 6 };
+constexpr gfx::Size HINT_PADDING = { 8, 8 };
 constexpr int PARAGRAPH_SPACING = 8;
 
 namespace {
