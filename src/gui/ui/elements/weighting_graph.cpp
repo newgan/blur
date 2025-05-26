@@ -147,7 +147,7 @@ void ui::render_weighting_graph(const Container& container, const AnimatedElemen
 	render::text(
 		{ graph_rect.center().x, graph_rect.y2() },
 		label_color,
-		graph_data.accurate_fps ? std::format("blur frame ({})", count) : "",
+		graph_data.accurate_fps ? std::format("blur frame ({})", count) : "blur frames depend on input fps",
 		fonts::dejavu,
 		FONT_CENTERED_X | FONT_BOTTOM_ALIGN
 	);
