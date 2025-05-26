@@ -91,7 +91,7 @@ bool ui::update_tabs(const Container& container, AnimatedElement& element) {
 					if (tabs_data.on_select)
 						(*tabs_data.on_select)();
 
-					keys::on_mouse_press_handled(SDL_BUTTON_LEFT);
+					// keys::on_mouse_press_handled(SDL_BUTTON_LEFT);
 					return true;
 				}
 			}
