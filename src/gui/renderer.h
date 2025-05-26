@@ -3,10 +3,6 @@
 #include "common/rendering.h"
 #include "ui/ui.h"
 
-namespace ui {
-	class Container;
-}
-
 namespace gui::renderer {
 	inline constexpr uint8_t MUTED_SHADE = 155;
 
