@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../render/render.h"
+#include "helpers/text_input.h"
 
 namespace ui {
 	inline size_t frame = 0;
@@ -180,13 +181,11 @@ namespace ui {
 	};
 
 	struct TextInputElementData {
-		std::string* text;
+		helpers::text_input::TextInputState state;
 		std::string placeholder;
-		const render::Font* font;
-		std::optional<std::function<void(const std::string&)>> on_change;
 
 		bool operator==(const TextInputElementData& other) const {
-			return text == other.text && placeholder == other.placeholder && font == other.font;
+			return state == other.state && placeholder == other.placeholder;
 		}
 	};
 
