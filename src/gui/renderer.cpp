@@ -1052,12 +1052,16 @@ void gui::renderer::components::configs::preview(
 	ui::Container& header_container, ui::Container& content_container, BlurSettings& settings
 ) {
 	int interp_fps = 1200;
+	bool parsed_interp_fps = false;
 
-	std::istringstream iss(settings.interpolated_fps);
-	int temp_fps{};
-	bool parsed_interp_fps = (iss >> temp_fps) && iss.eof();
-	if (parsed_interp_fps)
-		interp_fps = temp_fps;
+	if (settings.interpolate) {
+		std::istringstream iss(settings.interpolated_fps);
+		int temp_fps{};
+		if ((iss >> temp_fps) && iss.eof()) {
+			interp_fps = temp_fps;
+			parsed_interp_fps = true;
+		}
+	}
 
 	ui::add_tabs("preview tab", header_container, TABS, selected_tab, fonts::dejavu, [] {
 		old_tab.clear();
