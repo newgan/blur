@@ -11,7 +11,7 @@ void ui::render_button(const Container& container, const AnimatedElement& elemen
 	float anim = element.animations.at(hasher("main")).current;
 	float hover_anim = element.animations.at(hasher("hover")).current;
 
-	int shade = 10 + (25 * hover_anim);
+	int shade = 17 + (20 * hover_anim);
 	gfx::Color adjusted_color = gfx::Color(shade, shade, shade, anim * 255);
 	gfx::Color adjusted_text_color = gfx::Color(255, 255, 255, anim * 255);
 
