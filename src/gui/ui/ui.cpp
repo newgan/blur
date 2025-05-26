@@ -315,41 +315,51 @@ void ui::on_update_input_end() {
 bool ui::update_container_frame(Container& container, float delta_time) {
 	bool need_to_render_animation_update = false;
 
-	// animate scroll
-	float last_scroll_y = container.scroll_y;
+	bool container_stale = std::ranges::all_of(container.elements, [&](const auto& pair) {
+		const auto& element = pair.second;
+		return std::ranges::find(container.current_element_ids, element.element->id) ==
+		       container.current_element_ids.end();
+	});
 
-	const float scroll_speed_reset_speed = 17.f;
-	const float scroll_speed_overscroll_reset_speed = 25.f;
-	const float scroll_overscroll_reset_speed = 10.f;
-	const float scroll_reset_speed = 10.f;
+	if (!container_stale) {
+		// animate scroll
+		float last_scroll_y = container.scroll_y;
 
-	if (can_scroll(container)) {
-		// clamp scroll
-		int max_scroll = get_max_scroll(container);
+		const float scroll_speed_reset_speed = 17.f;
+		const float scroll_speed_overscroll_reset_speed = 25.f;
+		const float scroll_overscroll_reset_speed = 10.f;
+		const float scroll_reset_speed = 10.f;
 
-		if (container.scroll_y < 0) {
-			container.scroll_speed_y =
-				u::lerp(container.scroll_speed_y, 0.f, scroll_speed_overscroll_reset_speed * delta_time);
-			container.scroll_y = u::lerp(container.scroll_y, 0.f, scroll_overscroll_reset_speed * delta_time);
+		if (can_scroll(container)) {
+			// clamp scroll
+			int max_scroll = get_max_scroll(container);
+
+			if (container.scroll_y < 0) {
+				container.scroll_speed_y =
+					u::lerp(container.scroll_speed_y, 0.f, scroll_speed_overscroll_reset_speed * delta_time);
+				container.scroll_y = u::lerp(container.scroll_y, 0.f, scroll_overscroll_reset_speed * delta_time);
+			}
+			else if (container.scroll_y > max_scroll) {
+				container.scroll_speed_y =
+					u::lerp(container.scroll_speed_y, 0.f, scroll_speed_overscroll_reset_speed * delta_time);
+				container.scroll_y =
+					u::lerp(container.scroll_y, max_scroll, scroll_overscroll_reset_speed * delta_time);
+			}
+
+			if (container.scroll_speed_y != 0.f) {
+				container.scroll_y += container.scroll_speed_y * delta_time;
+				container.scroll_speed_y =
+					u::lerp(container.scroll_speed_y, 0.f, scroll_speed_reset_speed * delta_time);
+			}
 		}
-		else if (container.scroll_y > max_scroll) {
-			container.scroll_speed_y =
-				u::lerp(container.scroll_speed_y, 0.f, scroll_speed_overscroll_reset_speed * delta_time);
-			container.scroll_y = u::lerp(container.scroll_y, max_scroll, scroll_overscroll_reset_speed * delta_time);
+		else if (container.scroll_y != 0.f) {
+			// no longer scrollable but scroll set, reset it
+			container.scroll_y = u::lerp(container.scroll_y, 0.f, scroll_reset_speed * delta_time);
 		}
 
-		if (container.scroll_speed_y != 0.f) {
-			container.scroll_y += container.scroll_speed_y * delta_time;
-			container.scroll_speed_y = u::lerp(container.scroll_speed_y, 0.f, scroll_speed_reset_speed * delta_time);
-		}
+		if (container.scroll_y != last_scroll_y)
+			need_to_render_animation_update |= true;
 	}
-	else if (container.scroll_y != 0.f) {
-		// no longer scrollable but scroll set, reset it
-		container.scroll_y = u::lerp(container.scroll_y, 0.f, scroll_reset_speed * delta_time);
-	}
-
-	if (container.scroll_y != last_scroll_y)
-		need_to_render_animation_update |= true;
 
 	// update elements
 	for (auto it = container.elements.begin(); it != container.elements.end();) {
