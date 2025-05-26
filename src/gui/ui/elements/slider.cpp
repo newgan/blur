@@ -8,7 +8,7 @@ constexpr int TRACK_HEIGHT = 4;
 constexpr int LINE_HEIGHT_ADD = 7;
 constexpr int TRACK_LABEL_GAP = 10;
 constexpr int TOOLTIP_GAP = 4;
-constexpr std::string TIED_ICON = "a"; // chain
+const std::string TIED_ICON = "a"; // chain
 constexpr int TIED_ICON_GAP = 3;
 constexpr gfx::Size TIE_PAD(5, 3);
 constexpr float TIE_ROUNDING = 4.0f;
