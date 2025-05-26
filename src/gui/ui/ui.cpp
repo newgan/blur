@@ -227,8 +227,11 @@ void ui::center_elements_in_container(Container& container, bool horizontal, boo
 	}
 
 	// update original rects for scrolling
-	for (auto& [id, element] : container.elements)
-		element.element->orig_rect = element.element->rect;
+	for (auto& [y_pos, group_elements] : elements_by_y) {
+		for (auto& element : group_elements) {
+			element->orig_rect = element->rect;
+		}
+	}
 }
 
 // NOLINTEND(readability-function-cognitive-complexity)
