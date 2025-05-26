@@ -186,7 +186,6 @@ void ui::render_dropdown(const Container& container, const AnimatedElement& elem
 	}
 }
 
-// NOLINTBEGIN(readability-function-cognitive-complexity)
 bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
 	auto& dropdown_data = std::get<DropdownElementData>(element.element->data);
 
@@ -306,8 +305,6 @@ bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
 
 	return activated;
 }
-
-// NOLINTEND(readability-function-cognitive-complexity)
 
 ui::AnimatedElement* ui::add_dropdown(
 	const std::string& id,

@@ -156,7 +156,7 @@ void ui::set_next_same_line(Container& container) {
 	container.current_position.y = last_element->rect.y;
 }
 
-// NOLINTBEGIN(readability-function-cognitive-complexity) todo: refactor
+// todo: refactor
 void ui::center_elements_in_container(Container& container, bool horizontal, bool vertical) {
 	int total_height = get_content_height(container);
 
@@ -236,8 +236,6 @@ void ui::center_elements_in_container(Container& container, bool horizontal, boo
 		}
 	}
 }
-
-// NOLINTEND(readability-function-cognitive-complexity)
 
 void ui::set_cursor(SDL_SystemCursor cursor) {
 	desired_cursor = cursor;
