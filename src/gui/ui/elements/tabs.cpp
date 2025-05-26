@@ -33,21 +33,40 @@ void ui::render_tabs(const Container& container, const AnimatedElement& element)
 
 	render::rounded_rect_filled(element.element->rect, gfx::Color::black(anim * 255), 5);
 
-	render::rounded_rect_filled(
-		gfx::Rect(selected_offset, 0, selected_width, element.element->rect.h) + element.element->rect.origin(),
-		gfx::Color::white(anim * 255),
-		TAB_ROUNDING
-	);
+	for (size_t i = 0; i < tabs_data.options.size(); i++) {
+		const auto& option = tabs_data.options[i];
+		const auto& option_rect = tabs_data.option_offset_rects[i] + element.element->rect.origin();
+
+		render::text(
+			option_rect.center(),
+			gfx::Color(100, 100, 100, anim * 255),
+			option,
+			*tabs_data.font,
+			FONT_CENTERED_X | FONT_CENTERED_Y
+		);
+	}
+
+	auto background_rect =
+		gfx::Rect(selected_offset, 0, selected_width, element.element->rect.h) + element.element->rect.origin();
+
+	render::rounded_rect_filled(background_rect, gfx::Color::white(anim * 255), TAB_ROUNDING);
+
+	render::push_clip_rect(background_rect);
 
 	for (size_t i = 0; i < tabs_data.options.size(); i++) {
 		const auto& option = tabs_data.options[i];
 		const auto& option_rect = tabs_data.option_offset_rects[i] + element.element->rect.origin();
 
-		bool active = option == *tabs_data.selected;
-		gfx::Color text_color = active ? gfx::Color::black(anim * 255) : gfx::Color(100, 100, 100, anim * 255);
-
-		render::text(option_rect.center(), text_color, option, *tabs_data.font, FONT_CENTERED_X | FONT_CENTERED_Y);
+		render::text(
+			option_rect.center(),
+			gfx::Color::black(anim * 255),
+			option,
+			*tabs_data.font,
+			FONT_CENTERED_X | FONT_CENTERED_Y
+		);
 	}
+
+	render::pop_clip_rect();
 
 	render::rounded_rect_stroke(element.element->rect, gfx::Color(100, 100, 100, anim * 255), TAB_ROUNDING);
 }
