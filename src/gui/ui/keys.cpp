@@ -2,7 +2,9 @@
 #include "gui/ui/ui.h"
 
 bool keys::process_event(const SDL_Event& event) {
-	if (ui::active_element && ui::active_element->element->type == ui::ElementType::TEXT_INPUT) {
+	if (ui::get_active_element() &&
+	    ui::helpers::text_input::has_active_text_edit(ui::get_active_element()->element->id))
+	{
 		switch (event.type) {
 			case SDL_EVENT_KEY_DOWN:
 			case SDL_EVENT_TEXT_EDITING:

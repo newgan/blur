@@ -198,15 +198,15 @@ bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
 	bool hovered = pos.dropdown_rect.contains(keys::mouse_pos) && set_hovered_element(element);
 	hover_anim.set_goal(hovered ? 1.f : 0.f);
 
-	bool active = active_element == &element;
+	bool active = get_active_element() == &element;
 
 	auto toggle_active = [&] {
 		if (active) {
-			active_element = nullptr;
+			reset_active_element();
 			active = false;
 		}
 		else {
-			active_element = &element;
+			set_active_element(element);
 			active = true;
 		}
 

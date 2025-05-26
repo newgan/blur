@@ -179,7 +179,7 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 		if (hovered) {
 			if (!state.active) {
 				keys::on_mouse_press_handled(SDL_BUTTON_LEFT);
-				active_element = &element;
+				set_active_element(element);
 				state.active = true;
 				focus_anim.set_goal(1.f);
 
@@ -196,25 +196,25 @@ bool ui::update_text_input(const Container& container, AnimatedElement& element)
 				keys::mouse_pos.y - pos.text_pos.y
 			);
 		}
-		else if (active_element == &element) {
-			active_element = nullptr;
+		else if (get_active_element() == &element) {
+			reset_active_element();
 		}
 	}
 
 	// Handle deactivation
-	if (state.active && active_element != &element) {
+	if (state.active && get_active_element() != &element) {
 		state.active = false;
 		focus_anim.set_goal(0.f);
 
 		// Stop SDL text input if not in another text input
-		if (active_element && active_element->element->type != ElementType::TEXT_INPUT) {
+		if (get_active_element() && get_active_element()->element->type != ElementType::TEXT_INPUT) {
 			if (SDL_TextInputActive(container.window)) {
 				SDL_StopTextInput(container.window);
 			}
 		}
 	}
 
-	bool active = active_element == &element;
+	bool active = get_active_element() == &element;
 
 	if (active) {
 		while (!text_event_queue.empty()) {

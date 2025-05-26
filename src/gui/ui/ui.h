@@ -395,7 +395,6 @@ namespace ui {
 
 	inline auto hasher = std::hash<std::string>{};
 
-	inline AnimatedElement* active_element = nullptr;
 	inline std::vector<SDL_Event> text_event_queue;
 
 	struct SliderObserver {
@@ -630,6 +629,11 @@ namespace ui {
 	std::vector<decltype(Container::elements)::iterator> get_sorted_container_elements(Container& container);
 
 	void set_cursor(SDL_SystemCursor cursor);
+
+	void set_active_element(AnimatedElement& element, const std::string& type = "");
+	AnimatedElement* get_active_element();
+	std::string get_active_element_type();
+	void reset_active_element();
 
 	bool set_hovered_element(AnimatedElement& element);
 	std::string get_hovered_id();

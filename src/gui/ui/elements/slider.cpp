@@ -253,14 +253,14 @@ bool ui::update_slider(const Container& container, AnimatedElement& element) {
 	}
 
 	bool hovered = !tie_hovered && clickable_rect.contains(keys::mouse_pos) && set_hovered_element(element);
-	bool active = active_element == &element;
+	bool active = get_active_element() == &element;
 
 	hover_anim.set_goal(hovered || active ? 1.f : 0.f);
 
 	if (hovered) {
 		set_cursor(SDL_SYSTEM_CURSOR_POINTER);
 		if (keys::is_mouse_down())
-			active_element = &element;
+			set_active_element(element);
 	}
 
 	// Get min/max values
@@ -277,7 +277,7 @@ bool ui::update_slider(const Container& container, AnimatedElement& element) {
 		slider_data.max_value
 	);
 
-	if (active_element == &element && keys::is_mouse_down()) {
+	if (get_active_element() == &element && keys::is_mouse_down()) {
 		float mouse_progress =
 			positions.track_rect.mouse_percent_x(keys::pressing_keys.contains(SDL_Scancode::SDL_SCANCODE_LSHIFT));
 
@@ -303,8 +303,8 @@ bool ui::update_slider(const Container& container, AnimatedElement& element) {
 
 		return true;
 	}
-	else if (active_element == &element) {
-		active_element = nullptr;
+	else if (get_active_element() == &element) {
+		reset_active_element();
 	}
 
 	return false;

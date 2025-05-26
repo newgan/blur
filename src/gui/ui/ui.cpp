@@ -8,6 +8,9 @@ const int SCROLLBAR_WIDTH = 3;
 namespace {
 	SDL_SystemCursor desired_cursor = SDL_SYSTEM_CURSOR_DEFAULT;
 
+	ui::AnimatedElement* active_element = nullptr;
+	std::string active_element_type;
+
 	ui::AnimatedElement* hovered_element_internal = nullptr;
 	std::string hovered_id;
 
@@ -238,6 +241,24 @@ void ui::center_elements_in_container(Container& container, bool horizontal, boo
 
 void ui::set_cursor(SDL_SystemCursor cursor) {
 	desired_cursor = cursor;
+}
+
+void ui::set_active_element(AnimatedElement& element, const std::string& type) {
+	active_element = &element;
+	active_element_type = type;
+}
+
+ui::AnimatedElement* ui::get_active_element() {
+	return active_element;
+}
+
+std::string ui::get_active_element_type() {
+	return active_element_type;
+}
+
+void ui::reset_active_element() {
+	active_element = nullptr;
+	active_element_type = "";
 }
 
 bool ui::set_hovered_element(AnimatedElement& element) {
