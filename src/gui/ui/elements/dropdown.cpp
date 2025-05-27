@@ -82,7 +82,6 @@ namespace {
 		}
 		return 0.0f;
 	}
-
 }
 
 void ui::render_dropdown(const Container& container, const AnimatedElement& element) {
@@ -152,10 +151,12 @@ void ui::render_dropdown(const Container& container, const AnimatedElement& elem
 		gfx::Color option_color(7, 7, 7, anim * 255);
 		gfx::Color option_border_color(border_shade, border_shade, border_shade, anim * 255);
 
-		render::rounded_rect_filled(pos.options_rect, option_color, DROPDOWN_ROUNDING);
-		render::rounded_rect_stroke(pos.options_rect, option_border_color, DROPDOWN_ROUNDING);
+		render::late_draw_calls.emplace_back([pos, option_color, option_border_color] {
+			render::rounded_rect_filled(pos.options_rect, option_color, DROPDOWN_ROUNDING);
+			render::rounded_rect_stroke(pos.options_rect, option_border_color, DROPDOWN_ROUNDING);
 
-		render::push_clip_rect(pos.options_rect);
+			render::push_clip_rect(pos.options_rect);
+		});
 
 		// Render options
 		gfx::Point option_text_pos = pos.options_rect.origin();
@@ -170,18 +171,23 @@ void ui::render_dropdown(const Container& container, const AnimatedElement& elem
 			gfx::Color option_text_colour =
 				selected ? selected_text_color : gfx::Color::lerp(text_color, hover_text_color, option_hover_anim);
 
-			render::text(option_text_pos, option_text_colour, option, *dropdown_data.font);
+			render::late_draw_calls.emplace_back(
+				[option_text_pos, option_text_colour, option, font = *dropdown_data.font] {
+					render::text(option_text_pos, option_text_colour, option, font);
+				}
+			);
 
 			option_text_pos.y += pos.option_line_height;
 		}
 
-		render::pop_clip_rect();
+		render::late_draw_calls.emplace_back([] {
+			render::pop_clip_rect();
+		});
 	}
 }
 
-// NOLINTBEGIN(readability-function-cognitive-complexity)
 bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
-	const auto& dropdown_data = std::get<DropdownElementData>(element.element->data);
+	auto& dropdown_data = std::get<DropdownElementData>(element.element->data);
 
 	auto& hover_anim = element.animations.at(hasher("hover"));
 	auto& expand_anim = element.animations.at(hasher("expand"));
@@ -191,15 +197,15 @@ bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
 	bool hovered = pos.dropdown_rect.contains(keys::mouse_pos) && set_hovered_element(element);
 	hover_anim.set_goal(hovered ? 1.f : 0.f);
 
-	bool active = active_element == &element;
+	bool active = get_active_element() == &element;
 
 	auto toggle_active = [&] {
 		if (active) {
-			active_element = nullptr;
+			reset_active_element();
 			active = false;
 		}
 		else {
-			active_element = &element;
+			set_active_element(element);
 			active = true;
 		}
 
@@ -220,6 +226,8 @@ bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
 		}
 	}
 
+	dropdown_data.hovered_option = "";
+
 	if (!activated && active) {
 		if (pos.options_rect.contains(keys::mouse_pos)) {
 			set_cursor(SDL_SYSTEM_CURSOR_POINTER);
@@ -234,6 +242,9 @@ bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
 					hovered_option_index = -1;
 				}
 			}
+
+			if (hovered_option_index != -1)
+				dropdown_data.hovered_option = dropdown_data.options[hovered_option_index];
 
 			// Update all option animations
 			for (size_t i = 0; i < dropdown_data.options.size(); i++) {
@@ -295,9 +306,7 @@ bool ui::update_dropdown(const Container& container, AnimatedElement& element) {
 	return activated;
 }
 
-// NOLINTEND(readability-function-cognitive-complexity)
-
-ui::Element& ui::add_dropdown(
+ui::AnimatedElement* ui::add_dropdown(
 	const std::string& id,
 	Container& container,
 	const std::string& label,
@@ -326,12 +335,13 @@ ui::Element& ui::add_dropdown(
 			.selected = &selected,
 			.font = &font,
 			.on_change = std::move(on_change),
+			.hovered_option = "",
 		},
 		render_dropdown,
 		update_dropdown
 	);
 
-	return *add_element(
+	return add_element(
 		container,
 		std::move(element),
 		container.element_gap,

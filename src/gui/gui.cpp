@@ -78,7 +78,8 @@ int gui::run() {
 					to_render |= ui::update_container_input(renderer::main_container);
 					to_render |= ui::update_container_input(renderer::config_container);
 					to_render |= ui::update_container_input(renderer::option_information_container);
-					to_render |= ui::update_container_input(renderer::config_preview_container);
+					to_render |= ui::update_container_input(renderer::config_preview_header_container);
+					to_render |= ui::update_container_input(renderer::config_preview_content_container);
 
 					ui::on_update_input_end();
 				}
@@ -95,7 +96,7 @@ int gui::run() {
 #endif
 
 			// vsync
-			if (rendered || to_render) {
+			if (rendered) { // || to_render) { // im 99% sure this isn't needed
 				to_render = false;
 				rendered_last = true;
 
@@ -104,16 +105,17 @@ int gui::run() {
 				)
 				                      .count();
 
-				double time_to_sleep = sdl::vsync_frame_time - elapsed_ms;
+				double time_to_sleep = sdl::vsync_frame_time_ms - elapsed_ms;
 				if (time_to_sleep > 0.f)
 					SDL_Delay(time_to_sleep);
 			}
 			else {
 				rendered_last = false;
-				SDL_Delay(sdl::TICKRATE);
+				SDL_Delay(sdl::TICKRATE_MS);
 			}
 		}
 	}
+
 	catch (const std::exception& e) {
 		u::log_error("Error: {}", e.what());
 		sdl::cleanup();

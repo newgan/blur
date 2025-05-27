@@ -27,7 +27,7 @@ void ui::render_image(const Container& container, const AnimatedElement& element
 	);
 }
 
-std::optional<ui::Element*> ui::add_image(
+std::optional<ui::AnimatedElement*> ui::add_image(
 	const std::string& id,
 	Container& container,
 	const std::filesystem::path& image_path,

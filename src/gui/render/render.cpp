@@ -129,7 +129,12 @@ void render::ImGuiWrap::begin(SDL_Window* window) {
 
 void render::ImGuiWrap::end(SDL_Window* window) { // NOLINT(readability-convert-member-functions-to-static)
 	                                              // ^ yeah, but this is nicer to call
-	ImVec4 clear_colour = ImVec4(0.f, 0.f, 0.f, 1.f);
+	static constexpr ImVec4 clear_colour = ImVec4(0.f, 0.f, 0.f, 1.f);
+
+	for (auto& call : late_draw_calls) {
+		call();
+	}
+	late_draw_calls.clear();
 
 	ImGui::Render();
 

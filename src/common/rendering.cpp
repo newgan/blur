@@ -141,7 +141,7 @@ bool Render::remove_temp_path() {
 	return Blur::remove_temp_path(m_temp_path);
 }
 
-// NOLINTBEGIN(readability-function-cognitive-complexity) todo: refactor
+// todo: refactor
 RenderCommandsResult Render::build_render_commands() {
 	RenderCommands commands;
 
@@ -291,8 +291,6 @@ RenderCommandsResult Render::build_render_commands() {
 		.commands = commands,
 	};
 }
-
-// NOLINTEND(readability-function-cognitive-complexity)
 
 void Render::update_progress(int current_frame, int total_frames) {
 	m_status.current_frame = current_frame;

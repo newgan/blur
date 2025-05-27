@@ -1,6 +1,5 @@
 #include "../ui.h"
 #include "../../render/render.h"
-#include "../../renderer.h"
 #include "../keys.h"
 
 const gfx::Size NOTIFICATION_TEXT_PADDING = { 10, 7 };
@@ -137,7 +136,7 @@ bool ui::update_notification(const Container& container, AnimatedElement& elemen
 	return false;
 }
 
-ui::Element& ui::add_notification(
+ui::AnimatedElement* ui::add_notification(
 	const std::string& id,
 	Container& container,
 	const std::string& text,
@@ -178,7 +177,7 @@ ui::Element& ui::add_notification(
 		update_notification
 	);
 
-	return *add_element(
+	return add_element(
 		container,
 		std::move(element),
 		container.element_gap,

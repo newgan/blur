@@ -42,6 +42,7 @@ namespace fonts {
 namespace render {
 	inline float frametime;
 	inline gfx::Size window_size;
+	inline std::vector<std::function<void()>> late_draw_calls;
 
 	// Texture wrapper class for OpenGL textures
 	class Texture {

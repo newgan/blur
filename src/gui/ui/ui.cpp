@@ -8,6 +8,9 @@ const int SCROLLBAR_WIDTH = 3;
 namespace {
 	SDL_SystemCursor desired_cursor = SDL_SYSTEM_CURSOR_DEFAULT;
 
+	ui::AnimatedElement* active_element = nullptr;
+	std::string active_element_type;
+
 	ui::AnimatedElement* hovered_element_internal = nullptr;
 	std::string hovered_id;
 
@@ -80,7 +83,7 @@ void ui::reset_container(
 	container.last_margin_bottom = 0;
 }
 
-ui::Element* ui::add_element(
+ui::AnimatedElement* ui::add_element(
 	Container& container,
 	Element&& _element,
 	int margin_bottom,
@@ -101,18 +104,18 @@ ui::Element* ui::add_element(
 		}
 	}
 
-	auto* element = add_element(container, std::move(_element), animations);
+	auto* animated_element = add_element(container, std::move(_element), animations);
 
 	// reset x in case it was same line
 	container.current_position.x = container.get_usable_rect().x;
 
-	container.current_position.y += element->rect.h + margin_bottom;
+	container.current_position.y += animated_element->element->rect.h + margin_bottom;
 	container.last_margin_bottom = margin_bottom;
 
-	return element;
+	return animated_element;
 }
 
-ui::Element* ui::add_element(
+ui::AnimatedElement* ui::add_element(
 	Container& container, Element&& _element, const std::unordered_map<size_t, AnimationState>& animations
 ) {
 	auto& animated_element = container.elements[_element.id];
@@ -120,20 +123,22 @@ ui::Element* ui::add_element(
 	_element.orig_rect = _element.rect;
 
 	if (animated_element.element) {
-		if (animated_element.element->data != _element.data) {
+		if (animated_element.element->update(_element)) {
 			container.updated = true;
+		}
+		else {
+			animated_element.element->rect = _element.rect;
 		}
 	}
 	else {
 		u::log("first added {}", _element.id);
+		animated_element.element = std::make_unique<ui::Element>(std::move(_element));
 		animated_element.animations = animations;
 	}
 
-	animated_element.element = std::make_unique<ui::Element>(std::move(_element));
-
 	container.current_element_ids.push_back(animated_element.element->id);
 
-	return animated_element.element.get();
+	return &animated_element;
 }
 
 void ui::add_spacing(Container& container, int spacing) {
@@ -151,7 +156,7 @@ void ui::set_next_same_line(Container& container) {
 	container.current_position.y = last_element->rect.y;
 }
 
-// NOLINTBEGIN(readability-function-cognitive-complexity) todo: refactor
+// todo: refactor
 void ui::center_elements_in_container(Container& container, bool horizontal, bool vertical) {
 	int total_height = get_content_height(container);
 
@@ -225,29 +230,33 @@ void ui::center_elements_in_container(Container& container, bool horizontal, boo
 	}
 
 	// update original rects for scrolling
-	for (auto& [id, element] : container.elements)
-		element.element->orig_rect = element.element->rect;
+	for (auto& [y_pos, group_elements] : elements_by_y) {
+		for (auto& element : group_elements) {
+			element->orig_rect = element->rect;
+		}
+	}
 }
-
-// NOLINTEND(readability-function-cognitive-complexity)
 
 void ui::set_cursor(SDL_SystemCursor cursor) {
 	desired_cursor = cursor;
 }
 
-std::vector<decltype(ui::Container::elements)::iterator> ui::get_sorted_container_elements(Container& container) {
-	std::vector<decltype(container.elements)::iterator> sorted_elements;
-	sorted_elements.reserve(container.elements.size());
+void ui::set_active_element(AnimatedElement& element, const std::string& type) {
+	active_element = &element;
+	active_element_type = type;
+}
 
-	for (auto it = container.elements.begin(); it != container.elements.end(); ++it) {
-		sorted_elements.push_back(it);
-	}
+ui::AnimatedElement* ui::get_active_element() {
+	return active_element;
+}
 
-	std::ranges::stable_sort(sorted_elements, [](const auto& lhs, const auto& rhs) {
-		return lhs->second.z_index > rhs->second.z_index;
-	});
+std::string ui::get_active_element_type() {
+	return active_element_type;
+}
 
-	return sorted_elements;
+void ui::reset_active_element() {
+	active_element = nullptr;
+	active_element_type = "";
 }
 
 bool ui::set_hovered_element(AnimatedElement& element) {
@@ -265,13 +274,8 @@ std::string ui::get_hovered_id() {
 bool ui::update_container_input(Container& container) {
 	bool updated = false;
 
-	auto sorted_elements = get_sorted_container_elements(container);
-
 	// update all elements
-	for (auto& it : sorted_elements) {
-		const auto& id = it->first;
-		auto& element = it->second;
-
+	for (auto& [id, element] : container.elements) {
 		bool stale = std::ranges::find(container.current_element_ids, id) == container.current_element_ids.end();
 		if (stale)
 			continue;
@@ -330,41 +334,51 @@ void ui::on_update_input_end() {
 bool ui::update_container_frame(Container& container, float delta_time) {
 	bool need_to_render_animation_update = false;
 
-	// animate scroll
-	float last_scroll_y = container.scroll_y;
+	bool container_stale = std::ranges::all_of(container.elements, [&](const auto& pair) {
+		const auto& element = pair.second;
+		return std::ranges::find(container.current_element_ids, element.element->id) ==
+		       container.current_element_ids.end();
+	});
 
-	const float scroll_speed_reset_speed = 17.f;
-	const float scroll_speed_overscroll_reset_speed = 25.f;
-	const float scroll_overscroll_reset_speed = 10.f;
-	const float scroll_reset_speed = 10.f;
+	if (!container_stale) {
+		// animate scroll
+		float last_scroll_y = container.scroll_y;
 
-	if (can_scroll(container)) {
-		// clamp scroll
-		int max_scroll = get_max_scroll(container);
+		const float scroll_speed_reset_speed = 17.f;
+		const float scroll_speed_overscroll_reset_speed = 25.f;
+		const float scroll_overscroll_reset_speed = 10.f;
+		const float scroll_reset_speed = 10.f;
 
-		if (container.scroll_y < 0) {
-			container.scroll_speed_y =
-				u::lerp(container.scroll_speed_y, 0.f, scroll_speed_overscroll_reset_speed * delta_time);
-			container.scroll_y = u::lerp(container.scroll_y, 0.f, scroll_overscroll_reset_speed * delta_time);
+		if (can_scroll(container)) {
+			// clamp scroll
+			int max_scroll = get_max_scroll(container);
+
+			if (container.scroll_y < 0) {
+				container.scroll_speed_y =
+					u::lerp(container.scroll_speed_y, 0.f, scroll_speed_overscroll_reset_speed * delta_time);
+				container.scroll_y = u::lerp(container.scroll_y, 0.f, scroll_overscroll_reset_speed * delta_time);
+			}
+			else if (container.scroll_y > max_scroll) {
+				container.scroll_speed_y =
+					u::lerp(container.scroll_speed_y, 0.f, scroll_speed_overscroll_reset_speed * delta_time);
+				container.scroll_y =
+					u::lerp(container.scroll_y, max_scroll, scroll_overscroll_reset_speed * delta_time);
+			}
+
+			if (container.scroll_speed_y != 0.f) {
+				container.scroll_y += container.scroll_speed_y * delta_time;
+				container.scroll_speed_y =
+					u::lerp(container.scroll_speed_y, 0.f, scroll_speed_reset_speed * delta_time);
+			}
 		}
-		else if (container.scroll_y > max_scroll) {
-			container.scroll_speed_y =
-				u::lerp(container.scroll_speed_y, 0.f, scroll_speed_overscroll_reset_speed * delta_time);
-			container.scroll_y = u::lerp(container.scroll_y, max_scroll, scroll_overscroll_reset_speed * delta_time);
+		else if (container.scroll_y != 0.f) {
+			// no longer scrollable but scroll set, reset it
+			container.scroll_y = u::lerp(container.scroll_y, 0.f, scroll_reset_speed * delta_time);
 		}
 
-		if (container.scroll_speed_y != 0.f) {
-			container.scroll_y += container.scroll_speed_y * delta_time;
-			container.scroll_speed_y = u::lerp(container.scroll_speed_y, 0.f, scroll_speed_reset_speed * delta_time);
-		}
+		if (container.scroll_y != last_scroll_y)
+			need_to_render_animation_update |= true;
 	}
-	else if (container.scroll_y != 0.f) {
-		// no longer scrollable but scroll set, reset it
-		container.scroll_y = u::lerp(container.scroll_y, 0.f, scroll_reset_speed * delta_time);
-	}
-
-	if (container.scroll_y != last_scroll_y)
-		need_to_render_animation_update |= true;
 
 	// update elements
 	for (auto it = container.elements.begin(); it != container.elements.end();) {
@@ -406,12 +420,7 @@ void ui::render_container(Container& container) {
 
 	// render::push_clip_rect(container.rect); todo: fade or some shit but straight clipping looks poo
 
-	auto sorted_elements = get_sorted_container_elements(container);
-
-	for (auto& it : std::ranges::reverse_view(sorted_elements)) {
-		const auto& id = it->first;
-		auto& element = it->second;
-
+	for (auto& [id, element] : container.elements) {
 		element.element->render_fn(container, element);
 	}
 

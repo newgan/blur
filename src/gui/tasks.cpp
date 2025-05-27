@@ -1,9 +1,14 @@
 #include "tasks.h"
 
 #include "common/rendering.h"
+
 #include "gui.h"
 #include "gui/renderer.h"
 #include "gui/ui/ui.h"
+
+#include "components/main.h"
+#include "components/notifications.h"
+#include "components/configs/configs.h"
 
 void tasks::run(const std::vector<std::string>& arguments) {
 	auto res = blur.initialise(false, true);
@@ -20,7 +25,7 @@ void tasks::run(const std::vector<std::string>& arguments) {
 				u::log("current render is finished, copying it so its final state can be displayed once by gui");
 
 				// its about to be deleted, store a copy to be rendered at least once
-				gui::renderer::current_render_copy = current_render;
+				gui::components::main::current_render_copy = current_render;
 				gui::to_render = true;
 			}
 		}
@@ -40,37 +45,31 @@ void tasks::run(const std::vector<std::string>& arguments) {
 		static const auto update_notification_duration = std::chrono::duration<float>(15.f);
 
 #if defined(WIN32) || defined(__APPLE__)
-		gui::renderer::add_notification(
+		gui::components::notifications::add(
 			std::format("There's a newer version ({}) available! Click to run the installer.", update_res.latest_tag),
 			ui::NotificationType::INFO,
 			[&](const std::string& id) {
-				// std::lock_guard<std::mutex> lock(gui::renderer::notification_mutex);
-				for (auto& n : gui::renderer::notifications) {
-					if (n.id == id) {
-						n.closing = true;
-						break;
-					}
-				}
+				gui::components::notifications::close(id);
 
 				const static std::string update_notification_id = "update progress notification";
 
-				gui::renderer::add_notification(
+				gui::components::notifications::add(
 					update_notification_id,
 					"Downloading update...",
 					ui::NotificationType::INFO,
 					{},
-					std::chrono::duration<float>(gui::renderer::NOTIFICATION_LENGTH),
+					std::chrono::duration<float>(gui::components::notifications::NOTIFICATION_LENGTH),
 					false
 				);
 
 				std::thread([update_res] {
 					Blur::update(update_res.latest_tag, [](const std::string& text, bool done) {
-						gui::renderer::add_notification(
+						gui::components::notifications::add(
 							update_notification_id,
 							text,
 							ui::NotificationType::INFO,
 							{},
-							std::chrono::duration<float>(gui::renderer::NOTIFICATION_LENGTH),
+							std::chrono::duration<float>(gui::components::notifications::NOTIFICATION_LENGTH),
 							done
 						);
 					});
@@ -81,7 +80,7 @@ void tasks::run(const std::vector<std::string>& arguments) {
 			update_notification_duration
 		);
 #else
-		gui::renderer::add_notification(
+		gui::components::notifications::add(
 			std::format(
 				"There's a newer version ({}) available! Click to go to the download page.", update_res.latest_tag
 			),
@@ -117,7 +116,7 @@ void tasks::add_files(const std::vector<std::wstring>& path_strs) {
 
 		auto video_info = u::get_video_info(path);
 		if (!video_info.has_video_stream) {
-			gui::renderer::add_notification(
+			gui::components::notifications::add(
 				std::format("File is not a valid video or is unreadable: {}", u::tostring(path.wstring())),
 				ui::NotificationType::NOTIF_ERROR
 			);
@@ -129,7 +128,7 @@ void tasks::add_files(const std::vector<std::wstring>& path_strs) {
 		Render render(path, video_info);
 
 		if (gui::renderer::screen != gui::renderer::Screens::MAIN) {
-			gui::renderer::add_notification(
+			gui::components::notifications::add(
 				std::format("Queued '{}' for rendering", u::tostring(render.get_video_name())),
 				ui::NotificationType::INFO
 			);
@@ -149,7 +148,7 @@ void tasks::add_sample_video(const std::wstring& path_str) {
 	// todo: reencode?
 	std::filesystem::copy(path, sample_video_path);
 
-	gui::renderer::add_notification("Added sample video", ui::NotificationType::SUCCESS);
+	gui::components::notifications::add("Added sample video", ui::NotificationType::SUCCESS);
 
-	gui::renderer::just_added_sample_video = true;
+	gui::components::configs::just_added_sample_video = true;
 }

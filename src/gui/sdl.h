@@ -5,10 +5,10 @@ namespace sdl {
 	inline SDL_GLContext gl_context = nullptr;
 
 	inline const float VSYNC_EXTRA_FPS = 50;
-	inline const float MIN_DELTA_TIME = 1.f / 10;
+	inline const float MIN_FPS = 10.f;
 	inline const float DEFAULT_DELTA_TIME = 1.f / 60;
-	inline double vsync_frame_time = DEFAULT_DELTA_TIME * 1000.f;
-	inline const float TICKRATE = 1.f / 20 * 1000.f;
+	inline double vsync_frame_time_ms = DEFAULT_DELTA_TIME * 1000.f;
+	inline const float TICKRATE_MS = 1.f / 20 * 1000.f;
 
 	void initialise();
 	void cleanup();

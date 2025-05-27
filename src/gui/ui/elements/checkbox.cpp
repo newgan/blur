@@ -74,7 +74,7 @@ bool ui::update_checkbox(const Container& container, AnimatedElement& element) {
 	return false;
 }
 
-ui::Element& ui::add_checkbox(
+ui::AnimatedElement* ui::add_checkbox(
 	const std::string& id,
 	Container& container,
 	const std::string& label,
@@ -98,7 +98,7 @@ ui::Element& ui::add_checkbox(
 		update_checkbox
 	);
 
-	return *add_element(
+	return add_element(
 		container,
 		std::move(element),
 		container.element_gap,

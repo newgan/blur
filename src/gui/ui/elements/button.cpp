@@ -3,14 +3,15 @@
 
 #include "../keys.h"
 
-const float BUTTON_ROUNDING = 7.f;
+const gfx::Size BUTTON_PADDING = { 14, 9 };
+constexpr float BUTTON_ROUNDING = 7.f;
 
 void ui::render_button(const Container& container, const AnimatedElement& element) {
 	const auto& button_data = std::get<ButtonElementData>(element.element->data);
 	float anim = element.animations.at(hasher("main")).current;
 	float hover_anim = element.animations.at(hasher("hover")).current;
 
-	int shade = 20 + (20 * hover_anim);
+	int shade = 17 + (20 * hover_anim);
 	gfx::Color adjusted_color = gfx::Color(shade, shade, shade, anim * 255);
 	gfx::Color adjusted_text_color = gfx::Color(255, 255, 255, anim * 255);
 
@@ -53,21 +54,24 @@ bool ui::update_button(const Container& container, AnimatedElement& element) {
 	return false;
 }
 
-ui::Element& ui::add_button(
+ui::AnimatedElement* ui::add_button(
 	const std::string& id,
 	Container& container,
 	const std::string& text,
 	const render::Font& font,
 	std::optional<std::function<void()>> on_press
 ) {
-	const gfx::Size button_padding(40, 17);
-
 	gfx::Size text_size = font.calc_size(text);
+
+	gfx::Rect rect(
+		container.current_position,
+		gfx::Size(text_size.w + (BUTTON_PADDING.w * 2), font.height() + (BUTTON_PADDING.h * 2))
+	);
 
 	Element element(
 		id,
 		ElementType::BUTTON,
-		gfx::Rect(container.current_position, text_size + button_padding),
+		rect,
 		ButtonElementData{
 			.text = text,
 			.font = &font,
@@ -77,7 +81,7 @@ ui::Element& ui::add_button(
 		update_button
 	);
 
-	return *add_element(
+	return add_element(
 		container,
 		std::move(element),
 		container.element_gap,

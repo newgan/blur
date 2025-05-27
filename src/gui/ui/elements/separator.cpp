@@ -46,7 +46,7 @@ void ui::render_separator(const Container& container, const AnimatedElement& ele
 	}
 }
 
-ui::Element& ui::add_separator(const std::string& id, Container& container, SeparatorStyle style) {
+ui::AnimatedElement* ui::add_separator(const std::string& id, Container& container, SeparatorStyle style) {
 	Element element(
 		id,
 		ElementType::SEPARATOR,
@@ -57,5 +57,5 @@ ui::Element& ui::add_separator(const std::string& id, Container& container, Sepa
 		render_separator
 	);
 
-	return *add_element(container, std::move(element), container.element_gap);
+	return add_element(container, std::move(element), container.element_gap);
 }

@@ -33,7 +33,7 @@ struct BlurSettings {
 	float blur_gamma = 1.f;
 
 	bool interpolate = true;
-	std::string interpolated_fps = "5x";
+	std::string interpolated_fps = "1200";
 	std::string interpolation_method = "svp";
 
 	bool pre_interpolate = false;

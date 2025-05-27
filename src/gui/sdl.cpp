@@ -12,6 +12,9 @@ namespace {
 void sdl::initialise() {
 	SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1"); // idk mpv example says to
 	// SDL_SetHint(SDL_HINT_MAC_SCROLL_MOMENTUM, "1");
+	SDL_SetHint(
+		SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1"
+	); // allows the screen to auto sleep. WHY IS THIS DISABLED BY DEFAULT?
 
 	if (!SDL_Init(SDL_INIT_VIDEO)) {
 		throw std::runtime_error("SDL initialization failed");
@@ -164,7 +167,7 @@ void sdl::update_vsync() {
 		const SDL_DisplayMode* mode = SDL_GetCurrentDisplayMode(display_index);
 		if (mode) {
 			double rate = mode->refresh_rate;
-			vsync_frame_time = float(1.f / (rate + VSYNC_EXTRA_FPS)) * 1000.f;
+			vsync_frame_time_ms = float(1.f / (rate + VSYNC_EXTRA_FPS)) * 1000.f;
 			u::log("switched screen, updated vsync_frame_time. refresh rate: {:.2f} hz", rate);
 		}
 	}
