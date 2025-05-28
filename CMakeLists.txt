@@ -189,12 +189,12 @@ if(APPLE)
     # The VERBATIM flag ensures command arguments are correctly escaped
     VERBATIM)
 elseif(UNIX)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(Systemd IMPORTED_TARGET GLOBAL libsystemd>=239)
-    
-    find_package(sdbus-c++ REQUIRED)
-    
-    target_link_libraries(blur PRIVATE X11 Xext Xrandr SDBusCpp::sdbus-c++)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(Systemd IMPORTED_TARGET GLOBAL libsystemd>=239)
+
+  find_package(sdbus-c++ REQUIRED)
+
+  target_link_libraries(blur PRIVATE X11 Xext Xrandr SDBusCpp::sdbus-c++)
 elseif(WIN32)
   find_package(cppwinrt CONFIG REQUIRED)
 
