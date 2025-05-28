@@ -18,6 +18,8 @@ bool keys::process_event(const SDL_Event& event) {
 		}
 	}
 
+	ui::event_queue.push_back(event);
+
 	switch (event.type) {
 		case SDL_EVENT_WINDOW_MOUSE_LEAVE: {
 			mouse_pos = { -1, -1 };
