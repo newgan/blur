@@ -201,16 +201,16 @@ These options are not visible by default, add them to your config and they will 
 
 ### General list of things you need
 
-If your distro isn't listed below, here's a list of the things you'll need to install. Most of the Vapoursynth plugins don't provide Linux builds annoyingly, so you'll have to compile them yourself if they aren't available via package repos. They all provide instructions on how to do this though.
+If your distro isn't listed below, here's a list of the things you'll need to install.
 
 - VapourSynth
 - FFmpeg
-- VapourSynth plugins
+- VapourSynth plugins (install to your system vapoursynth plugin path or [your blur binary directory]/vapoursynth-plugins)
   - [SVPflow](https://web.archive.org/web/20190322064557/http://www.svp-team.com/files/gpl/svpflow-4.2.0.142.zip)
-  - [BestSource](https://github.com/vapoursynth/bestsource)
-  - [MVTools](https://github.com/dubhater/vapoursynth-mvtools)
-  - [Akarin](https://github.com/AkarinVS/vapoursynth-plugin) (or this [fork which supports newer LLVM versions](https://github.com/Jaded-Encoding-Thaumaturgy/akarin-vapoursynth-plugin))
-  - [RIFE-ncnn-Vulkan](https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan)
+  - [BestSource](https://github.com/vapoursynth/bestsource) ([my automated build](https://github.com/f0e/blur-plugin-builds/releases/latest))
+  - [MVTools](https://github.com/dubhater/vapoursynth-mvtools) ([my automated build](https://github.com/f0e/blur-plugin-builds/releases/latest))
+  - [Akarin](https://github.com/AkarinVS/vapoursynth-plugin) (or this [fork which supports newer LLVM versions](https://github.com/Jaded-Encoding-Thaumaturgy/akarin-vapoursynth-plugin)) ([my automated build](https://github.com/f0e/blur-plugin-builds/releases/latest))
+  - [RIFE-ncnn-Vulkan](https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/releases/tag/latest)
   - [Adjust](https://github.com/f0e/Vapoursynth-adjust/releases/latest)
 
 ### Arch required packages
