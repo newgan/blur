@@ -1,5 +1,9 @@
 ﻿#include "rendering_frame.h"
 
+#ifdef __linux__
+#	include "config_app.h"
+#endif
+
 RenderCommandsResult FrameRender::build_render_commands(
 	const std::filesystem::path& input_path, const std::filesystem::path& output_path, const BlurSettings& settings
 ) {
@@ -15,6 +19,10 @@ RenderCommandsResult FrameRender::build_render_commands(
 			.error_message = settings_json.error_message,
 		};
 	}
+
+#if defined(__linux__)
+	bool vapoursynth_plugins_bundled = std::filesystem::exists(blur.resources_path / "vapoursynth-plugins");
+#endif
 
 	RenderCommands commands;
 
@@ -33,6 +41,10 @@ RenderCommandsResult FrameRender::build_render_commands(
 #if defined(_WIN32)
 		                L"-a",
 		                L"enable_lsmash=true",
+#endif
+#if defined(__linux__)
+		                L"-a",
+		                std::format(L"linux_bundled={}", vapoursynth_plugins_bundled ? L"true" : L"false"),
 #endif
 		                blur_script_path,
 		                L"-" };
@@ -89,6 +101,14 @@ FrameRender::DoRenderResult FrameRender::do_render(RenderCommands render_command
 		if (blur.used_installer) {
 			env["PYTHONHOME"] = (blur.resources_path / "python").string();
 			env["PYTHONPATH"] = (blur.resources_path / "python/lib/python3.12/site-packages").string();
+		}
+#endif
+
+#if defined(__linux__)
+		auto app_config = config_app::get_app_config();
+		if (!app_config.vapoursynth_lib_path.empty()) {
+			env["LD_LIBRARY_PATH"] = app_config.vapoursynth_lib_path;
+			env["PYTHONPATH"] = app_config.vapoursynth_lib_path + "/python3.12/site-packages";
 		}
 #endif
 

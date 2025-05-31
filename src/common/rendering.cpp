@@ -2,6 +2,10 @@
 #include "config_presets.h"
 #include "utils.h"
 
+#ifdef __linux__
+#	include "config_app.h"
+#endif
+
 bool Rendering::render_next_video() {
 	if (m_queue.empty())
 		return false;
@@ -158,6 +162,10 @@ RenderCommandsResult Render::build_render_commands() {
 		};
 	}
 
+#if defined(__linux__)
+	bool vapoursynth_plugins_bundled = std::filesystem::exists(blur.resources_path / "vapoursynth-plugins");
+#endif
+
 	// Build vspipe command
 	commands.vspipe = { L"-p",
 		                L"-c",
@@ -177,6 +185,10 @@ RenderCommandsResult Render::build_render_commands() {
 #if defined(_WIN32)
 		                L"-a",
 		                L"enable_lsmash=true",
+#endif
+#if defined(__linux__)
+		                L"-a",
+		                std::format(L"linux_bundled={}", vapoursynth_plugins_bundled ? L"true" : L"false"),
 #endif
 		                blur_script_path,
 		                L"-" };
@@ -342,6 +354,14 @@ RenderResult Render::do_render(RenderCommands render_commands) {
 		if (blur.used_installer) {
 			env["PYTHONHOME"] = (blur.resources_path / "python").string();
 			env["PYTHONPATH"] = (blur.resources_path / "python/lib/python3.12/site-packages").string();
+		}
+#endif
+
+#if defined(__linux__)
+		auto app_config = config_app::get_app_config();
+		if (!app_config.vapoursynth_lib_path.empty()) {
+			env["LD_LIBRARY_PATH"] = app_config.vapoursynth_lib_path;
+			env["PYTHONPATH"] = app_config.vapoursynth_lib_path + "/python3.12/site-packages";
 		}
 #endif
 
