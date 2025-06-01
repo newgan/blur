@@ -170,7 +170,7 @@ jobs:
             mv "$gui_source" "$gui_binary"
 
             # copy dependencies
-            cp -r ../../out/ .
+            cp -r ../../ci/out/* .
 
             # note: vapoursynth already copied
 
