@@ -77,6 +77,28 @@ download_library() {
   cd ../..
 }
 
+download_model_files() {
+  local base_url="$1"
+  local model_name="$2"
+  local file_list=("${@:3}")
+
+  echo "Downloading model: $model_name"
+  local model_dir="$out_dir/models/$model_name"
+
+  mkdir -p "$model_dir"
+  echo "Created directory: $model_dir"
+
+  for file in "${file_list[@]}"; do
+    local file_url="$base_url/$file"
+    local output_path="$model_dir/$file"
+
+    echo "Downloading $file_url to $output_path"
+    wget -q "$file_url" -O "$output_path"
+  done
+
+  echo "Model $model_name download completed"
+}
+
 ## svpflow
 download_archive \
   "https://web.archive.org/web/20190322064557/http://www.svp-team.com/files/gpl/svpflow-4.2.0.142.zip" \
@@ -120,10 +142,9 @@ download_library \
   "vapoursynth-plugins"
 
 # rife model
-mkdir -p models/rife-v4.26_ensembleFalse
-cd models/rife-v4.26_ensembleFalse
-wget -q https://raw.githubusercontent.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/master/models/rife-v4.26_ensembleFalse/flownet.bin
-wget -q https://raw.githubusercontent.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/master/models/rife-v4.26_ensembleFalse/flownet.param
-cd ../../
+download_model_files \
+  "https://raw.githubusercontent.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/a2579e656dac7909a66e7da84578a2f80ccba41c/models/rife-v4.26_ensembleFalse" \
+  "rife-v4.26_ensembleFalse" \
+  "flownet.bin" "flownet.param"
 
 echo "done"
