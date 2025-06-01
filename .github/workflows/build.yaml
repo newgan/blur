@@ -82,12 +82,11 @@ jobs:
           wget -q https://raw.githubusercontent.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/master/models/rife-v4.26_ensembleFalse/flownet.param
           cd ../../
 
-      - name: Install LLVM and Clang
-        if: runner.os != 'Windows' && runner.os != 'Linux' # Skip on Windows and Linux
-        uses: KyleMayes/install-llvm-action@v2
-        with:
-          env: true
-          version: 17
+      - name: Remove old LLVM (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew uninstall llvm@12
+          brew install llvm
 
       - name: Set up vcpkg
         shell: bash
