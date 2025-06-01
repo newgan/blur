@@ -89,10 +89,12 @@ jobs:
           env: true
           version: 17
 
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: "cd124b84feb0c02a24a2d90981e8358fdee0e077"
+      - name: Set up vcpkg
+        shell: bash
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          ./bootstrap-vcpkg.sh
 
       - name: Determine CMake Preset
         id: select-preset
