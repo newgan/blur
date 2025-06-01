@@ -96,6 +96,18 @@ jobs:
           cd vcpkg
           ./bootstrap-vcpkg.sh
 
+      - name: Cache vcpkg packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            vcpkg_installed/
+            vcpkg/downloads/
+            vcpkg/packages/
+          key: vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ matrix.build-type }}-${{ steps.vcpkg-commit.outputs.hash }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ matrix.build-type }}-${{ steps.vcpkg-commit.outputs.hash }}-
+            vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ matrix.build-type }}-
+
       - name: Determine CMake Preset
         id: select-preset
         run: |
