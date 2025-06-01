@@ -155,7 +155,7 @@ download_library \
   "vapoursynth-plugins"
 
 download_library \
-  "https://github.com/f0e/Vapoursynth-adjust/releases/latest/libadjust.dylib" \
+  "https://github.com/f0e/Vapoursynth-adjust/releases/latest/download/libadjust.dylib" \
   "libadjust.dylib" \
   "vapoursynth-plugins"
 
