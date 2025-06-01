@@ -210,7 +210,7 @@ If your distro isn't listed below, here's a list of the things you'll need to in
   - [BestSource](https://github.com/vapoursynth/bestsource) ([my automated build](https://github.com/f0e/blur-plugin-builds/releases/latest))
   - [MVTools](https://github.com/dubhater/vapoursynth-mvtools) ([my automated build](https://github.com/f0e/blur-plugin-builds/releases/latest))
   - [Akarin](https://github.com/AkarinVS/vapoursynth-plugin) (or this [fork which supports newer LLVM versions](https://github.com/Jaded-Encoding-Thaumaturgy/akarin-vapoursynth-plugin)) ([my automated build](https://github.com/f0e/blur-plugin-builds/releases/latest))
-  - [RIFE-ncnn-Vulkan](https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/releases/tag/latest)
+  - [RIFE-ncnn-Vulkan](https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/releases/latest)
   - [Adjust](https://github.com/f0e/Vapoursynth-adjust/releases/latest)
 
 ### Arch required packages
