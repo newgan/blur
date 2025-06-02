@@ -23,12 +23,7 @@ public:
 	std::filesystem::path ffprobe_path;
 	std::filesystem::path vspipe_path;
 
-	struct InitialisationResponse {
-		bool success;
-		std::string error_message;
-	};
-
-	InitialisationResponse initialise(bool _verbose, bool _using_preview);
+	tl::expected<void, std::string> initialise(bool _verbose, bool _using_preview);
 
 	void cleanup() const;
 
@@ -37,7 +32,7 @@ public:
 	[[nodiscard]] std::optional<std::filesystem::path> create_temp_path(const std::string& folder_name) const;
 	static bool remove_temp_path(const std::filesystem::path& temp_path);
 
-	static updates::UpdateCheckRes check_updates();
+	static tl::expected<updates::UpdateCheckRes, std::string> check_updates();
 	static void update(
 		const std::string& tag,
 		const std::optional<std::function<void(const std::string& text, bool done)>>& progress_callback = {}

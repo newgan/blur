@@ -111,7 +111,7 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 	output << "blur amount tied to fps: " << (current_settings.blur_amount_tied_to_fps ? "true" : "false") << "\n";
 }
 
-config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config, bool fix) {
+tl::expected<void, std::string> config_blur::validate(BlurSettings& config, bool fix) {
 	std::set<std::string> errors;
 
 	if (!u::contains(SVP_INTERPOLATION_PRESETS, config.advanced.svp_interpolation_preset)) {
@@ -141,10 +141,10 @@ config_blur::ConfigValidationResponse config_blur::validate(BlurSettings& config
 			config.advanced.interpolation_blocksize = DEFAULT_CONFIG.advanced.interpolation_blocksize;
 	}
 
-	return ConfigValidationResponse{
-		.success = errors.empty(),
-		.error = u::join(errors, " "),
-	};
+	if (!errors.empty())
+		return tl::unexpected(u::join(errors, " "));
+
+	return {};
 }
 
 BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
@@ -294,7 +294,7 @@ BlurSettings config_blur::get_config(const std::filesystem::path& config_filepat
 	return parse(cfg_path);
 }
 
-BlurSettings::ToJsonResult BlurSettings::to_json() const {
+tl::expected<nlohmann::json, std::string> BlurSettings::to_json() const {
 	nlohmann::json j;
 
 	j["blur"] = this->blur;
@@ -358,23 +358,17 @@ BlurSettings::ToJsonResult BlurSettings::to_json() const {
 	j["interpolation_mask_area"] = this->advanced.interpolation_mask_area;
 
 	auto rife_model_path = get_rife_model_path();
-	if (!rife_model_path.success) {
-		return {
-			.success = false,
-			.error_message = rife_model_path.error_message,
-		};
-	}
-	j["rife_model"] = *rife_model_path.rife_model_path;
+	if (!rife_model_path)
+		return tl::unexpected(rife_model_path.error());
+
+	j["rife_model"] = *rife_model_path;
 
 	j["manual_svp"] = this->advanced.manual_svp;
 	j["super_string"] = this->advanced.super_string;
 	j["vectors_string"] = this->advanced.vectors_string;
 	j["smooth_string"] = this->advanced.smooth_string;
 
-	return {
-		.success = true,
-		.json = j,
-	};
+	return j;
 }
 
 BlurSettings::BlurSettings() {
@@ -405,7 +399,7 @@ void BlurSettings::verify_gpu_encoding() {
 }
 
 // NOLINTBEGIN(readability-convert-member-functions-to-static) other platforms need it
-BlurSettings::GetRifeModelResult BlurSettings::get_rife_model_path() const {
+tl::expected<std::filesystem::path, std::string> BlurSettings::get_rife_model_path() const {
 	// NOLINTEND(readability-convert-member-functions-to-static)
 	std::filesystem::path rife_model_path;
 
@@ -419,16 +413,10 @@ BlurSettings::GetRifeModelResult BlurSettings::get_rife_model_path() const {
 #	endif
 
 	if (!std::filesystem::exists(rife_model_path))
-		return {
-			.success = false,
-			.error_message = std::format("RIFE model '{}' could not be found", this->advanced.rife_model),
-		};
+		return tl::unexpected(std::format("RIFE model '{}' could not be found", this->advanced.rife_model));
 #endif
 
-	return {
-		.success = true,
-		.rife_model_path = rife_model_path,
-	};
+	return rife_model_path;
 }
 
 void BlurSettings::set_fastest_rife_gpu() {
@@ -440,9 +428,10 @@ void BlurSettings::set_fastest_rife_gpu() {
 
 	if (sample_video_exists) {
 		auto rife_model_path = BlurSettings::get_rife_model_path();
-		if (rife_model_path.success) {
+
+		if (rife_model_path) {
 			int fastest_gpu_index =
-				u::get_fastest_rife_gpu_index(blur_copy.rife_gpus, *rife_model_path.rife_model_path, sample_video_path);
+				u::get_fastest_rife_gpu_index(blur_copy.rife_gpus, *rife_model_path, sample_video_path);
 
 			this->rife_gpu_index = fastest_gpu_index;
 			u::log("set rife_gpu_index to the fastest gpu ({})", fastest_gpu_index);

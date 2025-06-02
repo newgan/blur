@@ -28,5 +28,5 @@ namespace gui::renderer {
 
 	bool redraw_window(bool rendered_last, bool force_render);
 
-	void on_render_finished(Render* render, const RenderResult& result);
+	void on_render_finished(Render* render, const tl::expected<RenderResult, std::string>& result);
 }

@@ -9,18 +9,17 @@ bool cli::run(
 	bool verbose,
 	bool disable_update_check
 ) {
-	auto res = blur.initialise(verbose, preview);
-
-	if (!res.success) { // todo: preview in cli
+	auto init_res = blur.initialise(verbose, preview);
+	if (!init_res) { // todo: preview in cli
 		u::log(L"Blur failed to initialise");
-		u::log("Reason: {}", res.error_message);
+		u::log("Reason: {}", init_res.error());
 		return false;
 	}
 
 	if (!disable_update_check) {
 		auto update_res = Blur::check_updates();
-		if (update_res.success && !update_res.is_latest) {
-			u::log("There's a newer version ({}) available at {}!", update_res.latest_tag, update_res.latest_tag_url);
+		if (update_res && !update_res->is_latest) {
+			u::log("There's a newer version ({}) available at {}!", update_res->latest_tag, update_res->latest_tag_url);
 		}
 	}
 

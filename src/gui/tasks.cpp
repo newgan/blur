@@ -11,9 +11,7 @@
 #include "components/configs/configs.h"
 
 void tasks::run(const std::vector<std::string>& arguments) {
-	auto res = blur.initialise(false, true);
-
-	gui::initialisation_res = res;
+	gui::initialisation_res = blur.initialise(false, true);
 
 	rendering.set_progress_callback([] {
 		std::optional<Render*> current_render_opt = rendering.get_current_render();
@@ -36,17 +34,17 @@ void tasks::run(const std::vector<std::string>& arguments) {
 		// ^ actually might not be needed since progress will update anyway
 	});
 
-	rendering.set_render_finished_callback([](Render* render, const RenderResult& result) {
+	rendering.set_render_finished_callback([](Render* render, const tl::expected<RenderResult, std::string>& result) {
 		gui::renderer::on_render_finished(render, result);
 	});
 
 	auto update_res = Blur::check_updates();
-	if (update_res.success && !update_res.is_latest) {
+	if (update_res && !update_res->is_latest) {
 		static const auto update_notification_duration = std::chrono::duration<float>(15.f);
 
 #if defined(WIN32) || defined(__APPLE__)
 		gui::components::notifications::add(
-			std::format("There's a newer version ({}) available! Click to run the installer.", update_res.latest_tag),
+			std::format("There's a newer version ({}) available! Click to run the installer.", update_res->latest_tag),
 			ui::NotificationType::INFO,
 			[&](const std::string& id) {
 				gui::components::notifications::close(id);
@@ -63,7 +61,7 @@ void tasks::run(const std::vector<std::string>& arguments) {
 				);
 
 				std::thread([update_res] {
-					Blur::update(update_res.latest_tag, [](const std::string& text, bool done) {
+					Blur::update(update_res->latest_tag, [](const std::string& text, bool done) {
 						gui::components::notifications::add(
 							update_notification_id,
 							text,
@@ -82,11 +80,11 @@ void tasks::run(const std::vector<std::string>& arguments) {
 #else
 		gui::components::notifications::add(
 			std::format(
-				"There's a newer version ({}) available! Click to go to the download page.", update_res.latest_tag
+				"There's a newer version ({}) available! Click to go to the download page.", update_res->latest_tag
 			),
 			ui::NotificationType::INFO,
 			[&](const std::string& id) {
-				SDL_OpenURL(update_res.latest_tag_url.c_str());
+				SDL_OpenURL(update_res->latest_tag_url.c_str());
 			},
 			update_notification_duration
 		);

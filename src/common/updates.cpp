@@ -56,7 +56,7 @@ namespace {
 	}
 }
 
-updates::UpdateCheckRes updates::is_latest_version(bool include_beta) {
+tl::expected<updates::UpdateCheckRes, std::string> updates::is_latest_version(bool include_beta) {
 	std::string url = include_beta ? "https://api.github.com/repos/f0e/blur/releases"
 	                               : "https://api.github.com/repos/f0e/blur/releases/latest";
 
@@ -64,7 +64,7 @@ updates::UpdateCheckRes updates::is_latest_version(bool include_beta) {
 
 	if (response.status_code != 200) {
 		u::log("Update check failed with status {}", response.status_code);
-		return { .success = false };
+		return tl::unexpected("Update check failed");
 	}
 
 	try {
@@ -75,7 +75,7 @@ updates::UpdateCheckRes updates::is_latest_version(bool include_beta) {
 
 			if (releases.empty() || !releases.is_array()) {
 				u::log("Update check failed: No releases found");
-				return { .success = false };
+				return tl::unexpected("Update check failed");
 			}
 
 			// get most recent release (needs to have an installer, might make a release without one temporarily - don't
@@ -110,7 +110,7 @@ updates::UpdateCheckRes updates::is_latest_version(bool include_beta) {
 			}
 			else {
 				u::log("Update check failed: Release information not found");
-				return { .success = false };
+				return tl::unexpected("Update check failed");
 			}
 		}
 
@@ -122,8 +122,7 @@ updates::UpdateCheckRes updates::is_latest_version(bool include_beta) {
 
 		bool is_latest = !is_version_newer(BLUR_VERSION, latest_version_number);
 
-		return {
-			.success = true,
+		return updates::UpdateCheckRes{
 			.is_latest = is_latest,
 			.latest_tag = latest_tag,
 			.latest_tag_url = "https://github.com/f0e/blur/releases/" + latest_tag,
@@ -131,9 +130,7 @@ updates::UpdateCheckRes updates::is_latest_version(bool include_beta) {
 	}
 	catch (const std::exception& e) {
 		u::log("Failed to parse latest release JSON: {}", e.what());
-		return {
-			.success = false,
-		};
+		return tl::unexpected("Update check failed");
 	}
 }
 
@@ -235,9 +232,9 @@ bool updates::update_to_latest(
 	bool include_beta, const std::optional<std::function<void(const std::string& text, bool done)>>& progress_callback
 ) {
 	auto check_result = is_latest_version(include_beta);
-	if (!check_result.success || check_result.is_latest) {
+	if (!check_result || check_result->is_latest) {
 		return false;
 	}
 
-	return update_to_tag(check_result.latest_tag, progress_callback);
+	return update_to_tag(check_result->latest_tag, progress_callback);
 }
