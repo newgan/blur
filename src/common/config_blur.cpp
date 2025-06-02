@@ -144,7 +144,7 @@ tl::expected<void, std::string> config_blur::validate(BlurSettings& config, bool
 	if (!errors.empty())
 		return tl::unexpected(u::join(errors, " "));
 
-	// ok:)
+	return {};
 }
 
 BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {

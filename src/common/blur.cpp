@@ -107,6 +107,8 @@ tl::expected<void, std::string> Blur::initialise(bool _verbose, bool _using_prev
 	std::thread([this] {
 		initialise_rife_gpus();
 	}).detach();
+
+	return {};
 }
 
 void Blur::initialise_base_temp_path() {

@@ -168,7 +168,7 @@ tl::expected<void, std::string> FrameRender::do_render(RenderCommands render_com
 			return tl::unexpected(vspipe_stderr_output.str());
 		}
 
-		// ok:)
+		return {};
 	}
 	catch (const boost::system::system_error& e) {
 		u::log_error("Process error: {}", e.what());
