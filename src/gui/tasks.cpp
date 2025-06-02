@@ -80,11 +80,11 @@ void tasks::run(const std::vector<std::string>& arguments) {
 #else
 		gui::components::notifications::add(
 			std::format(
-				"There's a newer version ({}) available! Click to go to the download page.", update_res.latest_tag
+				"There's a newer version ({}) available! Click to go to the download page.", update_res->latest_tag
 			),
 			ui::NotificationType::INFO,
 			[&](const std::string& id) {
-				SDL_OpenURL(update_res.latest_tag_url.c_str());
+				SDL_OpenURL(update_res->latest_tag_url.c_str());
 			},
 			update_notification_duration
 		);
