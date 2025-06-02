@@ -75,25 +75,24 @@ void configs::config_preview(ui::Container& container, BlurSettings& settings) {
 			if (render == renders.back().get())
 			{ // todo: this should be correct right? any cases where this doesn't work?
 				loading = false;
-				error = !res.success;
 
-				if (!error) {
+				if (res) {
 					std::lock_guard<std::mutex> lock(preview_mutex);
 					preview_id++;
 
 					Blur::remove_temp_path(preview_path.parent_path());
 
-					preview_path = res.output_path;
+					preview_path = *res;
 
 					u::log("config preview finished rendering");
 				}
 				else {
-					if (res.error_message != "Input path does not exist") {
+					if (res.error() != "Input path does not exist") {
 						gui::components::notifications::add(
 							"Failed to generate config preview. Click to copy error message",
 							ui::NotificationType::NOTIF_ERROR,
 							[res](const std::string& id) {
-								SDL_SetClipboardText(res.error_message.c_str());
+								SDL_SetClipboardText(res.error().c_str());
 
 								gui::components::notifications::close(id);
 
@@ -249,11 +248,11 @@ void configs::preview(ui::Container& header_container, ui::Container& content_co
 	ui::add_separator("config preview separator", content_container, ui::SeparatorStyle::FADE_BOTH);
 
 	auto validation_res = config_blur::validate(settings, false);
-	if (!validation_res.success) {
+	if (!validation_res) {
 		ui::add_text(
 			"config validation error/s",
 			content_container,
-			validation_res.error,
+			validation_res.error(),
 			gfx::Color(255, 50, 50, 255),
 			fonts::dejavu,
 			FONT_CENTERED_X | FONT_OUTLINE

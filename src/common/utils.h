@@ -10,6 +10,14 @@
 #	define M_PI 3.1415926535897932384626433832
 #endif
 
+#define TRY(expr)                                                                                                      \
+	({                                                                                                                 \
+		auto _res = (expr);                                                                                            \
+		if (!_res)                                                                                                     \
+			return _res.error();                                                                                       \
+		*_res;                                                                                                         \
+	})
+
 namespace u {
 	inline void log(const std::string& msg) {
 		std::cout << msg << '\n';

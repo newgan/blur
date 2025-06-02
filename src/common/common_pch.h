@@ -26,6 +26,7 @@
 // libs
 #include <nlohmann/json.hpp>
 #include <cpr/cpr.h>
+#include <tl/expected.hpp>
 
 #include <boost/process.hpp>
 #include <boost/asio.hpp>

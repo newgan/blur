@@ -141,7 +141,7 @@ bool gui::renderer::redraw_window(bool rendered_last, bool force_render) {
 
 			components::main::home_screen(main_container, delta_time);
 
-			if (initialisation_res && initialisation_res->success) {
+			if (initialisation_res) {
 				auto current_render = rendering.get_current_render();
 				if (current_render) {
 					ui::add_button(
@@ -288,38 +288,13 @@ bool gui::renderer::redraw_window(bool rendered_last, bool force_render) {
 	return want_to_render;
 }
 
-void gui::renderer::on_render_finished(Render* render, const RenderResult& result) {
-	if (result.stopped) {
-		gui::components::notifications::add(
-			std::format("Render '{}' stopped", u::tostring(render->get_video_name())), ui::NotificationType::INFO
-		);
-	}
-	else if (result.success) {
-		auto output_path = render->get_output_video_path();
-
-		gui::components::notifications::add(
-			std::format("Render '{}' completed", u::tostring(render->get_video_name())),
-			ui::NotificationType::SUCCESS,
-			[output_path](const std::string& id) {
-				// Convert path to a file:// URL for SDL_OpenURL
-				std::string file_url = "file://" + output_path.string();
-				if (!SDL_OpenURL(file_url.c_str())) {
-					u::log_error("Failed to open output folder: {}", SDL_GetError());
-				}
-			}
-		);
-
-		auto app_config = config_app::get_app_config();
-		if (app_config.render_success_notifications) {
-			desktop_notification::show("Blur render complete", "Render completed successfully");
-		}
-	}
-	else {
+void gui::renderer::on_render_finished(Render* render, const tl::expected<RenderResult, std::string>& result) {
+	if (!result) {
 		gui::components::notifications::add(
 			std::format("Render '{}' failed. Click to copy error message", u::tostring(render->get_video_name())),
 			ui::NotificationType::NOTIF_ERROR,
 			[result](const std::string& id) {
-				SDL_SetClipboardText(result.error_message.c_str());
+				SDL_SetClipboardText(result.error().c_str());
 
 				gui::components::notifications::close(id);
 
@@ -335,7 +310,34 @@ void gui::renderer::on_render_finished(Render* render, const RenderResult& resul
 
 		auto app_config = config_app::get_app_config();
 		if (app_config.render_failure_notifications) {
-			desktop_notification::show("Blur render failed", u::truncate_with_ellipsis(result.error_message, 100));
+			desktop_notification::show("Blur render failed", u::truncate_with_ellipsis(result.error(), 100));
 		}
+		return;
+	}
+
+	if (result->stopped) {
+		gui::components::notifications::add(
+			std::format("Render '{}' stopped", u::tostring(render->get_video_name())), ui::NotificationType::INFO
+		);
+		return;
+	}
+
+	auto output_path = render->get_output_video_path();
+
+	gui::components::notifications::add(
+		std::format("Render '{}' completed", u::tostring(render->get_video_name())),
+		ui::NotificationType::SUCCESS,
+		[output_path](const std::string& id) {
+			// Convert path to a file:// URL for SDL_OpenURL
+			std::string file_url = "file://" + output_path.string();
+			if (!SDL_OpenURL(file_url.c_str())) {
+				u::log_error("Failed to open output folder: {}", SDL_GetError());
+			}
+		}
+	);
+
+	auto app_config = config_app::get_app_config();
+	if (app_config.render_success_notifications) {
+		desktop_notification::show("Blur render complete", "Render completed successfully");
 	}
 }

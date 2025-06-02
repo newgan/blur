@@ -77,21 +77,9 @@ public:
 
 	void verify_gpu_encoding();
 
-	struct ToJsonResult {
-		bool success;
-		std::optional<nlohmann::json> json;
-		std::string error_message;
-	};
+	[[nodiscard]] tl::expected<nlohmann::json, std::string> to_json() const;
 
-	[[nodiscard]] ToJsonResult to_json() const;
-
-	struct GetRifeModelResult {
-		bool success;
-		std::optional<std::filesystem::path> rife_model_path;
-		std::string error_message;
-	};
-
-	[[nodiscard]] GetRifeModelResult get_rife_model_path() const;
+	[[nodiscard]] tl::expected<std::filesystem::path, std::string> get_rife_model_path() const;
 	void set_fastest_rife_gpu();
 };
 
@@ -112,12 +100,7 @@ namespace config_blur {
 
 	void create(const std::filesystem::path& filepath, const BlurSettings& current_settings = BlurSettings());
 
-	struct ConfigValidationResponse {
-		bool success;
-		std::string error;
-	};
-
-	ConfigValidationResponse validate(BlurSettings& config, bool fix);
+	tl::expected<void, std::string> validate(BlurSettings& config, bool fix);
 
 	BlurSettings parse(const std::filesystem::path& config_filepath);
 	BlurSettings parse_global_config();

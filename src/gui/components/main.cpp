@@ -175,7 +175,7 @@ void main::home_screen(ui::Container& container, float delta_time) {
 			"blur title text", container, title_pos, "blur", gfx::Color::white(), fonts::header_font, FONT_CENTERED_X
 		);
 
-		if (initialisation_res && !initialisation_res->success) {
+		if (!initialisation_res) {
 			ui::add_text(
 				"failed to initialise text",
 				container,
@@ -188,7 +188,7 @@ void main::home_screen(ui::Container& container, float delta_time) {
 			ui::add_text(
 				"failed to initialise reason",
 				container,
-				initialisation_res->error_message,
+				initialisation_res.error(),
 				gfx::Color::white(renderer::MUTED_SHADE),
 				fonts::dejavu,
 				FONT_CENTERED_X

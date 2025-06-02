@@ -7,7 +7,7 @@
 #include "config_app.h"
 #include "config_presets.h"
 
-Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview) {
+tl::expected<void, std::string> Blur::initialise(bool _verbose, bool _using_preview) {
 	resources_path = u::get_resources_path();
 	settings_path = u::get_settings_path();
 
@@ -51,24 +51,15 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 
 		// didn't use installer, check if dependencies are installed
 		if (!std::filesystem::exists(ffmpeg_path)) {
-			return {
-				.success = false,
-				.error_message = "FFmpeg could not be found. " + manual_troubleshooting_info,
-			};
+			return tl::unexpected("FFmpeg could not be found. " + manual_troubleshooting_info);
 		}
 
 		if (!std::filesystem::exists(ffprobe_path)) {
-			return {
-				.success = false,
-				.error_message = "FFprobe could not be found. " + manual_troubleshooting_info,
-			};
+			return tl::unexpected("FFprobe could not be found. " + manual_troubleshooting_info);
 		}
 
 		if (!std::filesystem::exists(vspipe_path)) {
-			return {
-				.success = false,
-				.error_message = "VapourSynth could not be found. " + manual_troubleshooting_info,
-			};
+			return tl::unexpected("VapourSynth could not be found. " + manual_troubleshooting_info);
 		}
 	}
 	else {
@@ -80,30 +71,21 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 			ffmpeg_path = *_ffmpeg_path;
 		}
 		else {
-			return {
-				.success = false,
-				.error_message = "FFmpeg could not be found. " + manual_troubleshooting_info,
-			};
+			return tl::unexpected("FFmpeg could not be found. " + manual_troubleshooting_info);
 		}
 
 		if (auto _ffprobe_path = u::get_program_path("ffprobe")) {
 			ffprobe_path = *_ffprobe_path;
 		}
 		else {
-			return {
-				.success = false,
-				.error_message = "FFprobe could not be found. " + manual_troubleshooting_info,
-			};
+			return tl::unexpected("FFprobe could not be found. " + manual_troubleshooting_info);
 		}
 
 		if (auto _vspipe_path = u::get_program_path("vspipe")) {
 			vspipe_path = *_vspipe_path;
 		}
 		else {
-			return {
-				.success = false,
-				.error_message = "VapourSynth could not be found. " + manual_troubleshooting_info,
-			};
+			return tl::unexpected("VapourSynth could not be found. " + manual_troubleshooting_info);
 		}
 	}
 
@@ -125,10 +107,6 @@ Blur::InitialisationResponse Blur::initialise(bool _verbose, bool _using_preview
 	std::thread([this] {
 		initialise_rife_gpus();
 	}).detach();
-
-	return {
-		.success = true,
-	};
 }
 
 void Blur::initialise_base_temp_path() {
@@ -187,10 +165,10 @@ bool Blur::remove_temp_path(const std::filesystem::path& temp_path) {
 	}
 }
 
-updates::UpdateCheckRes Blur::check_updates() {
+tl::expected<updates::UpdateCheckRes, std::string> Blur::check_updates() {
 	auto config = config_app::get_app_config();
 	if (!config.check_updates)
-		return { .success = false };
+		return updates::UpdateCheckRes{};
 
 	return updates::is_latest_version(config.check_beta);
 }

@@ -4,7 +4,7 @@
 #	include "config_app.h"
 #endif
 
-RenderCommandsResult FrameRender::build_render_commands(
+tl::expected<RenderCommands, std::string> FrameRender::build_render_commands(
 	const std::filesystem::path& input_path, const std::filesystem::path& output_path, const BlurSettings& settings
 ) {
 	std::wstring path_string = input_path.wstring();
@@ -13,12 +13,8 @@ RenderCommandsResult FrameRender::build_render_commands(
 	std::wstring blur_script_path = (blur.resources_path / "lib/blur.py").wstring();
 
 	auto settings_json = settings.to_json();
-	if (!settings_json.success || !settings_json.json) {
-		return {
-			.success = false,
-			.error_message = settings_json.error_message,
-		};
-	}
+	if (!settings_json)
+		return tl::unexpected(settings_json.error());
 
 #if defined(__linux__)
 	bool vapoursynth_plugins_bundled = std::filesystem::exists(blur.resources_path / "vapoursynth-plugins");
@@ -33,7 +29,7 @@ RenderCommandsResult FrameRender::build_render_commands(
 		                L"-a",
 		                L"video_path=" + path_string,
 		                L"-a",
-		                L"settings=" + u::towstring(settings_json.json->dump()),
+		                L"settings=" + u::towstring(settings_json->dump()),
 #if defined(__APPLE__)
 		                L"-a",
 		                std::format(L"macos_bundled={}", blur.used_installer ? L"true" : L"false"),
@@ -70,13 +66,10 @@ RenderCommandsResult FrameRender::build_render_commands(
 	};
 	// clang-format on
 
-	return {
-		.success = true,
-		.commands = commands,
-	};
+	return commands;
 }
 
-FrameRender::DoRenderResult FrameRender::do_render(RenderCommands render_commands, const BlurSettings& settings) {
+tl::expected<void, std::string> FrameRender::do_render(RenderCommands render_commands, const BlurSettings& settings) {
 	namespace bp = boost::process;
 
 	std::ostringstream vspipe_stderr_output;
@@ -169,26 +162,17 @@ FrameRender::DoRenderResult FrameRender::do_render(RenderCommands render_command
 				"vspipe exit code: {}, ffmpeg exit code: {}", vspipe_process.exit_code(), ffmpeg_process.exit_code()
 			);
 
-		bool success =
-			ffmpeg_process.exit_code() == 0; // vspipe_process.exit_code() == 0 && ffmpeg_process.exit_code() == 0;
-
-		// todo: check why vspipe isnt returning 0
-
-		if (!success)
+		if (ffmpeg_process.exit_code() != 0) { // || vspipe_process.exit_code() != 0;
+			                                   // todo: check why vspipe isnt returning 0
 			remove_temp_path();
+			return tl::unexpected(vspipe_stderr_output.str());
+		}
 
-		return {
-			.success = success,
-			.error_message = vspipe_stderr_output.str(),
-		};
+		// ok:)
 	}
 	catch (const boost::system::system_error& e) {
 		u::log_error("Process error: {}", e.what());
-
-		return {
-			.success = false,
-			.error_message = e.what(),
-		};
+		return tl::unexpected(e.what());
 	}
 }
 
@@ -210,44 +194,31 @@ bool FrameRender::remove_temp_path() {
 	return res;
 }
 
-FrameRender::RenderResponse FrameRender::render(const std::filesystem::path& input_path, const BlurSettings& settings) {
+tl::expected<std::filesystem::path, std::string> FrameRender::render(
+	const std::filesystem::path& input_path, const BlurSettings& settings
+) {
 	if (!blur.initialised)
-		return {
-			.success = false,
-			.error_message = "Blur not initialised",
-		};
+		return tl::unexpected("Blur not initialised");
 
 	if (!std::filesystem::exists(input_path)) {
-		return {
-			.success = false,
-			.error_message = "Input path does not exist",
-		};
+		return tl::unexpected("Input path does not exist");
 	}
 
 	if (!create_temp_path()) {
 		u::log("failed to make temp path");
-		return {
-			.success = false,
-			.error_message = "Failed to make temp path",
-		};
+		return tl::unexpected("Failed to make temp path");
 	}
 
 	std::filesystem::path output_path = m_temp_path / "render.jpg";
 
 	// render
-	auto render_commands_res = build_render_commands(input_path, output_path, settings);
-	if (!render_commands_res.success || !render_commands_res.commands) {
-		return {
-			.success = false,
-			.error_message = render_commands_res.error_message,
-		};
-	}
+	auto render_commands = build_render_commands(input_path, output_path, settings);
+	if (!render_commands)
+		return tl::unexpected(render_commands.error());
 
-	auto render_res = do_render(*render_commands_res.commands, settings);
+	auto render_res = do_render(*render_commands, settings);
+	if (!render_res)
+		return tl::unexpected(render_res.error());
 
-	return {
-		.success = render_res.success,
-		.output_path = output_path,
-		.error_message = render_res.error_message,
-	};
+	return output_path;
 }
