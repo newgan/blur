@@ -5,29 +5,27 @@ import sys
 import json
 from pathlib import Path
 
+# load vapoursynth plugins
 if vars().get("macos_bundled") == "true":
-    # load plugins
+    plugin_ext = ".dylib"
+elif vars().get("linux_bundled") == "true":
+    plugin_ext = ".so"
+else:
+    plugin_ext = None
+
+if plugin_ext:
     plugin_dir = Path("../vapoursynth-plugins")
     ignored = {
-        "libbestsource.dylib",
+        f"libbestsource{plugin_ext}",
     }
 
-    for dylib in plugin_dir.glob("*.dylib"):
-        if dylib.name not in ignored:
-            print("loading", dylib.name)
-            core.std.LoadPlugin(path=str(dylib))
-
-if vars().get("linux_bundled") == "true":
-    # load plugins
-    plugin_dir = Path("../vapoursynth-plugins")
-    ignored = {
-        "libbestsource.so",
-    }
-
-    for plugin in plugin_dir.glob("*.so"):
+    for plugin in plugin_dir.glob(f"*{plugin_ext}"):
         if plugin.name not in ignored:
-            print("loading", plugin.name)
-            core.std.LoadPlugin(path=str(plugin))
+            print("Loading", plugin.name)
+            try:
+                core.std.LoadPlugin(path=str(plugin))
+            except Exception as e:
+                print(f"Failed to load plugin {plugin.name}: {e}")
 
 # add blur.py folder to path so it can reference scripts
 sys.path.insert(1, str(Path(__file__).parent))
