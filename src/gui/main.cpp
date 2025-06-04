@@ -8,7 +8,5 @@ int main(int argc, char* argv[]) {
 
 	std::thread(tasks::run, arguments).detach();
 
-	gui::run();
-
-	return 0;
+	return gui::run();
 }
