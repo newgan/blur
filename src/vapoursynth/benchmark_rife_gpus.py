@@ -31,7 +31,11 @@ else:
     video = core.bs.VideoSource(source=benchmark_video_path, cachemode=0)
 
 video = blur.interpolate.interpolate_rife(
-    video, video.fps * 3, model_path=model_path, gpu_index=gpu_index
+    video,
+    is_full_color_range=False,  # doesn't matter
+    new_fps=video.fps * 3,
+    model_path=model_path,
+    gpu_index=gpu_index,
 )
 
 video.set_output()

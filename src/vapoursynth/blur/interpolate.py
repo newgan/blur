@@ -175,17 +175,21 @@ def interpolate_mvtools(
     )
 
 
-def interpolate_rife(video, new_fps: int, model_path: str, gpu_index=int):
+def interpolate_rife(
+    video, is_full_color_range: bool, new_fps: int, model_path: str, gpu_index=int
+):
     u.check_model_path(model_path)
 
     orig_format = video.format
     needs_conversion = orig_format.id != vs.RGBS
 
     if needs_conversion:
-        video = core.resize.Bicubic(
+        video = core.resize.Point(
             video,
             format=vs.RGBS,
             matrix_in_s="709" if orig_format.color_family == vs.YUV else None,
+            range_in=is_full_color_range,
+            range=is_full_color_range,
         )
 
     video = core.rife.RIFE(
@@ -197,10 +201,12 @@ def interpolate_rife(video, new_fps: int, model_path: str, gpu_index=int):
     )
 
     if needs_conversion:
-        video = core.resize.Bicubic(
+        video = core.resize.Point(
             video,
             format=orig_format.id,
             matrix_s="709" if orig_format.color_family == vs.YUV else None,
+            range_in=is_full_color_range,
+            range=is_full_color_range,
         )
 
     return video

@@ -175,6 +175,9 @@ tl::expected<RenderCommands, std::string> Render::build_render_commands() {
 		                L"-a",
 		                std::format(L"fps_den={}", m_video_info.fps_den),
 		                L"-a",
+		                L"color_range=" +
+		                    (m_video_info.color_range ? u::towstring(*m_video_info.color_range) : L"undefined"),
+		                L"-a",
 		                L"settings=" + u::towstring(settings_json->dump()),
 #if defined(__APPLE__)
 		                L"-a",
@@ -211,7 +214,7 @@ tl::expected<RenderCommands, std::string> Render::build_render_commands() {
 	if (m_video_info.color_range && *m_video_info.color_range == "pc") {
 		// https://github.com/f0e/blur/issues/106#issuecomment-2783791187
 		commands.ffmpeg.emplace_back(L"-vf");
-		commands.ffmpeg.emplace_back(L"scale=in_range=full:out_range=limited");
+		commands.ffmpeg.emplace_back(L"scale=in_range=full:out_range=full");
 	}
 
 	// Handle audio filters
