@@ -7,6 +7,8 @@ struct GlobalAppSettings {
 	bool check_updates = true;
 	bool check_beta = false;
 
+	bool notify_about_config_override = true;
+
 #ifdef __linux__
 	std::string vapoursynth_lib_path;
 #endif

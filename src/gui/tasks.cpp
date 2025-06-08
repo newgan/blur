@@ -1,6 +1,7 @@
 #include "tasks.h"
 
 #include "common/rendering.h"
+#include "common/config_app.h"
 
 #include "gui.h"
 #include "gui/renderer.h"
@@ -107,6 +108,8 @@ void tasks::run(const std::vector<std::string>& arguments) {
 }
 
 void tasks::add_files(const std::vector<std::wstring>& path_strs) {
+	auto app_config = config_app::get_app_config();
+
 	for (const std::wstring& path_str : path_strs) {
 		std::filesystem::path path = std::filesystem::canonical(path_str);
 		if (path.empty() || !std::filesystem::exists(path))
@@ -130,6 +133,13 @@ void tasks::add_files(const std::vector<std::wstring>& path_strs) {
 				std::format("Queued '{}' for rendering", u::tostring(render.get_video_name())),
 				ui::NotificationType::INFO
 			);
+		}
+
+		if (app_config.notify_about_config_override) {
+			if (!render.is_global_config())
+				gui::components::notifications::add(
+					"Using override config from video folder", ui::NotificationType::INFO
+				);
 		}
 
 		rendering.queue_render(std::move(render));

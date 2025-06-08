@@ -42,6 +42,7 @@ private:
 	u::VideoInfo m_video_info;
 
 	BlurSettings m_settings;
+	bool m_is_global_config = false;
 
 	bool m_to_kill = false;
 	bool m_paused = false;
@@ -106,6 +107,10 @@ public:
 
 	[[nodiscard]] std::filesystem::path get_preview_path() const {
 		return m_preview_path;
+	}
+
+	[[nodiscard]] bool is_global_config() const {
+		return m_is_global_config;
 	}
 };
 

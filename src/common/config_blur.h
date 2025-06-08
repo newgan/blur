@@ -108,5 +108,11 @@ namespace config_blur {
 	std::filesystem::path get_global_config_path();
 	std::filesystem::path get_config_filename(const std::filesystem::path& video_folder);
 	BlurSettings get_global_config();
-	BlurSettings get_config(const std::filesystem::path& config_filepath, bool use_global);
+
+	struct ConfigRes {
+		BlurSettings config;
+		bool is_global = false;
+	};
+
+	ConfigRes get_config(const std::filesystem::path& config_filepath, bool use_global);
 }

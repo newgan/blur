@@ -267,13 +267,15 @@ BlurSettings config_blur::get_global_config() {
 	return config_base::load_config<BlurSettings>(get_global_config_path(), create, parse);
 }
 
-BlurSettings config_blur::get_config(const std::filesystem::path& config_filepath, bool use_global) {
+config_blur::ConfigRes config_blur::get_config(const std::filesystem::path& config_filepath, bool use_global) {
 	bool local_cfg_exists = std::filesystem::exists(config_filepath);
 
 	auto global_cfg_path = get_global_config_path();
 	bool global_cfg_exists = std::filesystem::exists(global_cfg_path);
 
+	ConfigRes res;
 	std::filesystem::path cfg_path;
+
 	if (use_global && !local_cfg_exists && global_cfg_exists) {
 		cfg_path = global_cfg_path;
 
@@ -291,7 +293,10 @@ BlurSettings config_blur::get_config(const std::filesystem::path& config_filepat
 		cfg_path = config_filepath;
 	}
 
-	return parse(cfg_path);
+	res.config = parse(cfg_path);
+	res.is_global = (cfg_path == global_cfg_path);
+
+	return res;
 }
 
 tl::expected<nlohmann::json, std::string> BlurSettings::to_json() const {

@@ -7,7 +7,7 @@ void config_app::create(const std::filesystem::path& filepath, const GlobalAppSe
 	output << "[blur v" << BLUR_VERSION << "]" << "\n";
 
 	output << "\n";
-	output << "- notifications" << "\n";
+	output << "- desktop notifications" << "\n";
 	output << "render success notifications: " << (current_settings.render_success_notifications ? "true" : "false")
 		   << "\n";
 	output << "render failure notifications: " << (current_settings.render_failure_notifications ? "true" : "false")
@@ -17,6 +17,11 @@ void config_app::create(const std::filesystem::path& filepath, const GlobalAppSe
 	output << "- updates" << "\n";
 	output << "check for updates: " << (current_settings.check_updates ? "true" : "false") << "\n";
 	output << "include beta updates: " << (current_settings.check_beta ? "true" : "false") << "\n";
+
+	output << "\n";
+	output << "- misc" << "\n";
+	output << "notify about config overrides: " << (current_settings.notify_about_config_override ? "true" : "false")
+		   << "\n";
 
 #ifdef __linux__
 	output << "\n";
@@ -39,6 +44,10 @@ GlobalAppSettings config_app::parse(const std::filesystem::path& config_filepath
 
 	config_base::extract_config_value(config_map, "check for updates", settings.check_updates);
 	config_base::extract_config_value(config_map, "include beta updates", settings.check_beta);
+
+	config_base::extract_config_value(
+		config_map, "notify about config overrides", settings.notify_about_config_override
+	);
 
 #ifdef __linux__
 	config_base::extract_config_value(config_map, "vapoursynth lib path", settings.vapoursynth_lib_path);
