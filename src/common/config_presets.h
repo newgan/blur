@@ -41,17 +41,16 @@ struct PresetSettings {
 		{
 			"cpu",
 			{
-				{ "h264", "-c:v libx264 -pix_fmt yuv420p -preset superfast -crf {quality}" },
-				{ "h265", "-c:v libx265 -pix_fmt yuv420p -preset medium -crf {quality}" },
-				{ "av1", "-c:v libaom-av1 -pix_fmt yuv420p -cpu-used 4 -crf {quality}" },
-				{ "vp9", "-c:v libvpx-vp9 -pix_fmt yuv420p -deadline realtime -crf {quality}" },
+				{ "h264", "-c:v libx264 -preset superfast -crf {quality}" },
+				{ "h265", "-c:v libx265 -preset medium -crf {quality}" },
+				{ "av1", "-c:v libaom-av1 -cpu-used 4 -crf {quality}" },
+				{ "vp9", "-c:v libvpx-vp9 -deadline realtime -crf {quality}" },
 			},
 		}
 	};
 
-	[[nodiscard]] const std::string* find_preset_params(
-		const std::string& gpu_type, const std::string& preset_name
-	) const {
+	[[nodiscard]] const std::string* find_preset_params(const std::string& gpu_type, const std::string& preset_name)
+		const {
 		for (const auto& [type, codec_params] : presets) {
 			if (type == gpu_type) {
 				for (const auto& [codec, params] : codec_params) {

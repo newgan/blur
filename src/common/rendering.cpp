@@ -175,6 +175,9 @@ tl::expected<RenderCommands, std::string> Render::build_render_commands() {
 		                L"-a",
 		                std::format(L"fps_den={}", m_video_info.fps_den),
 		                L"-a",
+		                L"color_range=" +
+		                    (m_video_info.color_range ? u::towstring(*m_video_info.color_range) : L"undefined"),
+		                L"-a",
 		                L"settings=" + u::towstring(settings_json->dump()),
 #if defined(__APPLE__)
 		                L"-a",
@@ -208,10 +211,42 @@ tl::expected<RenderCommands, std::string> Render::build_render_commands() {
 		                L"-map",
 		                L"1:a?" };
 
-	if (m_video_info.color_range && *m_video_info.color_range == "pc") {
-		// https://github.com/f0e/blur/issues/106#issuecomment-2783791187
+	// handle colour metadata tagging
+	// (vspipe strips this input info, need to define it manually so ffmpeg knows about it)
+	std::vector<std::string> params;
+
+	if (m_video_info.color_range) {
+		std::string range = *m_video_info.color_range == "pc" ? "full" : "limited";
+		params.emplace_back("range=" + range);
+	}
+
+	if (m_video_info.color_space) {
+		params.emplace_back("colorspace=" + *m_video_info.color_space);
+	}
+
+	if (m_video_info.color_transfer) {
+		params.emplace_back("color_trc=" + *m_video_info.color_transfer);
+	}
+
+	if (m_video_info.color_primaries) {
+		params.emplace_back("color_primaries=" + *m_video_info.color_primaries);
+	}
+
+	if (!params.empty()) {
+		std::string setparams_filter = "setparams=";
+		for (size_t i = 0; i < params.size(); ++i) {
+			if (i > 0)
+				setparams_filter += ":";
+			setparams_filter += params[i];
+		}
+
 		commands.ffmpeg.emplace_back(L"-vf");
-		commands.ffmpeg.emplace_back(L"scale=in_range=full:out_range=limited");
+		commands.ffmpeg.emplace_back(u::towstring(setparams_filter));
+	}
+
+	if (m_video_info.pix_fmt) {
+		commands.ffmpeg.emplace_back(L"-pix_fmt");
+		commands.ffmpeg.emplace_back(u::towstring(*m_video_info.pix_fmt));
 	}
 
 	// Handle audio filters

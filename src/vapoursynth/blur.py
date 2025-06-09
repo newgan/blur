@@ -43,6 +43,8 @@ settings = json.loads(vars().get("settings", "{}"))
 
 fps_num = vars().get("fps_num", -1)
 fps_den = vars().get("fps_den", -1)
+color_range = vars().get("color_range", "")
+is_full_color_range = color_range == "pc"
 
 # validate some settings
 svp_interpolation_algorithm = u.coalesce(
@@ -107,6 +109,7 @@ if settings["deduplicate"] and settings["deduplicate_range"] != 0:
         case "svp":
             video = blur.deduplicate.fill_drops_multiple(
                 video,
+                is_full_color_range=is_full_color_range,
                 threshold=deduplicate_threshold,
                 max_frames=deduplicate_range,
                 debug=settings["debug"],
@@ -120,6 +123,7 @@ if settings["deduplicate"] and settings["deduplicate_range"] != 0:
         case _:
             video = blur.deduplicate_rife.fill_drops_rife(
                 video,
+                is_full_color_range=is_full_color_range,
                 model_path=settings["rife_model"],
                 gpu_index=rife_gpu_index,
                 threshold=deduplicate_threshold,
@@ -173,7 +177,8 @@ if settings["interpolate"]:
 
             video = blur.interpolate.interpolate_rife(
                 video,
-                pre_interpolated_fps,
+                is_full_color_range=is_full_color_range,
+                new_fps=pre_interpolated_fps,
                 model_path=settings["rife_model"],
                 gpu_index=rife_gpu_index,
             )
@@ -193,7 +198,8 @@ if settings["interpolate"]:
             case "rife":
                 video = blur.interpolate.interpolate_rife(
                     video,
-                    interpolated_fps,
+                    is_full_color_range=is_full_color_range,
+                    new_fps=interpolated_fps,
                     model_path=settings["rife_model"],
                     gpu_index=rife_gpu_index,
                 )
@@ -213,7 +219,12 @@ if settings["interpolate"]:
                 )  # svp only accepts yv12 (SVSuper: Clip must be YV12)
 
                 if needs_conversion:
-                    video = core.resize.Bicubic(video, format=vs.YUV420P8)
+                    video = core.resize.Point(
+                        video,
+                        format=vs.YUV420P8,
+                        range_in=is_full_color_range,
+                        range=is_full_color_range,
+                    )
 
                 if not settings["manual_svp"]:
                     video = blur.interpolate.interpolate_svp(
@@ -248,7 +259,12 @@ if settings["interpolate"]:
                     )
 
                 if needs_conversion:
-                    video = core.resize.Bicubic(video, format=orig_format.id)
+                    video = core.resize.Point(
+                        video,
+                        format=orig_format.id,
+                        range_in=is_full_color_range,
+                        range=is_full_color_range,
+                    )
 
         fps_added = video.fps - old_fps
         print(
@@ -339,7 +355,9 @@ if settings["blur"]:
             if gamma == 1.0:
                 video = blur.blending.average(video, weights)
             else:
-                video = blur.blending.average_bright(video, gamma, weights)
+                video = blur.blending.average_bright(
+                    video, is_full_color_range, gamma, weights
+                )
 
     # set exact fps
     video = blur.interpolate.change_fps(video, settings["blur_output_fps"])
@@ -353,7 +371,12 @@ if settings["filters"]:
     ):
         original_format = video.format
 
-        video = core.resize.Point(video, format=vs.YUV444PS)
+        video = core.resize.Point(
+            video,
+            format=vs.YUV444PS,
+            range_in=is_full_color_range,
+            range=is_full_color_range,
+        )
 
         video = core.adjust.Tweak(
             video,
@@ -362,6 +385,11 @@ if settings["filters"]:
             sat=settings["saturation"],
         )
 
-        video = core.resize.Point(video, format=original_format.id)
+        video = core.resize.Point(
+            video,
+            format=original_format.id,
+            range_in=is_full_color_range,
+            range=is_full_color_range,
+        )
 
 video.set_output()

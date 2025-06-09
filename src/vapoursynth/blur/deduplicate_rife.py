@@ -109,6 +109,7 @@ def interpolate_dupes(
 
 def fill_drops_rife(
     clip: vs.VideoNode,
+    is_full_color_range: bool,
     model_path: str,
     gpu_index: int,
     threshold: float = 0.1,
@@ -143,10 +144,12 @@ def fill_drops_rife(
 
     if needs_conversion:
         # Convert to RGBS for RIFE
-        clip = core.resize.Bicubic(
+        clip = core.resize.Point(
             clip,
             format=vs.RGBS,
             matrix_in_s="709" if orig_format.color_family == vs.YUV else None,
+            range_in=is_full_color_range,
+            range=is_full_color_range,
         )
 
     diffclip = core.std.PlaneStats(clip, clip[0] + clip)
@@ -154,10 +157,12 @@ def fill_drops_rife(
 
     if needs_conversion:
         # Convert back to original format
-        out = core.resize.Bicubic(
+        out = core.resize.Point(
             out,
             format=orig_format.id,
             matrix_s="709" if orig_format.color_family == vs.YUV else None,
+            range_in=is_full_color_range,
+            range=is_full_color_range,
         )
 
     return out

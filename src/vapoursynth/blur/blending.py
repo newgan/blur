@@ -85,6 +85,7 @@ def average(clip: vs.VideoNode, weights: list[float], divisor: float | None = No
 
 def average_bright(
     video: vs.VideoNode,
+    is_full_color_range: bool,
     gamma: float,
     weights: list[float],
     divisor: float | None = None,
@@ -93,10 +94,12 @@ def average_bright(
     needs_conversion = orig_format.id != vs.RGBS
 
     if needs_conversion:
-        video = core.resize.Bicubic(
+        video = core.resize.Point(
             video,
             format=vs.RGBS,
             matrix_in_s="709" if orig_format.color_family == vs.YUV else None,
+            range_in=is_full_color_range,
+            range=is_full_color_range,
         )
 
     def gamma_correct(video, gamma):
@@ -111,10 +114,12 @@ def average_bright(
     video = gamma_correct(video, 1.0 / gamma)
 
     if needs_conversion:
-        video = core.resize.Bicubic(
+        video = core.resize.Point(
             video,
             format=orig_format.id,
             matrix_s="709" if orig_format.color_family == vs.YUV else None,
+            range_in=is_full_color_range,
+            range=is_full_color_range,
         )
 
     return video

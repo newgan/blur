@@ -183,6 +183,10 @@ namespace u {
 	struct VideoInfo {
 		bool has_video_stream = false;
 		std::optional<std::string> color_range;
+		std::optional<std::string> pix_fmt;
+		std::optional<std::string> color_space;
+		std::optional<std::string> color_transfer;
+		std::optional<std::string> color_primaries;
 		int sample_rate = -1;
 		int fps_num = -1;
 		int fps_den = -1;
