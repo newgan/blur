@@ -273,7 +273,8 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 		"-select_streams",
 		"v:0", // only want to analyse first video stream
 		"-show_entries",
-		"stream=codec_type,codec_name,duration,color_range,sample_rate,r_frame_rate",
+		"stream=codec_type,codec_name,duration,color_range,sample_rate,r_frame_rate,pix_fmt,color_space,color_transfer,"
+		"color_primaries",
 		"-show_entries",
 		"format=duration",
 		"-of",
@@ -314,9 +315,20 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 		else if (line.find("color_range=") != std::string::npos) {
 			info.color_range = line.substr(line.find('=') + 1);
 		}
+		else if (line.find("pix_fmt=") != std::string::npos) {
+			info.pix_fmt = line.substr(line.find('=') + 1);
+		}
+		else if (line.find("color_space=") != std::string::npos) {
+			info.color_space = line.substr(line.find('=') + 1);
+		}
+		else if (line.find("color_transfer=") != std::string::npos) {
+			info.color_transfer = line.substr(line.find('=') + 1);
+		}
+		else if (line.find("color_primaries=") != std::string::npos) {
+			info.color_primaries = line.substr(line.find('=') + 1);
+		}
 		else if (line.find("sample_rate=") != std::string::npos) {
-			std::string sample_rate_str = line.substr(line.find('=') + 1);
-			info.sample_rate = std::stoi(sample_rate_str);
+			info.sample_rate = std::stoi(line.substr(line.find('=') + 1));
 		}
 		else if (line.find("r_frame_rate=") != std::string::npos) {
 			std::string frame_rate_str = line.substr(line.find('=') + 1);

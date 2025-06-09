@@ -211,10 +211,47 @@ tl::expected<RenderCommands, std::string> Render::build_render_commands() {
 		                L"-map",
 		                L"1:a?" };
 
-	if (m_video_info.color_range && *m_video_info.color_range == "pc") {
-		// https://github.com/f0e/blur/issues/106#issuecomment-2783791187
+	// handle scaling
+	// (vspipe strips this input info, need to define it manually so ffmpeg knows about it)
+	std::vector<std::string> scale;
+
+	if (m_video_info.color_range) {
+		std::string range = *m_video_info.color_range == "pc" ? "full" : "limited";
+		scale.emplace_back("in_range=" + range);
+		scale.emplace_back("out_range=" + range);
+	}
+
+	if (m_video_info.color_space) {
+		scale.emplace_back("in_color_matrix=" + *m_video_info.color_space);
+		scale.emplace_back("out_color_matrix=" + *m_video_info.color_space);
+	}
+
+	if (m_video_info.color_transfer) {
+		scale.emplace_back("in_transfer=" + *m_video_info.color_transfer);
+		scale.emplace_back("out_transfer=" + *m_video_info.color_transfer);
+	}
+
+	if (m_video_info.color_primaries) {
+		scale.emplace_back("in_primaries=" + *m_video_info.color_primaries);
+		scale.emplace_back("out_primaries=" + *m_video_info.color_primaries);
+	}
+
+	if (!scale.empty()) {
+		std::string scale_filter = "scale=";
+		for (size_t i = 0; i < scale.size(); ++i) {
+			if (i > 0)
+				scale_filter += ":";
+			scale_filter += scale[i];
+		}
+
 		commands.ffmpeg.emplace_back(L"-vf");
-		commands.ffmpeg.emplace_back(L"scale=in_range=full:out_range=full");
+		commands.ffmpeg.emplace_back(u::towstring(scale_filter));
+	}
+
+	// Handle pixel format separately as it's not a scale filter parameter
+	if (m_video_info.pix_fmt) {
+		commands.ffmpeg.emplace_back(L"-pix_fmt");
+		commands.ffmpeg.emplace_back(u::towstring(*m_video_info.pix_fmt));
 	}
 
 	// Handle audio filters
