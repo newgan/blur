@@ -92,10 +92,11 @@ download_model_files() {
 build() {
   local repo="$1"
   local pull_args="$2"
-  local name="$3"
-  local build_cmd="$4"
-  local lib_path="$5"
-  local out_path="$6"
+  local commit="$3"
+  local name="$4"
+  local build_cmd="$5"
+  local lib_path="$6"
+  local out_path="$7"
 
   echo "--- Building $name ---"
 
@@ -107,10 +108,22 @@ build() {
     # shellcheck disable=SC2086
     git clone $pull_args "$repo" "$name"
     cd "$name"
+
+    if [ ! -z "$commit" ]; then
+      echo "Checking out commit $commit..."
+      git checkout "$commit"
+    fi
   else
-    echo "Updating $name..."
+    echo "Repository $name already exists"
     cd "$name"
-    git pull
+    git fetch origin
+    if [ ! -z "$commit" ]; then
+      echo "Checking out commit $commit..."
+      git checkout "$commit"
+    else
+      echo "Pulling"
+      git pull
+    fi
   fi
 
   eval "$build_cmd"
@@ -197,7 +210,7 @@ $out_dir/python/bin/pip install cython
 PATH="$PWD/$out_dir/python/bin:$PATH"
 PYTHON_PREFIX="$PWD/$out_dir/python"
 
-build "https://github.com/vapoursynth/vapoursynth.git" "--depth 1 --single-branch" "vapoursynth" "
+build "https://github.com/vapoursynth/vapoursynth.git" "--single-branch" "e46204429041e95a881b61eedddd46c08f9a307c" "vapoursynth" "
 ./autogen.sh
 PYTHON3_LIBS=\"-L$PYTHON_PREFIX/lib/python3.12 -L$PYTHON_PREFIX/lib -lpython3.12\" \
   PYTHON3_CFLAGS=\"-I$PYTHON_PREFIX/include/python3.12\" \
@@ -210,19 +223,19 @@ sudo make install
 cp build/vapoursynth/.libs/vspipe $out_dir/vapoursynth
 
 ## bestsource
-build "https://github.com/vapoursynth/bestsource.git" "--depth 1 --single-branch --recurse-submodules --shallow-submodules --remote-submodules" "bestsource" "
+build "https://github.com/vapoursynth/bestsource.git" "--single-branch --recurse-submodules --shallow-submodules --remote-submodules" "c2be08527100a363e0018bc907c73644737b3953" "bestsource" "
 meson setup build
 ninja -C build
 " "build" "vapoursynth-plugins"
 
 ## mvtools
-build "https://github.com/dubhater/vapoursynth-mvtools.git" "--depth 1 --single-branch" "mvtools" "
+build "https://github.com/dubhater/vapoursynth-mvtools.git" "--single-branch" "e516e90f9618a20c2dc06be05935d2abbb5f691b" "mvtools" "
 meson setup build
 ninja -C build
 " "build" "vapoursynth-plugins"
 
 ## rife ncnn vulkan
-build "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan.git" "--depth 1 --single-branch" "rife-ncnn-vulkan" "
+build "https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan.git" "--single-branch" "48da541a7b1f1a71678d2325faa6cf2bd9ef8382" "rife-ncnn-vulkan" "
 git submodule update --init --recursive --depth 1
 meson build
 ninja -C build
@@ -231,7 +244,7 @@ ninja -C build
 PATH="/opt/homebrew/opt/llvm@12/bin:$PATH"
 
 ## akarin
-build "https://github.com/AkarinVS/vapoursynth-plugin.git" "--depth 1 --single-branch" "akarin" "
+build "https://github.com/AkarinVS/vapoursynth-plugin.git" "--single-branch" "" "akarin" "
 meson build
 ninja -C build
 " "build" "vapoursynth-plugins"
