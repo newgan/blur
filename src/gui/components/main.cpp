@@ -82,7 +82,7 @@ void main::render_screen(
 		}
 	}
 
-	if (render_status.init) {
+	if (render_status.init_frames) {
 		float render_progress = (float)render_status.current_frame / (float)render_status.total_frames;
 		bar_percent = u::lerp(bar_percent, render_progress, 5.f * delta_time, 0.005f);
 
@@ -111,6 +111,11 @@ void main::render_screen(
 			);
 		}
 
+		bool status_fps_init = render_status.fps != 0.f;
+
+		if (!status_fps_init)
+			container.pop_element_gap();
+
 		ui::add_text(
 			"progress text",
 			container,
@@ -120,16 +125,42 @@ void main::render_screen(
 			FONT_CENTERED_X
 		);
 
-		container.pop_element_gap();
+		if (status_fps_init) {
+			ui::add_text(
+				"progress text fps",
+				container,
+				std::format("{:.2f} frames per second", render_status.fps),
+				gfx::Color::white(renderer::MUTED_SHADE),
+				fonts::dejavu,
+				FONT_CENTERED_X
+			);
 
-		ui::add_text(
-			"progress text 2",
-			container,
-			std::format("{:.2f} frames per second", render_status.fps),
-			gfx::Color::white(renderer::MUTED_SHADE),
-			fonts::dejavu,
-			FONT_CENTERED_X
-		);
+			container.pop_element_gap();
+
+			int remaining_frames = render_status.total_frames - render_status.current_frame;
+			int eta_seconds = static_cast<int>(remaining_frames / render_status.fps);
+
+			int hours = eta_seconds / 3600;
+			int minutes = (eta_seconds % 3600) / 60;
+			int seconds = eta_seconds % 60;
+
+			std::ostringstream eta_stream;
+			if (hours > 0)
+				eta_stream << hours << " hour" << (hours > 1 ? "s " : " ");
+			if (minutes > 0)
+				eta_stream << minutes << " minute" << (minutes > 1 ? "s " : " ");
+			if (seconds > 0 || (hours == 0 && minutes == 0))
+				eta_stream << seconds << " second" << (seconds != 1 ? "s" : "");
+
+			ui::add_text(
+				"progress text eta",
+				container,
+				std::format("{}~ left", eta_stream.str()),
+				gfx::Color::white(renderer::MUTED_SHADE),
+				fonts::dejavu,
+				FONT_CENTERED_X
+			);
+		}
 
 		is_progress_shown = true;
 	}

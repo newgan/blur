@@ -337,18 +337,21 @@ tl::expected<RenderCommands, std::string> Render::build_render_commands() {
 void Render::update_progress(int current_frame, int total_frames) {
 	m_status.current_frame = current_frame;
 	m_status.total_frames = total_frames;
+	m_status.init_frames = true;
 
-	bool first = !m_status.init;
+	bool first = !m_status.init_fps;
 
-	if (!m_status.init) {
-		m_status.init = true;
+	if (!m_status.init_fps) {
+		m_status.init_fps = true;
 		m_status.start_time = std::chrono::steady_clock::now();
+		m_status.start_frame = current_frame;
+		m_status.fps = 0.f;
 	}
 	else {
 		auto current_time = std::chrono::steady_clock::now();
 		m_status.elapsed_time = current_time - m_status.start_time;
 
-		m_status.fps = m_status.current_frame / m_status.elapsed_time.count();
+		m_status.fps = (m_status.current_frame - m_status.start_frame) / m_status.elapsed_time.count();
 	}
 
 	m_status.update_progress_string(first);
@@ -536,6 +539,8 @@ void Render::pause() {
 
 	m_paused = true;
 
+	m_status.on_pause();
+
 	u::log("Render paused");
 }
 
@@ -649,4 +654,9 @@ void RenderStatus::update_progress_string(bool first) {
 		progress_string =
 			std::format("{:.1f}% complete ({}/{}, {:.2f} fps)", progress * 100, current_frame, total_frames, fps);
 	}
+}
+
+void RenderStatus::on_pause() {
+	init_fps = false;
+	fps = 0.f;
 }

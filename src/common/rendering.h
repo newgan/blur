@@ -13,14 +13,20 @@ struct RenderResult {
 
 struct RenderStatus {
 	bool finished = false;
-	bool init = false;
-	int current_frame;
-	int total_frames;
+
+	bool init_frames = false;
+	int current_frame = 0;
+	int total_frames = 0;
+
+	bool init_fps = false;
 	std::chrono::steady_clock::time_point start_time;
+	int start_frame = 0;
 	std::chrono::duration<double> elapsed_time;
-	float fps;
+	float fps = 0.f;
 
 	void update_progress_string(bool first);
+	void on_pause();
+
 	std::string progress_string;
 };
 
