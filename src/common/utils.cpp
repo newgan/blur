@@ -7,39 +7,6 @@ namespace {
 	std::set<std::string> hw_encoders;
 }
 
-std::string u::trim(std::string_view str) {
-	str.remove_prefix(std::min(str.find_first_not_of(" \t\r\v\n"), str.size()));
-	str.remove_suffix(std::min(str.size() - str.find_last_not_of(" \t\r\v\n") - 1, str.size()));
-
-	return std::string(str);
-}
-
-std::string u::random_string(int len) {
-	std::string str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-
-	std::random_device rd;
-	std::mt19937 generator(rd());
-
-	std::shuffle(str.begin(), str.end(), generator);
-
-	return str.substr(0, len);
-}
-
-std::vector<std::string> u::split_string(std::string str, const std::string& delimiter) {
-	std::vector<std::string> output;
-
-	size_t pos = 0;
-	while ((pos = str.find(delimiter)) != std::string::npos) {
-		std::string token = str.substr(0, pos);
-		output.push_back(token);
-		str.erase(0, pos + delimiter.length());
-	}
-
-	output.push_back(str);
-
-	return output;
-}
-
 // NOLINTBEGIN gpt ass code
 std::wstring u::towstring(const std::string& str) {
 	if (str.empty())
@@ -82,6 +49,39 @@ std::string u::tostring(const std::wstring& wstr) {
 }
 
 // NOLINTEND
+
+std::string u::trim(std::string_view str) {
+	str.remove_prefix(std::min(str.find_first_not_of(" \t\r\v\n"), str.size()));
+	str.remove_suffix(std::min(str.size() - str.find_last_not_of(" \t\r\v\n") - 1, str.size()));
+
+	return std::string(str);
+}
+
+std::string u::random_string(int len) {
+	std::string str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+
+	std::random_device rd;
+	std::mt19937 generator(rd());
+
+	std::shuffle(str.begin(), str.end(), generator);
+
+	return str.substr(0, len);
+}
+
+std::vector<std::string> u::split_string(std::string str, const std::string& delimiter) {
+	std::vector<std::string> output;
+
+	size_t pos = 0;
+	while ((pos = str.find(delimiter)) != std::string::npos) {
+		std::string token = str.substr(0, pos);
+		output.push_back(token);
+		str.erase(0, pos + delimiter.length());
+	}
+
+	output.push_back(str);
+
+	return output;
+}
 
 std::string u::to_lower(const std::string& str) {
 	std::string out = str;

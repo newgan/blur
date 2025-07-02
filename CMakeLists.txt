@@ -31,6 +31,7 @@ find_package(Freetype REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(GTest CONFIG REQUIRED)
 find_package(tl-expected CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 # source files
 file(GLOB_RECURSE COMMON_SOURCES "src/common/*.cpp")
@@ -61,8 +62,14 @@ file(GLOB_RECURSE RESOURCES "resources/*")
 function(setup_target target)
   target_include_directories(${target} PRIVATE src)
   target_link_libraries(
-    ${target} PRIVATE nlohmann_json::nlohmann_json cpr::cpr Boost::system
-                      Boost::filesystem Threads::Threads tl::expected)
+    ${target}
+    PRIVATE nlohmann_json::nlohmann_json
+            cpr::cpr
+            Boost::system
+            Boost::filesystem
+            Threads::Threads
+            tl::expected
+            spdlog::spdlog)
   target_compile_definitions(${target} PRIVATE NOMINMAX BOOST_FILESYSTEM_NO_LIB
                                                BOOST_FILESYSTEM_STATIC_LINK=1)
   if(WIN32)

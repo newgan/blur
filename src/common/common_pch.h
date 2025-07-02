@@ -27,6 +27,8 @@
 #include <nlohmann/json.hpp>
 #include <cpr/cpr.h>
 #include <tl/expected.hpp>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include <boost/process.hpp>
 #include <boost/asio.hpp>
