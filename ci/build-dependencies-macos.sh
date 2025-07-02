@@ -241,11 +241,13 @@ meson build
 ninja -C build
 " "build" "vapoursynth-plugins"
 
-PATH="/opt/homebrew/opt/llvm@12/bin:$PATH"
+PATH="/opt/homebrew/opt/llvm@20/bin:$PATH"
+ZSTD_PREFIX=$(brew --prefix zstd)
 
 ## akarin
-build "https://github.com/AkarinVS/vapoursynth-plugin.git" "--single-branch" "" "akarin" "
+build "https://github.com/Jaded-Encoding-Thaumaturgy/akarin-vapoursynth-plugin.git" "--single-branch" "ed8ecd58722958891684a25fb883bbe626b8950a" "akarin" "
 meson build
+sed -i.bak \"s|-lzstd|-L${ZSTD_PREFIX}/lib -lzstd|g\" build/build.ninja # fuck you
 ninja -C build
 " "build" "vapoursynth-plugins"
 

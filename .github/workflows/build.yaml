@@ -63,7 +63,7 @@ jobs:
       - name: Collect dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install python3 ffmpeg libass zimg imagemagick autoconf automake libtool pkg-config gcc ffmpeg llvm@12 meson xxhash vapoursynth fftw dylibbundler
+          brew install python3 ffmpeg libass zimg imagemagick autoconf automake libtool pkg-config gcc ffmpeg llvm@20 meson xxhash vapoursynth fftw dylibbundler zstd
           cd ci
           bash build-dependencies-macos.sh
 
@@ -78,12 +78,6 @@ jobs:
         run: |
           cd ci
           bash build-dependencies-linux.sh
-
-      - name: Remove old LLVM (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew uninstall llvm@12
-          brew install llvm
 
       - name: Set up vcpkg
         shell: bash
