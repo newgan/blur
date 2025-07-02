@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef _DEBUG
-#	define DEBUG_LOG(...) u::log(__VA_ARGS__)
+#	define DEBUG_LOG(...) u::debug_log(__VA_ARGS__)
 #else
 #	define DEBUG_LOG(...) ((void)0)
 #endif
@@ -25,9 +25,15 @@ namespace u {
 	namespace detail {
 		inline std::shared_ptr<spdlog::logger>& get_logger() {
 			static auto logger = []() {
-				auto l = spdlog::stdout_color_mt("u_log");
-				l->set_pattern("%v");
-				l->set_level(spdlog::level::info);
+				auto l = spdlog::stdout_color_mt("console");
+				l->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+				l->set_level(
+#ifdef _DEBUG
+					spdlog::level::debug
+#else
+					spdlog::level::info
+#endif
+				);
 				return l;
 			}();
 			return logger;
@@ -35,7 +41,7 @@ namespace u {
 
 		inline std::shared_ptr<spdlog::logger>& get_error_logger() {
 			static auto logger = []() {
-				auto l = spdlog::stderr_color_mt("u_error_log");
+				auto l = spdlog::stderr_color_mt("stderr");
 				l->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
 				l->set_level(spdlog::level::err);
 				return l;
@@ -81,6 +87,27 @@ namespace u {
 		auto formatted = std::format(format_str, std::forward<Args>(args)...);
 		detail::get_error_logger()->error(tostring(formatted));
 	}
+
+#ifdef _DEBUG
+	template<typename... Args>
+	void debug_log(const std::format_string<Args...> format_str, Args&&... args) {
+		detail::get_logger()->debug(std::format(format_str, std::forward<Args>(args)...));
+	}
+
+	inline void debug_log(const std::string& msg) {
+		detail::get_logger()->debug(msg);
+	}
+
+	inline void debug_log(const std::wstring& msg) {
+		detail::get_logger()->debug(tostring(msg));
+	}
+
+	template<typename... Args>
+	void debug_log(const std::wformat_string<Args...> format_str, Args&&... args) {
+		auto formatted = std::format(format_str, std::forward<Args>(args)...);
+		detail::get_logger()->debug(tostring(formatted));
+	}
+#endif
 
 	// NOLINTBEGIN not my code bud
 	template<typename container_type>
