@@ -26,14 +26,13 @@ namespace u {
 		inline std::shared_ptr<spdlog::logger>& get_logger() {
 			static auto logger = []() {
 				auto l = spdlog::stdout_color_mt("console");
-				l->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
-				l->set_level(
 #ifdef _DEBUG
-					spdlog::level::debug
+				l->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+				l->set_level(spdlog::level::debug);
 #else
-					spdlog::level::info
+				l->set_pattern("%v");
+				l->set_level(spdlog::level::info);
 #endif
-				);
 				return l;
 			}();
 			return logger;
