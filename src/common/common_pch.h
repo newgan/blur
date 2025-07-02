@@ -22,6 +22,7 @@
 #include <unordered_set>
 #include <ranges>
 #include <cfloat>
+#include <csignal>
 
 // libs
 #include <nlohmann/json.hpp>

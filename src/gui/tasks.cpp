@@ -73,7 +73,7 @@ void tasks::run(const std::vector<std::string>& arguments) {
 						);
 					});
 
-					gui::stop = true;
+					blur.exiting = true;
 				}).detach();
 			},
 			update_notification_duration
@@ -100,7 +100,7 @@ void tasks::run(const std::vector<std::string>& arguments) {
 
 	add_files(wargs); // todo: mac packaged app support (& linux? does it work?)
 
-	while (!gui::stop) {
+	while (!blur.exiting) {
 		if (!rendering.render_next_video()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		}

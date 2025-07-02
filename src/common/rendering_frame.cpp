@@ -82,8 +82,8 @@ tl::expected<void, std::string> FrameRender::do_render(RenderCommands render_com
 #ifndef _DEBUG
 		if (settings.advanced.debug) {
 #endif
-			u::log(L"VSPipe command: {} {}", blur.vspipe_path.wstring(), u::join(render_commands.vspipe, L" "));
-			u::log(L"FFmpeg command: {} {}", blur.ffmpeg_path.wstring(), u::join(render_commands.ffmpeg, L" "));
+			DEBUG_LOG(L"VSPipe command: {} {}", blur.vspipe_path.wstring(), u::join(render_commands.vspipe, L" "));
+			DEBUG_LOG(L"FFmpeg command: {} {}", blur.ffmpeg_path.wstring(), u::join(render_commands.ffmpeg, L" "));
 #ifndef _DEBUG
 		}
 #endif
@@ -139,14 +139,11 @@ tl::expected<void, std::string> FrameRender::do_render(RenderCommands render_com
 			}
 		});
 
-		vspipe_process.detach();
-		ffmpeg_process.detach();
-
 		while (vspipe_process.running() || ffmpeg_process.running()) {
 			if (m_to_kill) {
 				ffmpeg_process.terminate();
 				vspipe_process.terminate();
-				u::log("frame render: killed processes early");
+				DEBUG_LOG("frame render: killed processes early");
 				m_to_kill = false;
 			}
 

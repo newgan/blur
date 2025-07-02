@@ -696,8 +696,6 @@ int u::get_fastest_rife_gpu_index(
 #endif
 		);
 
-		c.detach();
-
 		bool killed_early = false;
 
 		while (c.running()) {

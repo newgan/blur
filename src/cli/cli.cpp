@@ -93,7 +93,7 @@ bool cli::run(
 	}
 
 	// render videos
-	while (rendering.render_next_video())
+	while (!blur.exiting && rendering.render_next_video())
 		;
 
 	u::log(L"Finished rendering");

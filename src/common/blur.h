@@ -9,6 +9,7 @@ const std::string BLUR_VERSION = "2.31";
 class Blur { // todo: switch all the classes which could be namespaces into namespaces
 public:
 	bool initialised = false;
+	bool exiting = false;
 
 	bool verbose = true;
 	bool using_preview = false;
@@ -44,6 +45,8 @@ public:
 
 	void initialise_rife_gpus();
 	void pick_fastest_rife_gpu(BlurSettings& settings);
+
+	void setup_signal_handlers();
 };
 
 inline Blur blur;
