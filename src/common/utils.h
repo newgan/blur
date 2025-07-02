@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef _DEBUG
-#	define DEBUG_LOG(...) u::log(__VA_ARGS__)
+#	define DEBUG_LOG(...) u::debug_log(__VA_ARGS__)
 #else
 #	define DEBUG_LOG(...) ((void)0)
 #endif
@@ -19,41 +19,94 @@
 	})
 
 namespace u {
+	std::wstring towstring(const std::string& str);
+	std::string tostring(const std::wstring& wstr);
+
+	namespace detail {
+		inline std::shared_ptr<spdlog::logger>& get_logger() {
+			static auto logger = []() {
+				auto l = spdlog::stdout_color_mt("console");
+#ifdef _DEBUG
+				l->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+				l->set_level(spdlog::level::debug);
+#else
+				l->set_pattern("%v");
+				l->set_level(spdlog::level::info);
+#endif
+				return l;
+			}();
+			return logger;
+		}
+
+		inline std::shared_ptr<spdlog::logger>& get_error_logger() {
+			static auto logger = []() {
+				auto l = spdlog::stderr_color_mt("stderr");
+				l->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+				l->set_level(spdlog::level::err);
+				return l;
+			}();
+			return logger;
+		}
+	}
+
 	inline void log(const std::string& msg) {
-		std::cout << msg << '\n';
+		detail::get_logger()->info(msg);
 	}
 
 	inline void log(const std::wstring& msg) {
-		std::wcout << msg << L'\n';
+		detail::get_logger()->info(tostring(msg));
 	}
 
 	template<typename... Args>
 	void log(const std::format_string<Args...> format_str, Args&&... args) {
-		std::cout << std::format(format_str, std::forward<Args>(args)...) << '\n';
+		detail::get_logger()->info(std::format(format_str, std::forward<Args>(args)...));
 	}
 
 	template<typename... Args>
 	void log(const std::wformat_string<Args...> format_str, Args&&... args) {
-		std::wcout << std::format(format_str, std::forward<Args>(args)...) << L'\n';
+		auto formatted = std::format(format_str, std::forward<Args>(args)...);
+		detail::get_logger()->info(tostring(formatted));
 	}
 
 	inline void log_error(const std::string& msg) {
-		std::cerr << msg << '\n';
+		detail::get_error_logger()->error(msg);
 	}
 
 	inline void log_error(const std::wstring& msg) {
-		std::wcerr << msg << L'\n';
+		detail::get_error_logger()->error(tostring(msg));
 	}
 
 	template<typename... Args>
 	void log_error(const std::format_string<Args...> format_str, Args&&... args) {
-		std::cerr << std::format(format_str, std::forward<Args>(args)...) << '\n';
+		detail::get_error_logger()->error(std::format(format_str, std::forward<Args>(args)...));
 	}
 
 	template<typename... Args>
 	void log_error(const std::wformat_string<Args...> format_str, Args&&... args) {
-		std::wcerr << std::format(format_str, std::forward<Args>(args)...) << L'\n';
+		auto formatted = std::format(format_str, std::forward<Args>(args)...);
+		detail::get_error_logger()->error(tostring(formatted));
 	}
+
+#ifdef _DEBUG
+	template<typename... Args>
+	void debug_log(const std::format_string<Args...> format_str, Args&&... args) {
+		detail::get_logger()->debug(std::format(format_str, std::forward<Args>(args)...));
+	}
+
+	inline void debug_log(const std::string& msg) {
+		detail::get_logger()->debug(msg);
+	}
+
+	inline void debug_log(const std::wstring& msg) {
+		detail::get_logger()->debug(tostring(msg));
+	}
+
+	template<typename... Args>
+	void debug_log(const std::wformat_string<Args...> format_str, Args&&... args) {
+		auto formatted = std::format(format_str, std::forward<Args>(args)...);
+		detail::get_logger()->debug(tostring(formatted));
+	}
+#endif
 
 	// NOLINTBEGIN not my code bud
 	template<typename container_type>
@@ -162,8 +215,6 @@ namespace u {
 	std::string trim(std::string_view str);
 	std::string random_string(int len);
 	std::vector<std::string> split_string(std::string str, const std::string& delimiter);
-	std::wstring towstring(const std::string& str);
-	std::string tostring(const std::wstring& wstr);
 	std::string to_lower(const std::string& str);
 	std::string truncate_with_ellipsis(const std::string& input, std::size_t max_length);
 

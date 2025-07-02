@@ -92,6 +92,8 @@ tl::expected<void, std::string> Blur::initialise(bool _verbose, bool _using_prev
 	verbose = _verbose;
 	using_preview = _using_preview;
 
+	setup_signal_handlers();
+
 	int res = std::atexit([] {
 		rendering.stop_rendering();
 		blur.cleanup();
@@ -196,4 +198,33 @@ void Blur::initialise_rife_gpus() {
 	);
 
 	initialised_rife_gpus = true;
+}
+
+void cleanup_handler(int signal) {
+	blur.exiting = true;
+
+	auto current_render = rendering.get_current_render();
+	if (current_render) {
+		(*current_render)->stop();
+
+		u::log("Stopping current render");
+	}
+
+	while (rendering.get_current_render_id()) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	}
+
+	DEBUG_LOG("cleaned up!");
+
+	// Restore default handler and re-raise
+	std::signal(signal, SIG_DFL);
+	std::raise(signal);
+}
+
+void Blur::setup_signal_handlers() {
+	std::signal(SIGINT, cleanup_handler);
+	std::signal(SIGTERM, cleanup_handler);
+#ifndef _WIN32
+	std::signal(SIGHUP, cleanup_handler);
+#endif
 }

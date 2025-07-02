@@ -26,7 +26,7 @@ bool Rendering::render_next_video() {
 		render_result = render->render();
 	}
 	catch (const std::exception& e) {
-		u::log(e.what());
+		u::log("Render exception: {}", e.what());
 	}
 
 	rendering.call_render_finished_callback(
@@ -368,15 +368,14 @@ tl::expected<RenderResult, std::string> Render::do_render(RenderCommands render_
 	std::ostringstream vspipe_stderr_output;
 
 	try {
-		boost::asio::io_context io_context;
 		bp::pipe vspipe_stdout;
 		bp::ipstream vspipe_stderr;
 
 #ifndef _DEBUG
 		if (m_settings.advanced.debug) {
 #endif
-			u::log(L"VSPipe command: {} {}", blur.vspipe_path.wstring(), u::join(render_commands.vspipe, L" "));
-			u::log(L"FFmpeg command: {} {}", blur.ffmpeg_path.wstring(), u::join(render_commands.ffmpeg, L" "));
+			DEBUG_LOG(L"VSPipe command: {} {}", blur.vspipe_path.wstring(), u::join(render_commands.vspipe, L" "));
+			DEBUG_LOG(L"FFmpeg command: {} {}", blur.ffmpeg_path.wstring(), u::join(render_commands.ffmpeg, L" "));
 #ifndef _DEBUG
 		}
 #endif
@@ -404,8 +403,7 @@ tl::expected<RenderResult, std::string> Render::do_render(RenderCommands render_
 			bp::args(render_commands.vspipe),
 			bp::std_out > vspipe_stdout,
 			bp::std_err > vspipe_stderr,
-			env,
-			io_context
+			env
 #ifdef _WIN32
 			,
 			bp::windows::create_no_window
@@ -418,14 +416,14 @@ tl::expected<RenderResult, std::string> Render::do_render(RenderCommands render_
 			bp::args(render_commands.ffmpeg),
 			bp::std_in < vspipe_stdout,
 			bp::std_out.null(),
-			// bp::std_err.null(),
-			io_context
+			env
 #ifdef _WIN32
 			,
 			bp::windows::create_no_window
 #endif
 		);
 
+		// Store PIDs for signal handler
 		m_vspipe_pid = vspipe_process.id();
 		m_ffmpeg_pid = ffmpeg_process.id();
 
@@ -468,16 +466,13 @@ tl::expected<RenderResult, std::string> Render::do_render(RenderCommands render_
 			}
 		});
 
-		vspipe_process.detach();
-		ffmpeg_process.detach();
-
 		bool killed = false;
 
 		while (vspipe_process.running() || ffmpeg_process.running()) {
 			if (m_to_kill) {
 				ffmpeg_process.terminate();
 				vspipe_process.terminate();
-				u::log("render: killed processes early");
+				DEBUG_LOG("render: killed processes early");
 				killed = true;
 				m_to_kill = false;
 			}
@@ -488,6 +483,9 @@ tl::expected<RenderResult, std::string> Render::do_render(RenderCommands render_
 		// Clean up
 		if (progress_thread.joinable())
 			progress_thread.join();
+
+		m_vspipe_pid = -1;
+		m_ffmpeg_pid = -1;
 
 		if (m_settings.advanced.debug)
 			u::log(
@@ -517,6 +515,10 @@ tl::expected<RenderResult, std::string> Render::do_render(RenderCommands render_
 		};
 	}
 	catch (const boost::system::system_error& e) {
+		// clean up
+		m_vspipe_pid = -1;
+		m_ffmpeg_pid = -1;
+
 		u::log_error("Process error: {}", e.what());
 		return tl::unexpected(e.what());
 	}
