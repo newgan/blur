@@ -115,4 +115,14 @@ namespace config_presets {
 	std::vector<PresetDetails> get_available_presets(bool gpu_encoding, const std::string& gpu_type);
 
 	std::vector<std::wstring> get_preset_params(const std::string& gpu_type, const std::string& preset, int quality);
+
+	tl::expected<std::wstring, std::string> extract_codec_from_args(const std::vector<std::wstring>& ffmpeg_args);
+
+	struct QualityConfig {
+		int min_quality;
+		int max_quality;
+		std::string quality_label;
+	};
+
+	QualityConfig get_quality_config(const std::wstring& codec);
 }

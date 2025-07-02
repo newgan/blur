@@ -185,3 +185,75 @@ std::vector<std::wstring> config_presets::get_preset_params(
 }
 
 // NOLINTEND(misc-no-recursion)
+
+tl::expected<std::wstring, std::string> config_presets::extract_codec_from_args(
+	const std::vector<std::wstring>& ffmpeg_args
+) {
+	const std::vector<std::wstring> codec_flags = { L"-c:v", L"-codec:v", L"-vcodec", L"-c:video", L"-codec:video" };
+
+	for (size_t i = 0; i < ffmpeg_args.size() - 1; i++) {
+		for (const auto& flag : codec_flags) {
+			if (ffmpeg_args[i] == flag) {
+				return ffmpeg_args[i + 1];
+			}
+		}
+	}
+
+	return tl::unexpected("no codec found");
+}
+
+config_presets::QualityConfig config_presets::get_quality_config(const std::wstring& codec) {
+	QualityConfig config;
+
+	// Detect codec type and set appropriate ranges
+	if (codec == L"h264_nvenc" || codec == L"hevc_nvenc" || codec == L"av1_nvenc") {
+		// NVIDIA NVENC
+		config.min_quality = 0;
+		config.max_quality = 51;
+		config.quality_label = "(0: lossless, 23: balanced, 51: worst)";
+	}
+	else if (codec == L"h264_amf" || codec == L"hevc_amf" || codec == L"av1_amf") {
+		// AMD AMF
+		config.min_quality = 0;
+		config.max_quality = 51;
+		config.quality_label = "(0: best, 23: balanced, 51: worst)";
+	}
+	else if (codec == L"h264_qsv" || codec == L"hevc_qsv" || codec == L"av1_qsv") {
+		// Intel QSV
+		config.min_quality = 1;
+		config.max_quality = 51;
+		config.quality_label = "(1: best, 23: balanced, 51: worst)";
+	}
+	else if (codec == L"h264_videotoolbox" || codec == L"hevc_videotoolbox" || codec == L"av1_videotoolbox") {
+		// Mac VideoToolbox H264/H265/AV1
+		config.min_quality = 0;
+		config.max_quality = 100;
+		config.quality_label = "(0: best, 50: balanced, 100: worst)";
+	}
+	else if (codec == L"prores_videotoolbox") {
+		// Mac ProRes
+		config.min_quality = 0;
+		config.max_quality = 4;
+		config.quality_label = "(0: proxy, 1: lt, 2: std, 3: hq, 4: 4444xq)";
+	}
+	else if (codec == L"libx264" || codec == L"libx265") {
+		// CPU x264/x265
+		config.min_quality = 0;
+		config.max_quality = 51;
+		config.quality_label = "(0: lossless, 23: balanced, 51: worst)";
+	}
+	else if (codec == L"libaom-av1" || codec == L"libvpx-vp9") {
+		// CPU AV1/VP9
+		config.min_quality = 15;
+		config.max_quality = 50;
+		config.quality_label = "(15: best, 30: balanced, 50: worst)";
+	}
+	else {
+		// Fallback
+		config.min_quality = 0;
+		config.max_quality = 51;
+		config.quality_label = "";
+	}
+
+	return config;
+}

@@ -4,6 +4,8 @@
 #include "../../ui/ui.h"
 #include "../../render/render.h"
 
+#include "common/config_presets.h"
+
 namespace configs = gui::components::configs;
 
 void configs::set_interpolated_fps() {
@@ -268,23 +270,29 @@ void configs::options(ui::Container& container, BlurSettings& settings) {
 	);
 
 	if (settings.advanced.ffmpeg_override.empty()) {
-		int min_quality = 0;
-		int max_quality = 51;
-		std::string quality_label = "quality: {}";
+		std::vector<std::wstring> preset_args = config_presets::get_preset_params(
+			settings.gpu_encoding ? settings.gpu_type : "cpu",
+			u::to_lower(settings.encode_preset.empty() ? "h264" : settings.encode_preset),
+			settings.quality
+		);
 
-		if (settings.encode_preset == "prores" && settings.gpu_type == "mac") {
-			min_quality = 0; // proxy
-			max_quality = 3; // hq
-			quality_label = "quality: {} (0:proxy, 1:lt, 2:standard, 3:hq)";
-		}
-		else if (settings.encode_preset == "av1") {
-			max_quality = 63;
-		}
+		auto codec = config_presets::extract_codec_from_args(preset_args);
+		auto quality_config = config_presets::get_quality_config(codec ? *codec : L"");
 
-		settings.quality = std::clamp(settings.quality, min_quality, max_quality);
+		// // clamp current quality to new range
+		// settings.quality = std::clamp(settings.quality, quality_config.min_quality, quality_config.max_quality);
 
 		ui::add_slider(
-			"quality", container, min_quality, max_quality, &settings.quality, quality_label, fonts::dejavu, {}, 0.f
+			"quality",
+			container,
+			quality_config.min_quality,
+			quality_config.max_quality,
+			&settings.quality,
+			"quality: {}",
+			fonts::dejavu,
+			{},
+			0.f,
+			quality_config.quality_label
 		);
 	}
 	else {
