@@ -95,6 +95,7 @@ tl::expected<void, std::string> Blur::initialise(bool _verbose, bool _using_prev
 	setup_signal_handlers();
 
 	int atexit_res = std::atexit([] {
+		blur.in_atexit = true; // spdlog's already shut down or smth. Cancer
 		blur.cleanup();
 	});
 

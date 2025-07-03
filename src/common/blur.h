@@ -11,6 +11,7 @@ public:
 	bool initialised = false;
 	bool exiting = false;
 	std::atomic<bool> cleanup_performed;
+	bool in_atexit = false;
 
 	bool verbose = true;
 	bool using_preview = false;

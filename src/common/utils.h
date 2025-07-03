@@ -47,64 +47,104 @@ namespace u {
 			}();
 			return logger;
 		}
+
+		enum class LogType {
+			LOG_INFO,
+			LOG_ERROR,
+			LOG_DEBUG
+		};
+
+		template<typename T>
+		inline void log_impl(LogType type, T&& msg) {
+			if (blur.in_atexit) {
+				if constexpr (std::is_convertible_v<T, std::wstring>) {
+					auto& stream = (type == LogType::LOG_ERROR) ? std::wcerr : std::wcout;
+					if (type == LogType::LOG_DEBUG)
+						stream << L"[debug] ";
+					stream << msg << L'\n';
+				}
+				else {
+					auto& stream = (type == LogType::LOG_ERROR) ? std::cerr : std::cout;
+					if (type == LogType::LOG_DEBUG)
+						stream << "[debug] ";
+					stream << msg << '\n';
+				}
+				return;
+			}
+
+			switch (type) {
+				case LogType::LOG_INFO:
+					get_logger()->info(std::forward<T>(msg));
+					break;
+				case LogType::LOG_ERROR:
+					get_error_logger()->error(std::forward<T>(msg));
+					break;
+				case LogType::LOG_DEBUG:
+					get_logger()->debug(std::forward<T>(msg));
+					break;
+			}
+		}
 	}
 
+	// Regular log functions
 	inline void log(const std::string& msg) {
-		detail::get_logger()->info(msg);
+		detail::log_impl(detail::LogType::LOG_INFO, msg);
 	}
 
 	inline void log(const std::wstring& msg) {
-		detail::get_logger()->info(tostring(msg));
+		detail::log_impl(detail::LogType::LOG_INFO, tostring(msg));
 	}
 
 	template<typename... Args>
 	void log(const std::format_string<Args...> format_str, Args&&... args) {
-		detail::get_logger()->info(std::format(format_str, std::forward<Args>(args)...));
+		detail::log_impl(detail::LogType::LOG_INFO, std::format(format_str, std::forward<Args>(args)...));
 	}
 
 	template<typename... Args>
 	void log(const std::wformat_string<Args...> format_str, Args&&... args) {
 		auto formatted = std::format(format_str, std::forward<Args>(args)...);
-		detail::get_logger()->info(tostring(formatted));
+		detail::log_impl(detail::LogType::LOG_INFO, tostring(formatted));
 	}
 
+	// Error log functions
 	inline void log_error(const std::string& msg) {
-		detail::get_error_logger()->error(msg);
+		detail::log_impl(detail::LogType::LOG_ERROR, msg);
 	}
 
 	inline void log_error(const std::wstring& msg) {
-		detail::get_error_logger()->error(tostring(msg));
+		detail::log_impl(detail::LogType::LOG_ERROR, tostring(msg));
 	}
 
 	template<typename... Args>
 	void log_error(const std::format_string<Args...> format_str, Args&&... args) {
-		detail::get_error_logger()->error(std::format(format_str, std::forward<Args>(args)...));
+		detail::log_impl(detail::LogType::LOG_ERROR, std::format(format_str, std::forward<Args>(args)...));
 	}
 
 	template<typename... Args>
 	void log_error(const std::wformat_string<Args...> format_str, Args&&... args) {
 		auto formatted = std::format(format_str, std::forward<Args>(args)...);
-		detail::get_error_logger()->error(tostring(formatted));
+		detail::log_impl(detail::LogType::LOG_ERROR, tostring(formatted));
 	}
 
 #ifdef _DEBUG
-	template<typename... Args>
-	void debug_log(const std::format_string<Args...> format_str, Args&&... args) {
-		detail::get_logger()->debug(std::format(format_str, std::forward<Args>(args)...));
-	}
-
+	// Debug log functions
 	inline void debug_log(const std::string& msg) {
-		detail::get_logger()->debug(msg);
+		detail::log_impl(detail::LogType::LOG_DEBUG, msg);
 	}
 
 	inline void debug_log(const std::wstring& msg) {
-		detail::get_logger()->debug(tostring(msg));
+		detail::log_impl(detail::LogType::LOG_DEBUG, tostring(msg));
+	}
+
+	template<typename... Args>
+	void debug_log(const std::format_string<Args...> format_str, Args&&... args) {
+		detail::log_impl(detail::LogType::LOG_DEBUG, std::format(format_str, std::forward<Args>(args)...));
 	}
 
 	template<typename... Args>
 	void debug_log(const std::wformat_string<Args...> format_str, Args&&... args) {
 		auto formatted = std::format(format_str, std::forward<Args>(args)...);
-		detail::get_logger()->debug(tostring(formatted));
+		detail::log_impl(detail::LogType::LOG_DEBUG, tostring(formatted));
 	}
 #endif
 
