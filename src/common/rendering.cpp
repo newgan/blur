@@ -640,9 +640,16 @@ tl::expected<RenderResult, std::string> Render::render() {
 	return render;
 }
 
-void Rendering::stop_rendering() {
-	for (auto& render : m_queue) {
-		render->stop();
+void Rendering::stop_renders_and_wait() {
+	auto current_render = get_current_render();
+	if (current_render) {
+		(*current_render)->stop();
+		u::log("Stopping current render");
+	}
+
+	// wait for current render to finish
+	while (get_current_render_id()) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	}
 }
 

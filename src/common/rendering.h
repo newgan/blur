@@ -136,7 +136,7 @@ public:
 
 	Render& queue_render(Render&& render);
 
-	void stop_rendering();
+	void stop_renders_and_wait();
 
 	const std::vector<std::unique_ptr<Render>>& get_queue() {
 		return m_queue;

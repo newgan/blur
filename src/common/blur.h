@@ -10,6 +10,7 @@ class Blur { // todo: switch all the classes which could be namespaces into name
 public:
 	bool initialised = false;
 	bool exiting = false;
+	std::atomic<bool> cleanup_performed;
 
 	bool verbose = true;
 	bool using_preview = false;
@@ -26,7 +27,7 @@ public:
 
 	tl::expected<void, std::string> initialise(bool _verbose, bool _using_preview);
 
-	void cleanup() const;
+	void cleanup();
 
 	void initialise_base_temp_path();
 

@@ -94,12 +94,11 @@ tl::expected<void, std::string> Blur::initialise(bool _verbose, bool _using_prev
 
 	setup_signal_handlers();
 
-	int res = std::atexit([] {
-		rendering.stop_rendering();
+	int atexit_res = std::atexit([] {
 		blur.cleanup();
 	});
 
-	if (res != 0)
+	if (atexit_res != 0)
 		DEBUG_LOG("failed to register atexit");
 
 	initialise_base_temp_path();
@@ -127,9 +126,23 @@ void Blur::initialise_base_temp_path() {
 	}
 }
 
-void Blur::cleanup() const {
-	u::log("removing temp path {}", temp_path.string());
+void Blur::cleanup() {
+	// prevent multiple cleanup calls
+	if (cleanup_performed.exchange(true))
+		return;
+
+	u::log("Starting application cleanup...");
+
+	exiting = true;
+
+	// stop renders
+	rendering.stop_renders_and_wait();
+
+	// remove temp dirs
+	DEBUG_LOG("removing temp path {}", temp_path.string());
 	std::filesystem::remove_all(temp_path); // todo: is this unsafe lol
+
+	u::log("Application cleanup completed");
 }
 
 std::optional<std::filesystem::path> Blur::create_temp_path(const std::string& folder_name) const {
@@ -201,23 +214,12 @@ void Blur::initialise_rife_gpus() {
 }
 
 void cleanup_handler(int signal) {
-	blur.exiting = true;
-
-	auto current_render = rendering.get_current_render();
-	if (current_render) {
-		(*current_render)->stop();
-
-		u::log("Stopping current render");
-	}
-
-	while (rendering.get_current_render_id()) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(50));
-	}
-
-	DEBUG_LOG("cleaned up!");
-
-	// Restore default handler and re-raise
+	// Restore default handler immediately to prevent re-entry
 	std::signal(signal, SIG_DFL);
+
+	blur.cleanup();
+
+	// Re-raise the signal for proper exit code
 	std::raise(signal);
 }
 
