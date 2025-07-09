@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config_blur.h"
+#include "config_app.h"
 #include "rendering.h"
 
 class FrameRender {
@@ -27,10 +28,13 @@ public:
 	bool remove_temp_path();
 
 	tl::expected<std::filesystem::path, std::string> render(
-		const std::filesystem::path& input_path, const BlurSettings& settings
+		const std::filesystem::path& input_path, const BlurSettings& settings, const GlobalAppSettings& app_settings
 	);
 
 	static tl::expected<RenderCommands, std::string> build_render_commands(
-		const std::filesystem::path& input_path, const std::filesystem::path& output_path, const BlurSettings& settings
+		const std::filesystem::path& input_path,
+		const std::filesystem::path& output_path,
+		const BlurSettings& settings,
+		const GlobalAppSettings& app_settings
 	);
 };

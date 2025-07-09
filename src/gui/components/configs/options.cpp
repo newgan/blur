@@ -33,7 +33,7 @@ void configs::set_interpolated_fps() {
 	}
 }
 
-void configs::options(ui::Container& container, BlurSettings& settings) {
+void configs::options(ui::Container& container) {
 	static const gfx::Color section_color = gfx::Color::white(renderer::MUTED_SHADE);
 
 	bool first_section = true;
@@ -69,8 +69,6 @@ void configs::options(ui::Container& container, BlurSettings& settings) {
 	section_component("blur", &settings.blur);
 
 	if (settings.blur) {
-		auto app_config = config_app::get_app_config();
-
 		ui::add_slider_tied(
 			"blur amount",
 			container,
@@ -79,7 +77,7 @@ void configs::options(ui::Container& container, BlurSettings& settings) {
 			&settings.blur_amount,
 			"blur amount: {:.2f}",
 			&settings.blur_output_fps,
-			app_config.blur_amount_tied_to_fps,
+			app_settings.blur_amount_tied_to_fps,
 			"fps",
 			fonts::dejavu
 		);
@@ -266,15 +264,15 @@ void configs::options(ui::Container& container, BlurSettings& settings) {
 	ui::add_dropdown(
 		"codec dropdown",
 		container,
-		std::format("encode preset ({})", settings.gpu_encoding ? "gpu: " + settings.gpu_type : "cpu"),
-		u::get_supported_presets(settings.gpu_encoding, settings.gpu_type),
+		std::format("encode preset ({})", settings.gpu_encoding ? "gpu: " + app_settings.gpu_type : "cpu"),
+		u::get_supported_presets(settings.gpu_encoding, app_settings.gpu_type),
 		settings.encode_preset,
 		fonts::dejavu
 	);
 
 	if (settings.advanced.ffmpeg_override.empty()) {
 		std::vector<std::wstring> preset_args = config_presets::get_preset_params(
-			settings.gpu_encoding ? settings.gpu_type : "cpu",
+			settings.gpu_encoding ? app_settings.gpu_type : "cpu",
 			u::to_lower(settings.encode_preset.empty() ? "h264" : settings.encode_preset),
 			settings.quality
 		);
@@ -338,7 +336,7 @@ void configs::options(ui::Container& container, BlurSettings& settings) {
 					container,
 					"gpu encoding device",
 					gpu_types,
-					settings.gpu_type,
+					app_settings.gpu_type,
 					fonts::dejavu
 				);
 			}
@@ -357,15 +355,15 @@ void configs::options(ui::Container& container, BlurSettings& settings) {
 #ifndef __APPLE__ // rife mac issue todo:
 	static std::string rife_gpu;
 
-	if (settings.rife_gpu_index == -1) {
+	if (app_settings.rife_gpu_index == -1) {
 		rife_gpu = "default - will use first available";
 	}
 	else {
 		if (blur.initialised_rife_gpus) {
-			rife_gpu = blur.rife_gpus.at(settings.rife_gpu_index);
+			rife_gpu = blur.rife_gpus.at(app_settings.rife_gpu_index);
 		}
 		else {
-			rife_gpu = std::format("gpu {}", settings.rife_gpu_index);
+			rife_gpu = std::format("gpu {}", app_settings.rife_gpu_index);
 		}
 	}
 
@@ -379,7 +377,7 @@ void configs::options(ui::Container& container, BlurSettings& settings) {
 		[&](std::string* new_gpu_name) {
 			for (const auto& [gpu_index, gpu_name] : blur.rife_gpus) {
 				if (gpu_name == *new_gpu_name) {
-					settings.rife_gpu_index = gpu_index;
+					app_settings.rife_gpu_index = gpu_index;
 				}
 			}
 		}
@@ -659,9 +657,14 @@ void configs::parse_interp() {
 void configs::save_config() {
 	config_blur::create(config_blur::get_global_config_path(), settings);
 	current_global_settings = settings;
+
+	config_app::create(config_app::get_app_config_path(), app_settings);
+	current_app_settings = app_settings;
 };
 
 void configs::on_load() {
 	current_global_settings = settings;
 	parse_interp();
+
+	current_app_settings = app_settings;
 };

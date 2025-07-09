@@ -1,7 +1,42 @@
 #pragma once
 
 namespace config_base {
-	std::map<std::string, std::string> read_config_map(const std::filesystem::path& config_filepath);
+	template<typename T>
+	concept HasGetline = requires(T& t, std::string& s) { std::getline(t, s); };
+
+	template<HasGetline InputStream>
+	std::map<std::string, std::string> read_config_map(InputStream& input_stream) {
+		std::map<std::string, std::string> config = {};
+
+		// retrieve all of the variables from the input source
+		std::string line;
+		while (std::getline(input_stream, line)) {
+			// get key & value
+			auto pos = line.find(':');
+			if (pos == std::string::npos) // not a variable
+				continue;
+
+			std::string key = line.substr(0, pos);
+			std::string value = line.substr(pos + 1);
+
+			// trim whitespace
+			key = u::trim(key);
+			if (key == "")
+				continue;
+
+			value = u::trim(value);
+
+			if (key != "custom ffmpeg filters") {
+				// remove all spaces in values (it breaks stringstream string parsing, this is a dumb workaround)
+				// todo: better solution
+				std::erase(value, ' ');
+			}
+
+			config[key] = value;
+		}
+
+		return config;
+	}
 
 	template<typename T>
 	void extract_config_value(const std::map<std::string, std::string>& config, const std::string& var, T& out) {

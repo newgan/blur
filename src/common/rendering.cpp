@@ -124,6 +124,8 @@ Render::Render(
 	this->m_settings = config_res.config;
 	this->m_is_global_config = config_res.is_global;
 
+	this->m_app_settings = config_app::get_app_config();
+
 	if (output_path.has_value())
 		this->m_output_path = output_path.value();
 	else {
@@ -159,6 +161,12 @@ tl::expected<RenderCommands, std::string> Render::build_render_commands() {
 	auto settings_json = m_settings.to_json();
 	if (!settings_json)
 		return tl::unexpected(settings_json.error());
+
+	auto app_settings_json = m_app_settings.to_json();
+	if (!app_settings_json)
+		return tl::unexpected(app_settings_json.error());
+
+	settings_json->update(*app_settings_json); // adds new keys from app settings (and overrides dupes)
 
 #if defined(__linux__)
 	bool vapoursynth_plugins_bundled = std::filesystem::exists(blur.resources_path / "vapoursynth-plugins");
@@ -297,7 +305,7 @@ tl::expected<RenderCommands, std::string> Render::build_render_commands() {
 	}
 	else {
 		std::vector<std::wstring> preset_args = config_presets::get_preset_params(
-			m_settings.gpu_encoding ? m_settings.gpu_type : "cpu",
+			m_settings.gpu_encoding ? m_app_settings.gpu_type : "cpu",
 			u::to_lower(m_settings.encode_preset.empty() ? "h264" : m_settings.encode_preset),
 			m_settings.quality
 		);

@@ -62,8 +62,6 @@ struct BlurSettings {
 	bool gpu_decoding = true;
 	bool gpu_interpolation = true;
 	bool gpu_encoding = false;
-	std::string gpu_type;
-	int rife_gpu_index = -1;
 
 	bool override_advanced = false;
 	AdvancedSettings advanced;
@@ -78,7 +76,6 @@ public:
 	[[nodiscard]] tl::expected<nlohmann::json, std::string> to_json() const;
 
 	[[nodiscard]] tl::expected<std::filesystem::path, std::string> get_rife_model_path() const;
-	void set_fastest_rife_gpu();
 };
 
 namespace config_blur {
@@ -96,11 +93,21 @@ namespace config_blur {
 
 	const std::string CONFIG_FILENAME = ".blur-config.cfg";
 
+	std::string generate_config_string(const BlurSettings& settings, bool concise);
+
 	void create(const std::filesystem::path& filepath, const BlurSettings& current_settings = BlurSettings());
+
+	std::string export_concise(const BlurSettings& settings);
 
 	tl::expected<void, std::string> validate(BlurSettings& config, bool fix);
 
+	BlurSettings parse(const std::string& config_content);
 	BlurSettings parse(const std::filesystem::path& config_filepath);
+	BlurSettings parse_from_map(
+		const std::map<std::string, std::string>& config_map,
+		const std::optional<std::filesystem::path>& config_filepath = {}
+	);
+
 	BlurSettings parse_global_config();
 
 	std::filesystem::path get_global_config_path();

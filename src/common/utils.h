@@ -306,6 +306,9 @@ namespace u {
 		const std::filesystem::path& benchmark_video_path
 	);
 
+	void set_fastest_rife_gpu(BlurSettings& settings);
+	void verify_gpu_encoding(BlurSettings& settings);
+
 #ifdef WIN32
 	bool windows_toggle_suspend_process(DWORD pid, bool to_suspend);
 #endif

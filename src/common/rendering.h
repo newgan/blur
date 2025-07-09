@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config_blur.h"
+#include "config_app.h"
 
 struct RenderCommands {
 	std::vector<std::wstring> vspipe;
@@ -49,6 +50,8 @@ private:
 
 	BlurSettings m_settings;
 	bool m_is_global_config = false;
+
+	GlobalAppSettings m_app_settings;
 
 	bool m_to_kill = false;
 	bool m_paused = false;

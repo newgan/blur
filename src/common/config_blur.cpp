@@ -1,110 +1,177 @@
 #include "config_blur.h"
 #include "config_base.h"
 
-void config_blur::create(const std::filesystem::path& filepath, const BlurSettings& current_settings) {
-	std::ofstream output(filepath);
+std::string config_blur::generate_config_string(const BlurSettings& settings, bool concise) {
+	std::ostringstream output;
 
 	output << "[blur v" << BLUR_VERSION << "]" << "\n";
 
-	output << "\n";
-	output << "- blur" << "\n";
-	output << "blur: " << (current_settings.blur ? "true" : "false") << "\n";
-	output << "blur amount: " << current_settings.blur_amount << "\n";
-	output << "blur output fps: " << current_settings.blur_output_fps << "\n";
-	output << "blur weighting: " << current_settings.blur_weighting << "\n";
-	output << "blur gamma: " << current_settings.blur_gamma << "\n";
-
-	output << "\n";
-	output << "- interpolation" << "\n";
-	output << "interpolate: " << (current_settings.interpolate ? "true" : "false") << "\n";
-	output << "interpolated fps: " << current_settings.interpolated_fps << "\n";
-#ifndef __APPLE__ // rife dont worky on mac (see renderer.cpp)
-	output << "interpolation method: " << current_settings.interpolation_method << "\n";
-
-	output << "\n";
-	output << "- pre-interpolation" << "\n";
-	output << "pre-interpolate: " << (current_settings.pre_interpolate ? "true" : "false") << "\n";
-	output << "pre-interpolated fps: " << current_settings.pre_interpolated_fps << "\n";
-#endif
-
-	output << "\n";
-	output << "- deduplication" << "\n";
-	output << "deduplicate: " << (current_settings.deduplicate ? "true" : "false") << "\n";
-	output << "deduplicate method: " << current_settings.deduplicate_method << "\n";
-
-	output << "\n";
-	output << "- rendering" << "\n";
-	output << "encode preset: " << current_settings.encode_preset << "\n";
-	output << "quality: " << current_settings.quality << "\n";
-	output << "preview: " << (current_settings.preview ? "true" : "false") << "\n";
-	output << "detailed filenames: " << (current_settings.detailed_filenames ? "true" : "false") << "\n";
-	output << "copy dates: " << (current_settings.copy_dates ? "true" : "false") << "\n";
-
-	output << "\n";
-	output << "- gpu acceleration" << "\n";
-	output << "gpu decoding: " << (current_settings.gpu_decoding ? "true" : "false") << "\n";
-	output << "gpu interpolation: " << (current_settings.gpu_interpolation ? "true" : "false") << "\n";
-	output << "gpu encoding: " << (current_settings.gpu_encoding ? "true" : "false") << "\n";
-	output << "gpu type (nvidia/amd/intel): " << current_settings.gpu_type << "\n";
-	output << "rife gpu number: " << current_settings.rife_gpu_index << "\n";
-
-	output << "\n";
-	output << "- timescale" << "\n";
-	output << "timescale: " << (current_settings.timescale ? "true" : "false") << "\n";
-	output << "input timescale: " << current_settings.input_timescale << "\n";
-	output << "output timescale: " << current_settings.output_timescale << "\n";
-	output << "adjust timescaled audio pitch: " << (current_settings.output_timescale_audio_pitch ? "true" : "false")
-		   << "\n";
-
-	output << "\n";
-	output << "- filters" << "\n";
-	output << "filters: " << (current_settings.filters ? "true" : "false") << "\n";
-	output << "brightness: " << current_settings.brightness << "\n";
-	output << "saturation: " << current_settings.saturation << "\n";
-	output << "contrast: " << current_settings.contrast << "\n";
-
-	output << "\n";
-	output << "- advanced" << "\n";
-	output << "advanced: " << (current_settings.override_advanced ? "true" : "false") << "\n";
-
-	if (current_settings.override_advanced) {
+	// Blur section
+	if (!concise || settings.blur) {
 		output << "\n";
-		output << "- advanced deduplication" << "\n";
-		output << "deduplicate range: " << current_settings.advanced.deduplicate_range << "\n";
-		output << "deduplicate threshold: " << current_settings.advanced.deduplicate_threshold << "\n";
-
-		output << "\n";
-		output << "- advanced rendering" << "\n";
-		output << "video container: " << current_settings.advanced.video_container << "\n";
-		output << "custom ffmpeg filters: " << current_settings.advanced.ffmpeg_override << "\n";
-		output << "debug: " << (current_settings.advanced.debug ? "true" : "false") << "\n";
-
-		output << "\n";
-		output << "- advanced blur" << "\n";
-		output << "blur weighting gaussian std dev: " << current_settings.advanced.blur_weighting_gaussian_std_dev
-			   << "\n";
-		output << "blur weighting gaussian mean: " << current_settings.advanced.blur_weighting_gaussian_mean << "\n";
-		output << "blur weighting gaussian bound: " << current_settings.advanced.blur_weighting_gaussian_bound << "\n";
-
-		output << "\n";
-		output << "- advanced interpolation" << "\n";
-		output << "svp interpolation preset: " << current_settings.advanced.svp_interpolation_preset << "\n";
-		output << "svp interpolation algorithm: " << current_settings.advanced.svp_interpolation_algorithm << "\n";
-		output << "interpolation block size: " << current_settings.advanced.interpolation_blocksize << "\n";
-		output << "interpolation mask area: " << current_settings.advanced.interpolation_mask_area << "\n";
-#ifndef __APPLE__ // rife issue again
-		output << "rife model: " << current_settings.advanced.rife_model << "\n";
-#endif
-
-		if (current_settings.advanced.manual_svp) {
-			output << "\n";
-			output << "- manual svp override" << "\n";
-			output << "manual svp: " << (current_settings.advanced.manual_svp ? "true" : "false") << "\n";
-			output << "super string: " << current_settings.advanced.super_string << "\n";
-			output << "vectors string: " << current_settings.advanced.vectors_string << "\n";
-			output << "smooth string: " << current_settings.advanced.smooth_string << "\n";
+		output << "- blur" << "\n";
+		output << "blur: " << (settings.blur ? "true" : "false") << "\n";
+		if (!concise || settings.blur) {
+			output << "blur amount: " << settings.blur_amount << "\n";
+			output << "blur output fps: " << settings.blur_output_fps << "\n";
+			output << "blur weighting: " << settings.blur_weighting << "\n";
+			output << "blur gamma: " << settings.blur_gamma << "\n";
 		}
 	}
+
+	// Interpolation section
+	if (!concise || settings.interpolate) {
+		output << "\n";
+		output << "- interpolation" << "\n";
+		output << "interpolate: " << (settings.interpolate ? "true" : "false") << "\n";
+		if (!concise || settings.interpolate) {
+			output << "interpolated fps: " << settings.interpolated_fps << "\n";
+#ifndef __APPLE__
+			output << "interpolation method: " << settings.interpolation_method << "\n";
+#endif
+		}
+	}
+
+	// Pre-interpolation section
+#ifndef __APPLE__
+	if (!concise || settings.pre_interpolate) {
+		output << "\n";
+		output << "- pre-interpolation" << "\n";
+		output << "pre-interpolate: " << (settings.pre_interpolate ? "true" : "false") << "\n";
+		if (!concise || settings.pre_interpolate) {
+			output << "pre-interpolated fps: " << settings.pre_interpolated_fps << "\n";
+		}
+	}
+#endif
+
+	// Deduplication section
+	if (!concise || settings.deduplicate) {
+		output << "\n";
+		output << "- deduplication" << "\n";
+		output << "deduplicate: " << (settings.deduplicate ? "true" : "false") << "\n";
+		if (!concise || settings.deduplicate) {
+			output << "deduplicate method: " << settings.deduplicate_method << "\n";
+		}
+	}
+
+	// Rendering section (always included)
+	output << "\n";
+	output << "- rendering" << "\n";
+	output << "encode preset: " << settings.encode_preset << "\n";
+	output << "quality: " << settings.quality << "\n";
+	if (!concise || settings.preview) {
+		output << "preview: " << (settings.preview ? "true" : "false") << "\n";
+	}
+	if (!concise || settings.detailed_filenames) {
+		output << "detailed filenames: " << (settings.detailed_filenames ? "true" : "false") << "\n";
+	}
+	if (!concise || settings.copy_dates) {
+		output << "copy dates: " << (settings.copy_dates ? "true" : "false") << "\n";
+	}
+
+	// GPU acceleration section
+	if (!concise || settings.gpu_decoding || settings.gpu_interpolation || settings.gpu_encoding) {
+		output << "\n";
+		output << "- gpu acceleration" << "\n";
+		output << "gpu decoding: " << (settings.gpu_decoding ? "true" : "false") << "\n";
+		output << "gpu interpolation: " << (settings.gpu_interpolation ? "true" : "false") << "\n";
+		output << "gpu encoding: " << (settings.gpu_encoding ? "true" : "false") << "\n";
+	}
+
+	// Timescale section
+	if (!concise || settings.timescale) {
+		output << "\n";
+		output << "- timescale" << "\n";
+		output << "timescale: " << (settings.timescale ? "true" : "false") << "\n";
+		if (!concise || settings.timescale) {
+			output << "input timescale: " << settings.input_timescale << "\n";
+			output << "output timescale: " << settings.output_timescale << "\n";
+			if (!concise || settings.output_timescale_audio_pitch) {
+				output << "adjust timescaled audio pitch: "
+					   << (settings.output_timescale_audio_pitch ? "true" : "false") << "\n";
+			}
+		}
+	}
+
+	// Filters section
+	if (!concise || settings.filters) {
+		output << "\n";
+		output << "- filters" << "\n";
+		output << "filters: " << (settings.filters ? "true" : "false") << "\n";
+		if (!concise || settings.filters) {
+			output << "brightness: " << settings.brightness << "\n";
+			output << "saturation: " << settings.saturation << "\n";
+			output << "contrast: " << settings.contrast << "\n";
+		}
+	}
+
+	// Advanced section
+	if (!concise || settings.override_advanced) {
+		output << "\n";
+		output << "- advanced" << "\n";
+		output << "advanced: " << (settings.override_advanced ? "true" : "false") << "\n";
+
+		if (!concise || settings.override_advanced) {
+			output << "\n";
+			output << "- advanced deduplication" << "\n";
+			output << "deduplicate range: " << settings.advanced.deduplicate_range << "\n";
+			output << "deduplicate threshold: " << settings.advanced.deduplicate_threshold << "\n";
+
+			output << "\n";
+			output << "- advanced rendering" << "\n";
+			output << "video container: " << settings.advanced.video_container << "\n";
+			if (!concise || !settings.advanced.ffmpeg_override.empty()) {
+				output << "custom ffmpeg filters: " << settings.advanced.ffmpeg_override << "\n";
+			}
+			if (!concise || settings.advanced.debug) {
+				output << "debug: " << (settings.advanced.debug ? "true" : "false") << "\n";
+			}
+
+			output << "\n";
+			output << "- advanced blur" << "\n";
+			output << "blur weighting gaussian std dev: " << settings.advanced.blur_weighting_gaussian_std_dev << "\n";
+			output << "blur weighting gaussian mean: " << settings.advanced.blur_weighting_gaussian_mean << "\n";
+			output << "blur weighting gaussian bound: " << settings.advanced.blur_weighting_gaussian_bound << "\n";
+
+			output << "\n";
+			output << "- advanced interpolation" << "\n";
+			output << "svp interpolation preset: " << settings.advanced.svp_interpolation_preset << "\n";
+			output << "svp interpolation algorithm: " << settings.advanced.svp_interpolation_algorithm << "\n";
+			output << "interpolation block size: " << settings.advanced.interpolation_blocksize << "\n";
+			output << "interpolation mask area: " << settings.advanced.interpolation_mask_area << "\n";
+#ifndef __APPLE__
+			output << "rife model: " << settings.advanced.rife_model << "\n";
+#endif
+
+			if (!concise || settings.advanced.manual_svp) {
+				output << "\n";
+				output << "- manual svp override" << "\n";
+				output << "manual svp: " << (settings.advanced.manual_svp ? "true" : "false") << "\n";
+				if (!concise || settings.advanced.manual_svp) {
+					output << "super string: " << settings.advanced.super_string << "\n";
+					output << "vectors string: " << settings.advanced.vectors_string << "\n";
+					output << "smooth string: " << settings.advanced.smooth_string << "\n";
+				}
+			}
+		}
+	}
+
+	std::string result = output.str();
+
+	// remove final newline if concise
+	if (concise && !result.empty() && result.back() == '\n')
+		result.pop_back();
+
+	return result;
+}
+
+void config_blur::create(const std::filesystem::path& filepath, const BlurSettings& current_settings) {
+	std::ofstream output(filepath);
+	output << generate_config_string(current_settings, false);
+}
+
+std::string config_blur::export_concise(const BlurSettings& settings) {
+	return generate_config_string(settings, true);
 }
 
 tl::expected<void, std::string> config_blur::validate(BlurSettings& config, bool fix) {
@@ -143,9 +210,21 @@ tl::expected<void, std::string> config_blur::validate(BlurSettings& config, bool
 	return {};
 }
 
-BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
-	auto config_map = config_base::read_config_map(config_filepath);
+BlurSettings config_blur::parse(const std::string& config_content) {
+	std::istringstream stream(config_content);
+	auto config_map = config_base::read_config_map(stream);
+	return parse_from_map(config_map);
+}
 
+BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
+	std::ifstream file_stream(config_filepath);
+	auto config_map = config_base::read_config_map(file_stream);
+	return parse_from_map(config_map, config_filepath);
+}
+
+BlurSettings config_blur::parse_from_map(
+	const std::map<std::string, std::string>& config_map, const std::optional<std::filesystem::path>& config_filepath
+) {
 	BlurSettings settings;
 
 	config_base::extract_config_value(config_map, "blur", settings.blur);
@@ -156,7 +235,7 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 
 	config_base::extract_config_value(config_map, "interpolate", settings.interpolate);
 	config_base::extract_config_string(config_map, "interpolated fps", settings.interpolated_fps);
-#ifndef __APPLE__ // rife dont worky on mac (see renderer.cpp)
+#ifndef __APPLE__
 	config_base::extract_config_string(config_map, "interpolation method", settings.interpolation_method);
 
 	config_base::extract_config_value(config_map, "pre-interpolate", settings.pre_interpolate);
@@ -175,14 +254,6 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 	config_base::extract_config_value(config_map, "gpu decoding", settings.gpu_decoding);
 	config_base::extract_config_value(config_map, "gpu interpolation", settings.gpu_interpolation);
 	config_base::extract_config_value(config_map, "gpu encoding", settings.gpu_encoding);
-	config_base::extract_config_string(config_map, "gpu type (nvidia/amd/intel)", settings.gpu_type);
-	config_base::extract_config_value(config_map, "rife gpu number", settings.rife_gpu_index);
-
-	settings.verify_gpu_encoding();
-
-	if (settings.rife_gpu_index == -1) {
-		settings.set_fastest_rife_gpu();
-	}
 
 	config_base::extract_config_value(config_map, "timescale", settings.timescale);
 	config_base::extract_config_value(config_map, "input timescale", settings.input_timescale);
@@ -230,7 +301,7 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 		config_base::extract_config_value(
 			config_map, "interpolation mask area", settings.advanced.interpolation_mask_area
 		);
-#ifndef __APPLE__ // rife issue again
+#ifndef __APPLE__
 		config_base::extract_config_string(config_map, "rife model", settings.advanced.rife_model);
 #endif
 		config_base::extract_config_value(config_map, "manual svp", settings.advanced.manual_svp);
@@ -239,8 +310,13 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 		config_base::extract_config_string(config_map, "smooth string", settings.advanced.smooth_string);
 	}
 
-	// recreate the config file using the parsed values (keeps nice formatting)
-	create(config_filepath, settings);
+	u::verify_gpu_encoding(settings);
+	u::set_fastest_rife_gpu(settings);
+
+	if (config_filepath) {
+		// rewrite config with proper structure and default values
+		create(*config_filepath, settings);
+	}
 
 	return settings;
 }
@@ -331,8 +407,6 @@ tl::expected<nlohmann::json, std::string> BlurSettings::to_json() const {
 	j["gpu_decoding"] = this->gpu_decoding;
 	j["gpu_interpolation"] = this->gpu_interpolation;
 	j["gpu_encoding"] = this->gpu_encoding;
-	j["gpu_type"] = this->gpu_type;
-	j["rife_gpu_index"] = this->rife_gpu_index;
 
 	j["filters"] = this->filters;
 	j["brightness"] = this->brightness;
@@ -371,30 +445,7 @@ tl::expected<nlohmann::json, std::string> BlurSettings::to_json() const {
 }
 
 BlurSettings::BlurSettings() {
-	verify_gpu_encoding();
-}
-
-namespace {
-	auto& blur_copy = blur; // cause BlurSettings.blur is a thing
-}
-
-void BlurSettings::verify_gpu_encoding() {
-	if (!blur_copy.initialised)
-		return;
-
-	if (gpu_type.empty() || !u::contains(u::get_available_gpu_types(), gpu_type)) {
-		gpu_type = u::get_primary_gpu_type();
-	}
-
-	if (gpu_type == "cpu") {
-		gpu_encoding = false;
-	}
-
-	auto available_codecs = u::get_supported_presets(gpu_encoding, gpu_type);
-
-	if (!u::contains(available_codecs, encode_preset)) {
-		encode_preset = "h264";
-	}
+	u::verify_gpu_encoding(*this);
 }
 
 // NOLINTBEGIN(readability-convert-member-functions-to-static) other platforms need it
@@ -416,24 +467,4 @@ tl::expected<std::filesystem::path, std::string> BlurSettings::get_rife_model_pa
 #endif
 
 	return rife_model_path;
-}
-
-void BlurSettings::set_fastest_rife_gpu() {
-	if (!blur_copy.initialised_rife_gpus)
-		return;
-
-	auto sample_video_path = blur_copy.settings_path / "sample_video.mp4";
-	bool sample_video_exists = std::filesystem::exists(sample_video_path);
-
-	if (sample_video_exists) {
-		auto rife_model_path = BlurSettings::get_rife_model_path();
-
-		if (rife_model_path) {
-			int fastest_gpu_index =
-				u::get_fastest_rife_gpu_index(blur_copy.rife_gpus, *rife_model_path, sample_video_path);
-
-			this->rife_gpu_index = fastest_gpu_index;
-			u::log("set rife_gpu_index to the fastest gpu ({})", fastest_gpu_index);
-		}
-	}
 }

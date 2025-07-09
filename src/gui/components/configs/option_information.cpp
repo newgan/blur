@@ -5,7 +5,7 @@
 
 namespace configs = gui::components::configs;
 
-void configs::option_information(ui::Container& container, BlurSettings& settings) {
+void configs::option_information(ui::Container& container) {
 	const static std::unordered_map<std::string, std::vector<std::string>> option_explanations = {
 		// Blur settings
 		// { "section blur checkbox",

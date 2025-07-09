@@ -1,11 +1,10 @@
 ﻿#include "rendering_frame.h"
 
-#ifdef __linux__
-#	include "config_app.h"
-#endif
-
 tl::expected<RenderCommands, std::string> FrameRender::build_render_commands(
-	const std::filesystem::path& input_path, const std::filesystem::path& output_path, const BlurSettings& settings
+	const std::filesystem::path& input_path,
+	const std::filesystem::path& output_path,
+	const BlurSettings& settings,
+	const GlobalAppSettings& app_settings
 ) {
 	std::wstring path_string = input_path.wstring();
 	std::ranges::replace(path_string, '\\', '/');
@@ -15,6 +14,12 @@ tl::expected<RenderCommands, std::string> FrameRender::build_render_commands(
 	auto settings_json = settings.to_json();
 	if (!settings_json)
 		return tl::unexpected(settings_json.error());
+
+	auto app_settings_json = app_settings.to_json();
+	if (!app_settings_json)
+		return tl::unexpected(app_settings_json.error());
+
+	settings_json->update(*app_settings_json); // adds new keys from app settings (and overrides dupes)
 
 #if defined(__linux__)
 	bool vapoursynth_plugins_bundled = std::filesystem::exists(blur.resources_path / "vapoursynth-plugins");
@@ -192,7 +197,7 @@ bool FrameRender::remove_temp_path() {
 }
 
 tl::expected<std::filesystem::path, std::string> FrameRender::render(
-	const std::filesystem::path& input_path, const BlurSettings& settings
+	const std::filesystem::path& input_path, const BlurSettings& settings, const GlobalAppSettings& app_settings
 ) {
 	if (!blur.initialised)
 		return tl::unexpected("Blur not initialised");
@@ -209,7 +214,7 @@ tl::expected<std::filesystem::path, std::string> FrameRender::render(
 	std::filesystem::path output_path = m_temp_path / "render.jpg";
 
 	// render
-	auto render_commands = build_render_commands(input_path, output_path, settings);
+	auto render_commands = build_render_commands(input_path, output_path, settings, app_settings);
 	if (!render_commands)
 		return tl::unexpected(render_commands.error());
 

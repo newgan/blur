@@ -1,43 +1,51 @@
 #include "config_app.h"
 #include "config_base.h"
 
-void config_app::create(const std::filesystem::path& filepath, const GlobalAppSettings& current_settings) {
+void config_app::create(const std::filesystem::path& filepath, const GlobalAppSettings& settings) {
 	std::ofstream output(filepath);
 
 	output << "[blur v" << BLUR_VERSION << "]" << "\n";
 
 	output << "\n";
+	output << "- pc-specific blur settings" << "\n";
+	output << "gpu type (nvidia/amd/intel): " << settings.gpu_type << "\n";
+	output << "rife gpu number: " << settings.rife_gpu_index << "\n";
+
+	output << "\n";
 	output << "- gui" << "\n";
-	output << "blur amount tied to fps: " << (current_settings.blur_amount_tied_to_fps ? "true" : "false") << "\n";
+	output << "blur amount tied to fps: " << (settings.blur_amount_tied_to_fps ? "true" : "false") << "\n";
 
 	output << "\n";
 	output << "- desktop notifications" << "\n";
-	output << "render success notifications: " << (current_settings.render_success_notifications ? "true" : "false")
-		   << "\n";
-	output << "render failure notifications: " << (current_settings.render_failure_notifications ? "true" : "false")
-		   << "\n";
+	output << "render success notifications: " << (settings.render_success_notifications ? "true" : "false") << "\n";
+	output << "render failure notifications: " << (settings.render_failure_notifications ? "true" : "false") << "\n";
 
 	output << "\n";
 	output << "- updates" << "\n";
-	output << "check for updates: " << (current_settings.check_updates ? "true" : "false") << "\n";
-	output << "include beta updates: " << (current_settings.check_beta ? "true" : "false") << "\n";
+	output << "check for updates: " << (settings.check_updates ? "true" : "false") << "\n";
+	output << "include beta updates: " << (settings.check_beta ? "true" : "false") << "\n";
 
 	output << "\n";
 	output << "- misc" << "\n";
-	output << "notify about config overrides: " << (current_settings.notify_about_config_override ? "true" : "false")
-		   << "\n";
+	output << "notify about config overrides: " << (settings.notify_about_config_override ? "true" : "false") << "\n";
 
 #ifdef __linux__
 	output << "\n";
 	output << "- linux" << "\n";
-	output << "vapoursynth lib path: " << current_settings.vapoursynth_lib_path << "\n";
+	output << "vapoursynth lib path: " << settings.vapoursynth_lib_path << "\n";
 #endif
 }
 
 GlobalAppSettings config_app::parse(const std::filesystem::path& config_filepath) {
-	auto config_map = config_base::read_config_map(config_filepath);
+	std::ifstream file_stream(config_filepath);
+	auto config_map = config_base::read_config_map(file_stream);
 
 	GlobalAppSettings settings;
+
+	config_base::extract_config_string(config_map, "gpu type (nvidia/amd/intel)", settings.gpu_type);
+	config_base::extract_config_value(config_map, "rife gpu number", settings.rife_gpu_index);
+
+	config_base::extract_config_value(config_map, "blur amount tied to fps", settings.blur_amount_tied_to_fps);
 
 	config_base::extract_config_value(
 		config_map, "render success notifications", settings.render_success_notifications
@@ -69,4 +77,13 @@ std::filesystem::path config_app::get_app_config_path() {
 
 GlobalAppSettings config_app::get_app_config() {
 	return config_base::load_config<GlobalAppSettings>(get_app_config_path(), create, parse);
+}
+
+tl::expected<nlohmann::json, std::string> GlobalAppSettings::to_json() const {
+	nlohmann::json j;
+
+	j["gpu_type"] = this->gpu_type;
+	j["rife_gpu_index"] = this->rife_gpu_index;
+
+	return j;
 }

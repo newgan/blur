@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "common/config_presets.h"
+#include "common/config_app.h"
 
 namespace {
 	bool init_hw = false;
@@ -728,6 +729,59 @@ int u::get_fastest_rife_gpu_index(
 	}
 
 	return fastest_index;
+}
+
+void u::set_fastest_rife_gpu(BlurSettings& settings) {
+	auto app_config = config_app::get_app_config();
+	if (app_config.rife_gpu_index != -1)
+		return;
+
+	if (!blur.initialised_rife_gpus)
+		return;
+
+	auto sample_video_path = blur.settings_path / "sample_video.mp4";
+	bool sample_video_exists = std::filesystem::exists(sample_video_path);
+
+	if (sample_video_exists) {
+		auto rife_model_path = settings.get_rife_model_path();
+
+		if (rife_model_path) {
+			int fastest_gpu_index = u::get_fastest_rife_gpu_index(blur.rife_gpus, *rife_model_path, sample_video_path);
+
+			app_config.rife_gpu_index = fastest_gpu_index;
+
+			// todo: this is dumb
+			auto app_config_path = config_app::get_app_config_path();
+			config_app::create(app_config_path, app_config);
+
+			u::log("set rife_gpu_index to the fastest gpu ({})", fastest_gpu_index);
+		}
+	}
+}
+
+void u::verify_gpu_encoding(BlurSettings& settings) {
+	if (!blur.initialised)
+		return;
+
+	auto app_config = config_app::get_app_config();
+
+	if (app_config.gpu_type.empty() || !u::contains(u::get_available_gpu_types(), app_config.gpu_type)) {
+		app_config.gpu_type = u::get_primary_gpu_type();
+	}
+
+	if (app_config.gpu_type == "cpu") {
+		settings.gpu_encoding = false;
+	}
+
+	auto available_codecs = u::get_supported_presets(settings.gpu_encoding, app_config.gpu_type);
+
+	if (!u::contains(available_codecs, settings.encode_preset)) {
+		settings.encode_preset = "h264";
+	}
+
+	// todo: this is dumb
+	auto app_config_path = config_app::get_app_config_path();
+	config_app::create(app_config_path, app_config);
 }
 
 #ifdef WIN32

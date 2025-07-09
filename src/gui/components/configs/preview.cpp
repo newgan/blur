@@ -11,7 +11,7 @@
 
 namespace configs = gui::components::configs;
 
-void configs::config_preview(ui::Container& container, BlurSettings& settings) {
+void configs::config_preview(ui::Container& container) {
 	static BlurSettings previewed_settings;
 	static bool first = true;
 
@@ -56,7 +56,9 @@ void configs::config_preview(ui::Container& container, BlurSettings& settings) {
 			loading = true;
 		}
 
-		std::thread([sample_video_path, settings] {
+		auto local_settings = settings;
+		auto local_app_settings = app_settings;
+		std::thread([sample_video_path, local_settings, local_app_settings] {
 			FrameRender* render = nullptr;
 
 			{
@@ -70,7 +72,7 @@ void configs::config_preview(ui::Container& container, BlurSettings& settings) {
 				render = renders.emplace_back(std::make_unique<FrameRender>()).get();
 			}
 
-			auto res = render->render(sample_video_path, settings);
+			auto res = render->render(sample_video_path, local_settings, local_app_settings);
 
 			if (render == renders.back().get())
 			{ // todo: this should be correct right? any cases where this doesn't work?
@@ -203,7 +205,7 @@ void configs::config_preview(ui::Container& container, BlurSettings& settings) {
 }
 
 // todo: refactor
-void configs::preview(ui::Container& header_container, ui::Container& content_container, BlurSettings& settings) {
+void configs::preview(ui::Container& header_container, ui::Container& content_container) {
 	int interp_fps = 1200;
 	bool parsed_interp_fps = false;
 
@@ -221,7 +223,7 @@ void configs::preview(ui::Container& header_container, ui::Container& content_co
 	});
 
 	if (selected_tab == "output video") {
-		config_preview(content_container, settings);
+		config_preview(content_container);
 	}
 	else {
 		auto weight_settings = settings;
@@ -268,6 +270,52 @@ void configs::preview(ui::Container& header_container, ui::Container& content_co
 			}
 		);
 	}
+
+	ui::add_button("export config", content_container, "Export", fonts::dejavu, [] {
+		std::string exported_config = config_blur::export_concise(settings);
+		SDL_SetClipboardText(exported_config.c_str());
+
+		gui::components::notifications::add(
+			"Exported config to clipboard", ui::NotificationType::INFO, {}, std::chrono::duration<float>(2.f)
+		);
+	});
+
+	ui::set_next_same_line(content_container);
+
+	ui::add_button("import config", content_container, "Import", fonts::dejavu, [] {
+		size_t len = 0;
+		void* clipboard_data = SDL_GetClipboardData("text/plain", &len);
+
+		if (clipboard_data && len > 0) {
+			std::string clipboard_text(static_cast<char*>(clipboard_data), len);
+			SDL_free(clipboard_data);
+
+			try {
+				auto clipboard_settings = config_blur::parse(clipboard_text);
+				settings = clipboard_settings;
+
+				gui::components::notifications::add(
+					"Imported config from clipboard", ui::NotificationType::INFO, {}, std::chrono::duration<float>(2.f)
+				);
+			}
+			catch (const std::exception& e) {
+				gui::components::notifications::add(
+					std::string("Failed to load config: ") + e.what(),
+					ui::NotificationType::NOTIF_ERROR,
+					{},
+					std::chrono::duration<float>(3.f)
+				);
+			}
+		}
+		else {
+			gui::components::notifications::add(
+				"Clipboard is empty or unreadable",
+				ui::NotificationType::NOTIF_ERROR,
+				{},
+				std::chrono::duration<float>(2.f)
+			);
+		}
+	});
 
 	ui::add_button("open config folder", content_container, "Open config folder", fonts::dejavu, [] {
 		// Convert path to a file:// URL for SDL_OpenURL
