@@ -119,7 +119,7 @@ Blur supports rendering from frameservers. This means you can avoid having to ru
 
 ### rendering
 
-- quality - [crf](https://trac.ffmpeg.org/wiki/Encode/H.264#crf) of the output video (qp if using GPU encoding) - (0 = lossless quality, 51 = really bad)
+- quality - [crf](https://trac.ffmpeg.org/wiki/Encode/H.264#crf) of the output video (may be different if using GPU encoding) - (0 = lossless quality, 51 = really bad)
 - deduplicate - removes duplicate frames and generates new interpolated frames to take their place. fixes 'unsmooth' looking output caused by stuttering in recordings
 - deduplicate range - amount of frames beyond the current frame to look for unique frames when deduplicating. make it higher if your footage is at a lower FPS than it should be (e.g. choppy 120fps gameplay recorded at 240fps), lower it if your blurred footage starts blurring static elements such as menu screens
 - deduplicate threshold - threshold of movement that triggers deduplication. turn on debug in advanced and render a video to embed text showing the movement in each frame

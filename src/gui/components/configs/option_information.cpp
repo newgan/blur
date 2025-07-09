@@ -130,13 +130,6 @@ void configs::option_information(ui::Container& container, BlurSettings& setting
 
 		// Rendering settings
 		{
-			"quality",
-			{
-				"Quality setting for output video. Depends on the codec",
-				"(0 = lossless quality, 51 = really bad)",
-			},
-		},
-		{
 			"deduplicate checkbox",
 			{
 				"Removes duplicate frames and replaces them with interpolated frames",
