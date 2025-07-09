@@ -40,15 +40,6 @@ PresetSettings config_presets::parse(const std::filesystem::path& config_filepat
 	std::istringstream stream(content);
 	std::string line;
 
-	// check version in first line
-	if (std::getline(stream, line)) {
-		line = u::trim(line);
-		if (line.find("[blur v" + std::string(BLUR_VERSION) + "]") == std::string::npos) {
-			DEBUG_LOG("presets from older version, replacing with defaults");
-			create(config_filepath, settings); // recreate with current version
-			return settings;
-		}
-	}
 	std::string current_gpu_type;
 	std::vector<PresetSettings::Preset>* current_presets = nullptr;
 
@@ -87,8 +78,22 @@ PresetSettings config_presets::parse(const std::filesystem::path& config_filepat
 			std::string preset_name = u::trim(line.substr(0, delimiter_pos));
 
 			if (!preset_name.empty() && preset_name[0] == '*') {
-				// default preset, skip
+				// default preset (or imposter), skip
 				DEBUG_LOG("skipping default preset (line: {})", line);
+				continue;
+			}
+
+			// don't allow presets with same name as defaults (e.g. h265)
+			bool is_default_name = false;
+			for (const auto& preset : *current_presets) {
+				if (preset.name == preset_name && preset.is_default) {
+					is_default_name = true;
+					break;
+				}
+			}
+
+			if (is_default_name) {
+				DEBUG_LOG("skipping preset with default name (line: {})", line);
 				continue;
 			}
 
