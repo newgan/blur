@@ -72,8 +72,10 @@ PresetSettings config_presets::parse(const std::filesystem::path& config_filepat
 
 			// new gpu type
 			if (!current_presets) {
-				auto& new_entry =
-					settings.all_gpu_presets.emplace_back(current_gpu_type, std::vector<PresetSettings::Preset>{});
+				auto& new_entry = settings.all_gpu_presets.emplace_back(PresetSettings::GpuPresets{
+					.gpu_type = current_gpu_type,
+					.presets = {},
+				});
 				current_presets = &new_entry.presets;
 			}
 
@@ -103,7 +105,10 @@ PresetSettings config_presets::parse(const std::filesystem::path& config_filepat
 
 			// new preset
 			if (!found) {
-				current_presets->emplace_back(preset_name, preset_params);
+				current_presets->emplace_back(PresetSettings::Preset{
+					.name = preset_name,
+					.args = preset_params,
+				});
 			}
 		}
 	}
