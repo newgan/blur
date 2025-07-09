@@ -13,6 +13,8 @@ struct GlobalAppSettings {
 	std::string vapoursynth_lib_path;
 #endif
 
+	bool blur_amount_tied_to_fps = true;
+
 	bool operator==(const GlobalAppSettings& other) const = default;
 };
 

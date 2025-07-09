@@ -5,6 +5,7 @@
 #include "../../render/render.h"
 
 #include "common/config_presets.h"
+#include "common/config_app.h"
 
 namespace configs = gui::components::configs;
 
@@ -68,6 +69,8 @@ void configs::options(ui::Container& container, BlurSettings& settings) {
 	section_component("blur", &settings.blur);
 
 	if (settings.blur) {
+		auto app_config = config_app::get_app_config();
+
 		ui::add_slider_tied(
 			"blur amount",
 			container,
@@ -76,7 +79,7 @@ void configs::options(ui::Container& container, BlurSettings& settings) {
 			&settings.blur_amount,
 			"blur amount: {:.2f}",
 			&settings.blur_output_fps,
-			settings.blur_amount_tied_to_fps,
+			app_config.blur_amount_tied_to_fps,
 			"fps",
 			fonts::dejavu
 		);

@@ -105,10 +105,6 @@ void config_blur::create(const std::filesystem::path& filepath, const BlurSettin
 			output << "smooth string: " << current_settings.advanced.smooth_string << "\n";
 		}
 	}
-
-	output << "\n";
-	output << "- gui" << "\n";
-	output << "blur amount tied to fps: " << (current_settings.blur_amount_tied_to_fps ? "true" : "false") << "\n";
 }
 
 tl::expected<void, std::string> config_blur::validate(BlurSettings& config, bool fix) {
@@ -242,8 +238,6 @@ BlurSettings config_blur::parse(const std::filesystem::path& config_filepath) {
 		config_base::extract_config_string(config_map, "vectors string", settings.advanced.vectors_string);
 		config_base::extract_config_string(config_map, "smooth string", settings.advanced.smooth_string);
 	}
-
-	config_base::extract_config_value(config_map, "blur amount tied to fps", settings.blur_amount_tied_to_fps);
 
 	// recreate the config file using the parsed values (keeps nice formatting)
 	create(config_filepath, settings);

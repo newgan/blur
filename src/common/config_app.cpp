@@ -7,6 +7,10 @@ void config_app::create(const std::filesystem::path& filepath, const GlobalAppSe
 	output << "[blur v" << BLUR_VERSION << "]" << "\n";
 
 	output << "\n";
+	output << "- gui" << "\n";
+	output << "blur amount tied to fps: " << (current_settings.blur_amount_tied_to_fps ? "true" : "false") << "\n";
+
+	output << "\n";
 	output << "- desktop notifications" << "\n";
 	output << "render success notifications: " << (current_settings.render_success_notifications ? "true" : "false")
 		   << "\n";

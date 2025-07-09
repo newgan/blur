@@ -68,8 +68,6 @@ struct BlurSettings {
 	bool override_advanced = false;
 	AdvancedSettings advanced;
 
-	bool blur_amount_tied_to_fps = true;
-
 public:
 	BlurSettings();
 
