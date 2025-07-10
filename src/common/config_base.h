@@ -39,7 +39,10 @@ namespace config_base {
 	}
 
 	template<typename T>
-	void extract_config_value(const std::map<std::string, std::string>& config, const std::string& var, T& out) {
+	void extract_config_value(
+		const std::map<std::string, std::string>& config, const std::string& var, T& out
+	) { // todo: this (i think) takes more time than necessary sometimes (happened when i imported a config that was
+		// just one value)
 		if (!config.contains(var)) {
 			DEBUG_LOG("config missing variable '{}'", var);
 			return;
