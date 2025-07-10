@@ -50,7 +50,7 @@ jobs:
 
           # strip up to+including first '---', then drop any blank lines that follow
           sed -E '1,/^[[:space:]]*---[[:space:]]*$/d' /tmp/body.txt \
-            | sed '/^[[:space:]]*$/d' > /tmp/body.filtered.txt
+            | sed '/^[[:space:]]*$/d' > /tmp/changelog.txt
 
           PAYLOAD=$(jq -n \
             --arg content "<@&$ROLE_ID>" \
@@ -58,7 +58,7 @@ jobs:
             --arg url "${{ steps.release.outputs.url }}" \
             --arg repo "${{ github.repository }}" \
             --arg tag "${{ steps.release.outputs.tag }}" \
-            --rawfile body /tmp/body.filtered.txt \
+            --rawfile changelog /tmp/changelog.txt \
             --arg timestamp "${{ steps.release.outputs.published_at }}" \
             '{
               content: $content,
@@ -69,8 +69,8 @@ jobs:
                   "**Downloads:**\n" +
                   "• [Windows (.exe)](https://github.com/" + $repo + "/releases/download/" + $tag + "/blur-Windows-Installer-x64.exe)\n" +
                   "• [macOS (.dmg)](https://github.com/" + $repo + "/releases/download/" + $tag + "/blur-macOS-Release-arm64.dmg)\n" +
-                  "• [Linux (.tar.gz)](https://github.com/" + $repo + "/releases/download/" + $tag + "/blur-Linux-Release-x64.tar.gz)\n\n" +
-                  $body
+                  "• [Linux (.tar.gz)](https://github.com/" + $repo + "/releases/download/" + $tag + "/blur-Linux-Release-x64.tar.gz)\n" +
+                  $changelog
                 ),
                 color: 3447003,
                 timestamp: $timestamp
