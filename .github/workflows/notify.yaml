@@ -33,13 +33,11 @@ jobs:
         run: |
           if [ "${{ steps.release.outputs.prerelease }}" = "true" ]; then
             WEBHOOK_URL="${{ secrets.DISCORD_WEBHOOK_RELEASES_BETA }}"
-            # ROLE_ID="${{ secrets.DISCORD_ROLE_RELEASES_BETA }}"
-            ROLE_ID="123"
+            ROLE_ID="${{ secrets.DISCORD_ROLE_RELEASES_BETA }}"
             TYPE="Beta Release"
           else
             WEBHOOK_URL="${{ secrets.DISCORD_WEBHOOK_RELEASES }}"
-            # ROLE_ID="${{ secrets.DISCORD_ROLE_RELEASES }}"
-            ROLE_ID="123"
+            ROLE_ID="${{ secrets.DISCORD_ROLE_RELEASES }}"
             TYPE="Release"
           fi
 
