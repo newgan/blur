@@ -1,0 +1,70 @@
+name: Discord Release Notification
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch: # manual trigger
+
+jobs:
+  notify-discord:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest release
+        id: release
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RELEASE_DATA=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+          else
+            RELEASE_DATA='${{ toJson(github.event.release) }}'
+          fi
+
+          echo "tag=$(echo "$RELEASE_DATA" | jq -r '.tag_name')" >> $GITHUB_OUTPUT
+          echo "name=$(echo "$RELEASE_DATA" | jq -r '.name // .tag_name')" >> $GITHUB_OUTPUT
+          echo "url=$(echo "$RELEASE_DATA" | jq -r '.html_url')" >> $GITHUB_OUTPUT
+          echo "prerelease=$(echo "$RELEASE_DATA" | jq -r '.prerelease')" >> $GITHUB_OUTPUT
+          echo "published_at=$(echo "$RELEASE_DATA" | jq -r '.published_at')" >> $GITHUB_OUTPUT
+
+          # handle multiline body with EOF delimiter
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$RELEASE_DATA" | jq -r '.body' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Send Discord notification
+        run: |
+          if [ "${{ steps.release.outputs.prerelease }}" = "true" ]; then
+            WEBHOOK_URL="${{ secrets.DISCORD_WEBHOOK_RELEASES_BETA }}"
+            # ROLE_ID="${{ secrets.DISCORD_ROLE_RELEASES_BETA }}"
+            ROLE_ID="123"
+            TYPE="Beta Release"
+          else
+            WEBHOOK_URL="${{ secrets.DISCORD_WEBHOOK_RELEASES }}"
+            # ROLE_ID="${{ secrets.DISCORD_ROLE_RELEASES }}"
+            ROLE_ID="123"
+            TYPE="Release"
+          fi
+
+          # Write body to file to avoid shell quoting issues
+          cat << 'BODY_EOF' > /tmp/body.txt
+          ${{ steps.release.outputs.body }}
+          BODY_EOF
+
+          PAYLOAD=$(jq -n \
+            --arg content "<@&$ROLE_ID>" \
+            --arg title "New $TYPE: ${{ steps.release.outputs.name }}" \
+            --arg url "${{ steps.release.outputs.url }}" \
+            --arg repo "${{ github.repository }}" \
+            --arg tag "${{ steps.release.outputs.tag }}" \
+            --rawfile body /tmp/body.txt \
+            --arg timestamp "${{ steps.release.outputs.published_at }}" \
+            '{
+              content: $content,
+              embeds: [{
+                title: $title,
+                url: $url,
+                description: "**Downloads:**\n• [Windows (.exe)](https://github.com/\($repo)/releases/download/\($tag)/blur-Windows-Installer-x64.exe)\n• [macOS (.dmg)](https://github.com/\($repo)/releases/download/\($tag)/blur-macOS-Release-arm64.dmg)\n• [Linux (.tar.gz)](https://github.com/\($repo)/releases/download/\($tag)/blur-Linux-Release-x64.tar.gz)\n\n**Changelog:**\n```\n\($body)\n```",
+                color: 3447003,
+                timestamp: $timestamp
+              }]
+            }')
+
+          curl -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$WEBHOOK_URL"
