@@ -48,8 +48,9 @@ jobs:
           ${{ steps.release.outputs.body }}
           BODY_EOF
 
-          # strip everything past the first '---' (inclusive)
-          sed -E '1,/^[[:space:]]*---[[:space:]]*$/d' /tmp/body.txt > /tmp/body.filtered.txt
+          # strip up to+including first '---', then drop any blank lines that follow
+          sed -E '1,/^[[:space:]]*---[[:space:]]*$/d' /tmp/body.txt \
+            | sed '/^[[:space:]]*$/d' > /tmp/body.filtered.txt
 
           PAYLOAD=$(jq -n \
             --arg content "<@&$ROLE_ID>" \
