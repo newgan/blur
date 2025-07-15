@@ -155,7 +155,7 @@ void main::render_screen(
 			ui::add_text(
 				"progress text eta",
 				container,
-				std::format("{}~ left", eta_stream.str()),
+				std::format("~{} left", eta_stream.str()),
 				gfx::Color::white(renderer::MUTED_SHADE),
 				fonts::dejavu,
 				FONT_CENTERED_X
