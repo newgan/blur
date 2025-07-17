@@ -2,6 +2,7 @@ import vapoursynth as vs
 from vapoursynth import core
 
 import blur.interpolate
+import blur.utils as u
 
 cur_interp = None
 dupe_last_good_idx = 0
@@ -147,8 +148,8 @@ def interpolate_dupes(
 
 
 def fill_drops_multiple(
-    video: vs.VideoNode,
-    is_full_color_range: bool = True,
+    _video: vs.VideoNode,
+    is_full_color_range: bool,
     threshold: float = 0.1,
     max_frames: int | None = None,
     svp_preset=blur.interpolate.DEFAULT_PRESET,
@@ -158,62 +159,40 @@ def fill_drops_multiple(
     svp_gpu=blur.interpolate.DEFAULT_GPU,
     debug=False,
 ):
-    def handle_frames(n, f):
-        global cur_interp
+    def process(video):
+        def handle_frames(n, f):
+            global cur_interp
 
-        if f.props["PlaneStatsDiff"] >= threshold or n == 0:
-            cur_interp = None
-            return video
+            if f.props["PlaneStatsDiff"] >= threshold or n == 0:
+                cur_interp = None
+                return video
 
-        # duplicate frame
-        interp = interpolate_dupes(
-            video,
-            n,
-            threshold,
-            max_frames,
-            svp_preset,
-            svp_algorithm,
-            svp_blocksize,
-            svp_masking,
-            svp_gpu,
-        )
-
-        if debug:
-            return core.text.Text(
-                clip=interp,
-                text=f"duplicate, {duped_frames} gap, diff: {f.props['PlaneStatsDiff']:.4f}",
-                alignment=8,
+            # duplicate frame
+            interp = interpolate_dupes(
+                video,
+                n,
+                threshold,
+                max_frames,
+                svp_preset,
+                svp_algorithm,
+                svp_blocksize,
+                svp_masking,
+                svp_gpu,
             )
 
-        return interp
+            if debug:
+                return core.text.Text(
+                    clip=interp,
+                    text=f"duplicate, {duped_frames} gap, diff: {f.props['PlaneStatsDiff']:.4f}",
+                    alignment=8,
+                )
 
-    orig_format = video.format
-    needs_conversion = (
-        orig_format.id != vs.YUV420P8
-    )  # svp only accepts yv12 (SVSuper: Clip must be YV12)
+            return interp
 
-    if needs_conversion:
-        video = core.resize.Point(
-            video,
-            format=vs.YUV420P8,
-            range_in=is_full_color_range,
-            range=is_full_color_range,
-        )
+        diffclip = core.std.PlaneStats(video, video[0] + video)
+        return core.std.FrameEval(video, handle_frames, prop_src=diffclip)
 
-    diffclip = core.std.PlaneStats(video, video[0] + video)
-    out = core.std.FrameEval(video, handle_frames, prop_src=diffclip)
-
-    if needs_conversion:
-        # Convert back to original format
-        out = core.resize.Point(
-            out,
-            format=orig_format.id,
-            matrix_s="709" if orig_format.color_family == vs.YUV else None,
-            range_in=is_full_color_range,
-            range=is_full_color_range,
-        )
-
-    return out
+    return u.with_format(_video, is_full_color_range, vs.YUV420P8, process)
 
 
 def fill_drops_old(clip, threshold=0.1, debug=False):

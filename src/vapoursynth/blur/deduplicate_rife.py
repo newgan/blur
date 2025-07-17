@@ -1,5 +1,6 @@
 import vapoursynth as vs
 from vapoursynth import core
+
 import blur.utils as u
 
 cur_interp = None
@@ -108,7 +109,7 @@ def interpolate_dupes(
 
 
 def fill_drops_rife(
-    clip: vs.VideoNode,
+    _video: vs.VideoNode,
     is_full_color_range: bool,
     model_path: str,
     gpu_index: int,
@@ -118,51 +119,29 @@ def fill_drops_rife(
 ):
     u.check_model_path(model_path)
 
-    def handle_frames(n, f):
-        global cur_interp
+    def process(video):
+        def handle_frames(n, f):
+            global cur_interp
 
-        if f.props["PlaneStatsDiff"] >= threshold or n == 0:
-            cur_interp = None
-            return clip
+            if f.props["PlaneStatsDiff"] >= threshold or n == 0:
+                cur_interp = None
+                return video
 
-        # duplicate frame
-        interp = interpolate_dupes(
-            clip, n, threshold, max_frames, model_path, gpu_index
-        )
-
-        if debug:
-            return core.text.Text(
-                clip=interp,
-                text=f"duplicate, {duped_frames - 1} gap, diff: {f.props['PlaneStatsDiff']:.4f}",
-                alignment=8,
+            # duplicate frame
+            interp = interpolate_dupes(
+                video, n, threshold, max_frames, model_path, gpu_index
             )
 
-        return interp
+            if debug:
+                return core.text.Text(
+                    clip=interp,
+                    text=f"duplicate, {duped_frames - 1} gap, diff: {f.props['PlaneStatsDiff']:.4f}",
+                    alignment=8,
+                )
 
-    orig_format = clip.format
-    needs_conversion = orig_format.id != vs.RGBS
+            return interp
 
-    if needs_conversion:
-        # Convert to RGBS for RIFE
-        clip = core.resize.Point(
-            clip,
-            format=vs.RGBS,
-            matrix_in_s="709" if orig_format.color_family == vs.YUV else None,
-            range_in=is_full_color_range,
-            range=is_full_color_range,
-        )
+        diffclip = core.std.PlaneStats(video, video[0] + video)
+        return core.std.FrameEval(video, handle_frames, prop_src=diffclip)
 
-    diffclip = core.std.PlaneStats(clip, clip[0] + clip)
-    out = core.std.FrameEval(clip, handle_frames, prop_src=diffclip)
-
-    if needs_conversion:
-        # Convert back to original format
-        out = core.resize.Point(
-            out,
-            format=orig_format.id,
-            matrix_s="709" if orig_format.color_family == vs.YUV else None,
-            range_in=is_full_color_range,
-            range=is_full_color_range,
-        )
-
-    return out
+    return u.with_format(_video, is_full_color_range, vs.RGBS, process)
