@@ -56,7 +56,7 @@ def create_svp_interp(
 ):
     [super_string, vectors_string, smooth_string] = (
         blur.interpolate.generate_svp_strings(
-            new_fps=duped_frames + 1,
+            new_fps=duped_frames,
             preset=svp_preset,
             algorithm=svp_algorithm,
             blocksize=svp_blocksize,
@@ -83,8 +83,7 @@ def create_svp_interp(
         fps=good_frames.fps,
     )
 
-    # trim edges (they're just the input frames)
-    return interp[1:-1]  # TODO: copy from rife? or does it behave diff
+    return interp[1 : 1 + duped_frames]  # first frame is a duplicate
 
 
 def get_interp(
@@ -106,9 +105,7 @@ def get_interp(
         cur_interp = None
         return
 
-    duped_frames = dupe_next_good_idx - (
-        dupe_last_good_idx if "model_path" in kwargs else duplicate_index
-    )
+    duped_frames = dupe_next_good_idx - dupe_last_good_idx
 
     # generate fake clip which includes the two good frames. this will be used to interpolate between them.
     # todo: possibly including more frames will result in better results?
@@ -156,7 +153,7 @@ def create_frame_handler(video, threshold, max_frames, interp_creator, debug, **
         )
 
         if debug:
-            gap = duped_frames - 1 if "model_path" in kwargs else duped_frames
+            gap = duped_frames - 1
             return core.text.Text(
                 clip=interp,
                 text=f"duplicate, {gap} gap, diff: {f.props['PlaneStatsDiff']:.4f}",
