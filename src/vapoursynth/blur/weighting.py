@@ -6,6 +6,8 @@ import warnings
 from typing import Iterable
 from numbers import Number
 
+import blur.utils as u
+
 
 class InvalidCustomWeighting(Exception):
     def __init__(self, message="Invalid custom weighting function!"):
