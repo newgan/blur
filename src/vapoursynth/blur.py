@@ -10,7 +10,6 @@ sys.path.insert(1, str(Path(__file__).parent))
 
 import blur.blending
 import blur.deduplicate
-import blur.deduplicate_rife
 import blur.interpolate
 import blur.weighting
 import blur.utils as u
@@ -104,7 +103,7 @@ if settings["deduplicate"] and settings["deduplicate_range"] != 0:
             )
 
         case _:
-            video = blur.deduplicate_rife.fill_drops_rife(
+            video = blur.deduplicate.fill_drops_rife(
                 video,
                 is_full_color_range=is_full_color_range,
                 model_path=settings["rife_model"],
