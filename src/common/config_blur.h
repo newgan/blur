@@ -34,7 +34,11 @@ struct BlurSettings {
 
 	bool interpolate = true;
 	std::string interpolated_fps = "1200";
+#ifdef __APPLE__
+	std::string interpolation_method = "rife";
+#else
 	std::string interpolation_method = "svp";
+#endif
 
 	bool pre_interpolate = false;
 	std::string pre_interpolated_fps = "360";
@@ -53,7 +57,11 @@ struct BlurSettings {
 	int quality = 16;
 
 	bool deduplicate = true;
+#ifdef __APPLE__
+	std::string deduplicate_method = "rife";
+#else
 	std::string deduplicate_method = "svp";
+#endif
 
 	bool preview = true;
 	bool detailed_filenames = false;
