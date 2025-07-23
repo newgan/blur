@@ -167,7 +167,6 @@ void configs::options(ui::Container& container) {
 			);
 		}
 
-#ifndef __APPLE__ // see comment
 		ui::add_dropdown(
 			"interpolation method dropdown",
 			container,
@@ -179,10 +178,8 @@ void configs::options(ui::Container& container) {
 			settings.interpolation_method,
 			fonts::dejavu
 		);
-#endif
 	}
 
-#ifndef __APPLE__ // see above
 	/*
 	    Pre-interpolation
 	*/
@@ -232,7 +229,6 @@ void configs::options(ui::Container& container) {
 			}
 		}
 	}
-#endif
 
 	/*
 	    Deduplication
@@ -246,11 +242,11 @@ void configs::options(ui::Container& container) {
 			"deduplicate method dropdown",
 			container,
 			"deduplicate method",
-			{ "svp",
-#ifndef __APPLE__ // rife issue again
-		      "rife",
-#endif
-		      "old" },
+			{
+				"svp",
+				"rife",
+				"old",
+			},
 			settings.deduplicate_method,
 			fonts::dejavu
 		);
@@ -352,7 +348,6 @@ void configs::options(ui::Container& container) {
 		);
 	}
 
-#ifndef __APPLE__ // rife mac issue todo:
 	static std::string rife_gpu;
 
 	if (app_settings.rife_gpu_index == -1) {
@@ -382,7 +377,6 @@ void configs::options(ui::Container& container) {
 			}
 		}
 	);
-#endif
 
 	/*
 	    Timescale
@@ -573,9 +567,7 @@ void configs::options(ui::Container& container) {
 			fonts::dejavu
 		);
 
-#ifndef __APPLE__ // rife issue again
 		ui::add_text_input("rife model", container, settings.advanced.rife_model, "rife model", fonts::dejavu);
-#endif
 
 		/*
 		    Advanced Blur

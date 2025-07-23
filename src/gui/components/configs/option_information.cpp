@@ -72,7 +72,6 @@ void configs::option_information(ui::Container& container) {
 				"FPS to interpolate input video to (before blurring)",
 			},
 		},
-#ifndef __APPLE__ // TODO: apple rife issue
 		{
 			"interpolation method dropdown",
 			{
@@ -80,7 +79,6 @@ void configs::option_information(ui::Container& container) {
 				"Speed: svp > rife",
 			},
 		},
-#endif
 		// pre-interp settings
 		{
 			"section pre-interpolation checkbox",
@@ -155,12 +153,8 @@ void configs::option_information(ui::Container& container) {
 		{
 			"deduplicate method dropdown",
 			{
-#ifndef __APPLE__ // TODO: apple rife issue
 				"Quality: rife > svp",
 				"Speed: old > svp > rife",
-#else
-				"Old is faster, but less accurate",
-#endif
 			},
 		},
 		{

@@ -26,14 +26,11 @@ std::string config_blur::generate_config_string(const BlurSettings& settings, bo
 		output << "interpolate: " << (settings.interpolate ? "true" : "false") << "\n";
 		if (!concise || settings.interpolate) {
 			output << "interpolated fps: " << settings.interpolated_fps << "\n";
-#ifndef __APPLE__
 			output << "interpolation method: " << settings.interpolation_method << "\n";
-#endif
 		}
 	}
 
 	// Pre-interpolation section
-#ifndef __APPLE__
 	if (!concise || settings.pre_interpolate) {
 		output << "\n";
 		output << "- pre-interpolation" << "\n";
@@ -42,7 +39,6 @@ std::string config_blur::generate_config_string(const BlurSettings& settings, bo
 			output << "pre-interpolated fps: " << settings.pre_interpolated_fps << "\n";
 		}
 	}
-#endif
 
 	// Deduplication section
 	if (!concise || settings.deduplicate) {
@@ -139,9 +135,7 @@ std::string config_blur::generate_config_string(const BlurSettings& settings, bo
 			output << "svp interpolation algorithm: " << settings.advanced.svp_interpolation_algorithm << "\n";
 			output << "interpolation block size: " << settings.advanced.interpolation_blocksize << "\n";
 			output << "interpolation mask area: " << settings.advanced.interpolation_mask_area << "\n";
-#ifndef __APPLE__
 			output << "rife model: " << settings.advanced.rife_model << "\n";
-#endif
 
 			if (!concise || settings.advanced.manual_svp) {
 				output << "\n";
@@ -235,12 +229,10 @@ BlurSettings config_blur::parse_from_map(
 
 	config_base::extract_config_value(config_map, "interpolate", settings.interpolate);
 	config_base::extract_config_string(config_map, "interpolated fps", settings.interpolated_fps);
-#ifndef __APPLE__
 	config_base::extract_config_string(config_map, "interpolation method", settings.interpolation_method);
 
 	config_base::extract_config_value(config_map, "pre-interpolate", settings.pre_interpolate);
 	config_base::extract_config_string(config_map, "pre-interpolated fps", settings.pre_interpolated_fps);
-#endif
 
 	config_base::extract_config_value(config_map, "deduplicate", settings.deduplicate);
 	config_base::extract_config_value(config_map, "deduplicate method", settings.deduplicate_method);
@@ -301,9 +293,7 @@ BlurSettings config_blur::parse_from_map(
 		config_base::extract_config_value(
 			config_map, "interpolation mask area", settings.advanced.interpolation_mask_area
 		);
-#ifndef __APPLE__
 		config_base::extract_config_string(config_map, "rife model", settings.advanced.rife_model);
-#endif
 		config_base::extract_config_value(config_map, "manual svp", settings.advanced.manual_svp);
 		config_base::extract_config_string(config_map, "super string", settings.advanced.super_string);
 		config_base::extract_config_string(config_map, "vectors string", settings.advanced.vectors_string);
@@ -453,18 +443,16 @@ tl::expected<std::filesystem::path, std::string> BlurSettings::get_rife_model_pa
 	// NOLINTEND(readability-convert-member-functions-to-static)
 	std::filesystem::path rife_model_path;
 
-#ifndef __APPLE__ // rife issue again
-#	if defined(_WIN32)
+#if defined(_WIN32)
 	rife_model_path = u::get_resources_path() / "lib/models" / this->advanced.rife_model;
-#	elif defined(__linux__)
+#elif defined(__linux__)
 	rife_model_path = u::get_resources_path() / "models" / this->advanced.rife_model;
-#	elif defined(__APPLE__)
+#elif defined(__APPLE__)
 	rife_model_path = u::get_resources_path() / "models" / this->advanced.rife_model;
-#	endif
+#endif
 
 	if (!std::filesystem::exists(rife_model_path))
 		return tl::unexpected(std::format("RIFE model '{}' could not be found", this->advanced.rife_model));
-#endif
 
 	return rife_model_path;
 }
