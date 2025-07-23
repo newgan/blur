@@ -359,7 +359,7 @@ void configs::options(ui::Container& container) {
 		rife_gpu = "default - will use first available";
 	}
 	else {
-		if (blur.initialised_rife_gpus) {
+		if (blur.initialised_rife_gpus && !blur.rife_gpus.empty()) {
 			rife_gpu = blur.rife_gpus.at(app_settings.rife_gpu_index);
 		}
 		else {
