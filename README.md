@@ -112,7 +112,7 @@ Blur supports rendering from frameservers. This means you can avoid having to ru
 - interpolation method - method used for interpolation:
   - Quality: rife > svp
   - Speed: svp > rife
-  - Note: On macOS, SVP requires SVP Manager to be open or a red border will appear
+  - Note: On macOS, SVP requires SVP Manager to be open or a red border will appear. It provides a 30-day trial, but then costs $24.99 for a lifetime license.
 
 ### pre-interpolation
 
