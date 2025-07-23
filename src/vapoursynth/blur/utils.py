@@ -1,11 +1,27 @@
 import vapoursynth as vs
 from vapoursynth import core
+
 from pathlib import Path
 from fractions import Fraction
 
 
 class BlurException(Exception):
     pass
+
+
+def load_plugins(extension: str):
+    plugin_dir = Path("../vapoursynth-plugins")
+    ignored = {
+        f"libbestsource{extension}",
+    }
+
+    for plugin in plugin_dir.glob(f"*{extension}"):
+        if plugin.name not in ignored:
+            print("Loading", plugin.name)
+            try:
+                core.std.LoadPlugin(path=str(plugin))
+            except Exception as e:
+                print(f"Failed to load plugin {plugin.name}: {e}")
 
 
 def safe_int(value):

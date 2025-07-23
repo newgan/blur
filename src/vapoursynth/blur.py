@@ -5,28 +5,6 @@ import sys
 import json
 from pathlib import Path
 
-# load vapoursynth plugins
-if vars().get("macos_bundled") == "true":
-    plugin_ext = ".dylib"
-elif vars().get("linux_bundled") == "true":
-    plugin_ext = ".so"
-else:
-    plugin_ext = None
-
-if plugin_ext:
-    plugin_dir = Path("../vapoursynth-plugins")
-    ignored = {
-        f"libbestsource{plugin_ext}",
-    }
-
-    for plugin in plugin_dir.glob(f"*{plugin_ext}"):
-        if plugin.name not in ignored:
-            print("Loading", plugin.name)
-            try:
-                core.std.LoadPlugin(path=str(plugin))
-            except Exception as e:
-                print(f"Failed to load plugin {plugin.name}: {e}")
-
 # add blur.py folder to path so it can reference scripts
 sys.path.insert(1, str(Path(__file__).parent))
 
@@ -36,6 +14,11 @@ import blur.deduplicate_rife
 import blur.interpolate
 import blur.weighting
 import blur.utils as u
+
+if vars().get("macos_bundled") == "true":
+    u.load_plugins(".dylib")
+elif vars().get("linux_bundled") == "true":
+    u.load_plugins(".so")
 
 video_path = Path(vars().get("video_path", ""))
 

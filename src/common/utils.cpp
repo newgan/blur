@@ -603,6 +603,14 @@ std::map<int, std::string> u::get_rife_gpus() {
 		blur.vspipe_path.wstring(),
 		L"-c",
 		L"y4m",
+#if defined(__APPLE__)
+		L"-a",
+		std::format(L"macos_bundled={}", blur.used_installer ? L"true" : L"false"),
+#endif
+#if defined(__linux__)
+		L"-a",
+		std::format(L"linux_bundled={}", vapoursynth_plugins_bundled ? L"true" : L"false"),
+#endif
 		get_gpus_script_path,
 		L"-",
 		bp::std_out.null(),
@@ -680,6 +688,10 @@ int u::get_fastest_rife_gpu_index(
 			L"-a",
 			std::format(L"macos_bundled={}", blur.used_installer ? L"true" : L"false"),
 #endif
+#if defined(__linux__)
+			L"-a",
+			std::format(L"linux_bundled={}", vapoursynth_plugins_bundled ? L"true" : L"false"),
+#endif
 #if defined(_WIN32)
 			L"-a",
 			L"enable_lsmash=true",
@@ -736,27 +748,31 @@ void u::set_fastest_rife_gpu(BlurSettings& settings) {
 	if (app_config.rife_gpu_index != -1)
 		return;
 
-	if (!blur.initialised_rife_gpus)
+	if (!blur.initialised_rife_gpus || blur.rife_gpus.empty())
 		return;
 
-	auto sample_video_path = blur.settings_path / "sample_video.mp4";
-	bool sample_video_exists = std::filesystem::exists(sample_video_path);
-
-	if (sample_video_exists) {
-		auto rife_model_path = settings.get_rife_model_path();
-
-		if (rife_model_path) {
-			int fastest_gpu_index = u::get_fastest_rife_gpu_index(blur.rife_gpus, *rife_model_path, sample_video_path);
-
-			app_config.rife_gpu_index = fastest_gpu_index;
-
-			// todo: this is dumb
-			auto app_config_path = config_app::get_app_config_path();
-			config_app::create(app_config_path, app_config);
-
-			u::log("set rife_gpu_index to the fastest gpu ({})", fastest_gpu_index);
-		}
+	if (blur.rife_gpus.size() == 1) {
+		// only one gpu, so it's the fastest. don't need to benchmark.
+		app_config.rife_gpu_index = 0;
 	}
+	else {
+		auto sample_video_path = blur.settings_path / "sample_video.mp4";
+		if (!std::filesystem::exists(sample_video_path))
+			return;
+
+		auto rife_model_path = settings.get_rife_model_path();
+		if (!rife_model_path)
+			return;
+
+		int fastest_gpu_index = u::get_fastest_rife_gpu_index(blur.rife_gpus, *rife_model_path, sample_video_path);
+		app_config.rife_gpu_index = fastest_gpu_index;
+	}
+
+	// todo: this is dumb
+	auto app_config_path = config_app::get_app_config_path();
+	config_app::create(app_config_path, app_config);
+
+	u::log("set rife_gpu_index to the fastest gpu ({})", app_config.rife_gpu_index);
 }
 
 void u::verify_gpu_encoding(BlurSettings& settings) {
