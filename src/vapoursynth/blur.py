@@ -10,7 +10,6 @@ sys.path.insert(1, str(Path(__file__).parent))
 
 import blur.blending
 import blur.deduplicate
-import blur.deduplicate_rife
 import blur.interpolate
 import blur.weighting
 import blur.utils as u
@@ -104,7 +103,7 @@ if settings["deduplicate"] and settings["deduplicate_range"] != 0:
             )
 
         case _:
-            video = blur.deduplicate_rife.fill_drops_rife(
+            video = blur.deduplicate.fill_drops_rife(
                 video,
                 is_full_color_range=is_full_color_range,
                 model_path=settings["rife_model"],
@@ -196,22 +195,10 @@ if settings["interpolate"]:
             #     )
 
             case _:  # svp
-                orig_format = video.format
-                needs_conversion = (
-                    orig_format.id != vs.YUV420P8
-                )  # svp only accepts yv12 (SVSuper: Clip must be YV12)
-
-                if needs_conversion:
-                    video = core.resize.Point(
-                        video,
-                        format=vs.YUV420P8,
-                        range_in=is_full_color_range,
-                        range=is_full_color_range,
-                    )
-
                 if not settings["manual_svp"]:
                     video = blur.interpolate.interpolate_svp(
                         video,
+                        is_full_color_range=is_full_color_range,
                         new_fps=interpolated_fps,
                         preset=settings["svp_interpolation_preset"],
                         algorithm=svp_interpolation_algorithm,
@@ -221,32 +208,18 @@ if settings["interpolate"]:
                         gpu=settings["gpu_interpolation"],
                     )
                 else:
-                    super = core.svp1.Super(video, settings["super_string"])
-                    vectors = core.svp1.Analyse(
-                        super["clip"], super["data"], video, settings["vectors_string"]
-                    )
-
                     # insert interpolated fps
                     smooth_json = json.loads(settings["smooth_string"])
                     if "rate" not in smooth_json:
                         smooth_json["rate"] = {"num": interpolated_fps, "abs": True}
                     smooth_str = json.dumps(smooth_json)
 
-                    video = core.svp2.SmoothFps(
+                    video = blur.interpolate.svp(
                         video,
-                        super["clip"],
-                        super["data"],
-                        vectors["clip"],
-                        vectors["data"],
-                        smooth_str,
-                    )
-
-                if needs_conversion:
-                    video = core.resize.Point(
-                        video,
-                        format=orig_format.id,
-                        range_in=is_full_color_range,
-                        range=is_full_color_range,
+                        is_full_color_range=is_full_color_range,
+                        super_string=settings["super_string"],
+                        vectors_string=settings["vectors_string"],
+                        smooth_str=smooth_str,
                     )
 
         fps_added = video.fps - old_fps
@@ -264,75 +237,20 @@ if settings["timescale"]:
 if settings["blur"]:
     if settings["blur_amount"] > 0:
         frame_gap = int(video.fps / settings["blur_output_fps"])
-        blended_frames = int(frame_gap * settings["blur_amount"])
+        blur_frames = int(frame_gap * settings["blur_amount"])
 
-        if blended_frames > 0:
+        if blur_frames > 0:
             # number of weights must be odd
-            if blended_frames % 2 == 0:
-                blended_frames += 1
+            if blur_frames % 2 == 0:
+                blur_frames += 1
 
-            def do_weighting_fn(blur_weighting_fn):
-                blur_weighting_gaussian_bound = json.loads(
-                    settings["blur_weighting_gaussian_bound"]
-                )
-
-                match blur_weighting_fn:
-                    case "equal":
-                        return blur.weighting.equal(blended_frames)
-
-                    case "ascending":
-                        return blur.weighting.ascending(blended_frames)
-
-                    case "descending":
-                        return blur.weighting.descending(blended_frames)
-
-                    case "pyramid":
-                        return blur.weighting.pyramid(blended_frames)
-
-                    case "gaussian":
-                        return blur.weighting.gaussian(
-                            blended_frames,
-                            standard_deviation=settings[
-                                "blur_weighting_gaussian_std_dev"
-                            ],
-                            mean=settings["blur_weighting_gaussian_mean"],
-                            bound=blur_weighting_gaussian_bound,
-                        )
-
-                    case "gaussian_reverse":
-                        return blur.weighting.gaussian_reverse(
-                            blended_frames,
-                            standard_deviation=settings[
-                                "blur_weighting_gaussian_std_dev"
-                            ],
-                            mean=settings["blur_weighting_gaussian_mean"],
-                            bound=blur_weighting_gaussian_bound,
-                        )
-
-                    case "gaussian_sym":
-                        return blur.weighting.gaussian_sym(
-                            blended_frames,
-                            standard_deviation=settings[
-                                "blur_weighting_gaussian_std_dev"
-                            ],
-                            bound=blur_weighting_gaussian_bound,
-                        )
-
-                    case "vegas":
-                        return blur.weighting.vegas(blended_frames)
-
-                    case _:
-                        try:
-                            weights = [
-                                int(x) for x in settings["blur_weighting"].split(",")
-                            ]
-                            return blur.weighting.divide(blended_frames, weights)
-                        except (ValueError, AttributeError):
-                            raise u.BlurException(
-                                f"Invalid blur_weighting value: {settings['blur_weighting']}. Valid options are: 'equal', 'gaussian_sym', 'vegas', 'pyramid', 'gaussian', 'ascending', 'descending', 'gaussian_reverse', or a comma-separated list of custom weights (e.g. '1, 2, 3, 2, 1')."
-                            )
-
-            weights = do_weighting_fn(settings["blur_weighting"])
+            weights = blur.weighting.parse(
+                blur_frames,
+                weighting_type=settings["blur_weighting"],
+                gaussian_std_dev=settings["blur_weighting_gaussian_std_dev"],
+                gaussian_mean=settings["blur_weighting_gaussian_mean"],
+                gaussian_bound=json.loads(settings["blur_weighting_gaussian_bound"]),
+            )
 
             gamma = float(settings["blur_gamma"])
             if gamma == 1.0:
@@ -352,27 +270,17 @@ if settings["filters"]:
         or settings["contrast"] != 1
         or settings["saturation"] != 1
     ):
-        original_format = video.format
-
-        video = core.resize.Point(
+        video = u.with_format(
             video,
-            format=vs.YUV444PS,
-            range_in=is_full_color_range,
-            range=is_full_color_range,
+            is_full_color_range,
+            vs.YUV444PS,
+            lambda video: core.adjust.Tweak(
+                video,
+                bright=settings["brightness"] - 1,
+                cont=settings["contrast"],
+                sat=settings["saturation"],
+            ),
         )
 
-        video = core.adjust.Tweak(
-            video,
-            bright=settings["brightness"] - 1,
-            cont=settings["contrast"],
-            sat=settings["saturation"],
-        )
-
-        video = core.resize.Point(
-            video,
-            format=original_format.id,
-            range_in=is_full_color_range,
-            range=is_full_color_range,
-        )
 
 video.set_output()
