@@ -12,7 +12,7 @@ jobs:
       - name: Get latest release
         id: release
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             RELEASE_DATA=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest")
           else
             RELEASE_DATA='${{ toJson(github.event.release) }}'
@@ -31,13 +31,13 @@ jobs:
 
       - name: Send Discord notification
         run: |
-          if [ "${{ steps.release.outputs.prerelease }}" = "true" ]; then
+          if [[ "${{ steps.release.outputs.prerelease }}" == "true" ]]; then
             WEBHOOK_URL="${{ secrets.DISCORD_WEBHOOK_RELEASES_BETA }}"
-            ROLE_ID="${{ secrets.DISCORD_ROLE_RELEASES_BETA }}"
+            ROLE_ID="${{ vars.DISCORD_ROLE_RELEASES_BETA }}"
             TYPE="Beta Release"
           else
             WEBHOOK_URL="${{ secrets.DISCORD_WEBHOOK_RELEASES }}"
-            ROLE_ID="${{ secrets.DISCORD_ROLE_RELEASES }}"
+            ROLE_ID="${{ vars.DISCORD_ROLE_RELEASES }}"
             TYPE="Release"
           fi
 
@@ -49,6 +49,8 @@ jobs:
           # strip up to+including first '---', then drop any blank lines that follow
           sed -E '1,/^[[:space:]]*---[[:space:]]*$/d' /tmp/body.txt \
             | sed '/^[[:space:]]*$/d' > /tmp/changelog.txt
+
+          cat /tmp/changelog.txt
 
           PAYLOAD=$(jq -n \
             --arg content "<@&$ROLE_ID>" \
