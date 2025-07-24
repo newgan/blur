@@ -359,26 +359,18 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 	return info;
 }
 
-std::vector<u::EncodingDevice> u::get_hardware_encoding_devices() {
+bool u::test_hardware_device(const std::string& device_type) {
 	namespace bp = boost::process;
 
-	static std::vector<EncodingDevice> devices;
-
-	if (init_hw)
-		return devices;
-	else
-		init_hw = true;
-
-	// First check available hardware acceleration methods
-	bp::ipstream pipe_stream;
+	bp::ipstream error_stream;
 	bp::child c(
 		blur.ffmpeg_path.wstring(),
-		"-v",
+		"-init_hw_device",
+		(device_type + "=hw:0"),
+		"-loglevel",
 		"error",
-		"-hide_banner",
-		"-hwaccels",
-		bp::std_out > pipe_stream,
-		bp::std_err > bp::null
+		bp::std_out > bp::null,
+		bp::std_err > error_stream
 #ifdef _WIN32
 		,
 		bp::windows::create_no_window
@@ -386,117 +378,59 @@ std::vector<u::EncodingDevice> u::get_hardware_encoding_devices() {
 	);
 
 	std::string line;
-
-	bool in_accel_section = false;
-
-	while (pipe_stream && std::getline(pipe_stream, line)) {
-		boost::algorithm::trim(line);
-
-		if (line == "Hardware acceleration methods:") {
-			in_accel_section = true;
-			continue;
-		}
-
-		if (in_accel_section && !line.empty()) {
-			hw_accels.insert(line);
-		}
+	if (std::getline(error_stream, line)) {
+		// any error output means the device is not available
+		c.terminate();
+		return false;
 	}
 
 	c.wait();
+	return true;
+}
 
-	// Now check specific encoders
-	bp::ipstream encoder_stream;
-	bp::child c2(
-		blur.ffmpeg_path.wstring(),
-		"-v",
-		"error",
-		"-hide_banner",
-		"-encoders",
-		bp::std_out > encoder_stream,
-		bp::std_err > bp::null
-#ifdef _WIN32
-		,
-		bp::windows::create_no_window
-#endif
-	);
+std::vector<u::EncodingDevice> u::get_hardware_encoding_devices() {
+	static std::vector<EncodingDevice> devices;
 
-	bool in_encoder_section = false;
+	if (init_hw)
+		return devices;
+	else
+		init_hw = true;
 
-	while (encoder_stream && std::getline(encoder_stream, line)) {
-		boost::algorithm::trim(line);
+	struct HardwareTest {
+		std::string type;
+		std::string method;
+		std::string ffmpeg_device_type;
+	};
 
-		if (line == "------") {
-			in_encoder_section = true;
-			continue;
-		}
-
-		if (in_encoder_section && !line.empty() && u::contains(line, "V....D")) {
-			auto tmp = u::split_string(line, "V....D ")[1];
-			auto encoder = u::split_string(tmp, " ")[0];
-			hw_encoders.insert(encoder);
-		}
-	}
-
-	c2.wait();
-
-	// Check for NVIDIA (NVENC)
-	bool has_nvidia = false;
-	if (u::contains(hw_accels, "cuda") || u::contains(hw_accels, "nvenc") || u::contains(hw_accels, "nvdec")) {
-		for (const auto& encoder : hw_encoders) {
-			if (u::contains(encoder, "nvenc")) {
-				EncodingDevice device;
-				device.type = "nvidia";
-				device.method = "nvenc";
-				device.is_primary = true;
-				devices.push_back(device);
-				break;
-			}
-		}
-	}
-
-	// Check for AMD (AMF)
-	bool has_amd = false;
-	for (const auto& encoder : hw_encoders) {
-		if (u::contains(encoder, "amf")) {
-			has_amd = true;
-			EncodingDevice device;
-			device.type = "amd";
-			device.method = "amf";
-			device.is_primary = devices.empty(); // Primary if no other device yet
-			devices.push_back(device);
-			break;
-		}
-	}
-
-	// Check for Intel (QSV)
-	if (u::contains(hw_accels, "qsv")) {
-		for (const auto& encoder : hw_encoders) {
-			if (u::contains(encoder, "qsv")) {
-				EncodingDevice device;
-				device.type = "intel";
-				device.method = "qsv";
-				device.is_primary = devices.empty(); // Primary if no other device yet
-				devices.push_back(device);
-				break;
-			}
-		}
-	}
-
-	// Check for Mac (VideoToolbox)
-	bool has_mac = false;
+	std::vector<HardwareTest> tests = {
+		// in order of priority
+		// e.g. if you have nvidia + amd/intel you'll want to use nvidia over them i assume
+		{ .type = "nvidia", .method = "nvenc", .ffmpeg_device_type = "cuda" },
+		{ .type = "amd", .method = "amf", .ffmpeg_device_type = "d3d11va" },
+		{ .type = "intel", .method = "qsv", .ffmpeg_device_type = "qsv" },
 #ifdef __APPLE__
-	for (const auto& encoder : hw_encoders) {
-		if (u::contains(encoder, "videotoolbox")) {
-			has_mac = true;
+		{ .type = "mac", .method = "videotoolbox", .ffmpeg_device_type = "videotoolbox" }
+#endif
+	};
+
+	std::vector<std::future<bool>> futures;
+	futures.reserve(tests.size());
+
+	for (const auto& test : tests) {
+		futures.push_back(std::async(std::launch::async, [&test]() {
+			return test_hardware_device(test.ffmpeg_device_type);
+		}));
+	}
+
+	for (size_t i = 0; i < tests.size(); ++i) {
+		if (futures[i].get()) {
 			EncodingDevice device;
-			device.type = "mac";
-			device.method = "videotoolbox";
-			device.is_primary = devices.empty(); // Primary if no other device yet
+			device.type = tests[i].type;
+			device.method = tests[i].method;
+			device.is_primary = devices.empty();
 			devices.push_back(device);
-			break;
 		}
 	}
-#endif
 
 	return devices;
 }

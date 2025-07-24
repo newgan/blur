@@ -291,6 +291,8 @@ namespace u {
 		bool is_primary;    // Whether this is likely the primary GPU
 	};
 
+	bool test_hardware_device(const std::string& device_type);
+
 	std::vector<EncodingDevice> get_hardware_encoding_devices();
 	std::vector<std::string> get_available_gpu_types();
 	std::string get_primary_gpu_type();
