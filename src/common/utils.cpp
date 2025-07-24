@@ -424,11 +424,11 @@ std::vector<u::EncodingDevice> u::get_hardware_encoding_devices() {
 
 	for (size_t i = 0; i < tests.size(); ++i) {
 		if (futures[i].get()) {
-			EncodingDevice device;
-			device.type = tests[i].type;
-			device.method = tests[i].method;
-			device.is_primary = devices.empty();
-			devices.push_back(device);
+			devices.emplace_back(EncodingDevice{
+				.type = tests[i].type,
+				.method = tests[i].method,
+				.is_primary = devices.empty(),
+			});
 		}
 	}
 
