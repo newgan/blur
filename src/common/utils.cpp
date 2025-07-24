@@ -366,7 +366,7 @@ bool u::test_hardware_device(const std::string& device_type) {
 	bp::child c(
 		blur.ffmpeg_path.wstring(),
 		"-init_hw_device",
-		(device_type + "=hw:0"),
+		(device_type + "=hw"),
 		"-loglevel",
 		"error",
 		bp::std_out > bp::null,
