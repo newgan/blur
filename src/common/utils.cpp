@@ -525,6 +525,10 @@ std::map<int, std::string> u::get_rife_gpus() {
 	}
 #endif
 
+#if defined(__linux__)
+	bool vapoursynth_plugins_bundled = std::filesystem::exists(blur.resources_path / "vapoursynth-plugins");
+#endif
+
 	std::wstring get_gpus_script_path = (blur.resources_path / "lib/get_rife_gpus.py").wstring();
 
 	bp::ipstream err_stream;
@@ -595,6 +599,10 @@ int u::get_fastest_rife_gpu_index(
 			env["PYTHONHOME"] = (blur.resources_path / "python").string();
 			env["PYTHONPATH"] = (blur.resources_path / "python/lib/python3.12/site-packages").string();
 		}
+#endif
+
+#if defined(__linux__)
+		bool vapoursynth_plugins_bundled = std::filesystem::exists(blur.resources_path / "vapoursynth-plugins");
 #endif
 
 		auto start = std::chrono::steady_clock::now();
