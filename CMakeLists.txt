@@ -130,6 +130,11 @@ setup_target(blur-cli)
 # gui
 add_executable(blur WIN32 ${GUI_SOURCES} ${IMGUI_SOURCES} ${RESOURCES})
 
+# name the executable blur-gui on windows to stop nvidia from detecting it as a game (blur 2010)
+if(WIN32)
+  set_target_properties(blur PROPERTIES OUTPUT_NAME "blur-gui")
+endif()
+
 # imgui
 target_include_directories(blur
                            PRIVATE ${PROJECT_SOURCE_DIR}/dependencies/imgui)
