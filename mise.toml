@@ -1,5 +1,13 @@
 [tasks.check]
 run = """
-python3 ci/run-clangd-tidy.py -use-color \
-  -source-filter='^((?!/dependencies/|/vcpkg_installed/).)*$'
+uv run ci/run-clangd-tidy.py -use-color \
+  -source-filter='^((?!/dependencies/|/vcpkg_installed/).)*$' \
+  -p='./build'
 """
+
+[tools]
+cmake = "latest"
+meson = "latest"
+ninja = "latest"
+"pipx:clangd-tidy" = "latest"
+uv = "latest"
