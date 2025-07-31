@@ -20,7 +20,7 @@ Join the [Discord](https://discord.gg/B5BK9GMN87) to share your configs, render 
 
 ### macOS notes
 
-> After opening on Mac for the first time you'll get a 'Blur is damaged and can't be opened.' error. To fix this, run `xattr -dr com.apple.quarantine /Applications/blur.app` to unquarantine it.\*
+> After opening on Mac for the first time you'll get a 'Blur is damaged and can't be opened.' error. To fix this, run `xattr -dr com.apple.quarantine /Applications/blur.app` in Terminal to unquarantine it.\*
 
 > Using SVP for interpolation requires that [SVP Manager](https://www.svp-team.com/get/) be running, or you'll get a red border around videos. This is because the older, free version of SVPflow (the interpolation plugin) that's used on Windows and Linux doesn't have an ARM build unfortunately.
 
