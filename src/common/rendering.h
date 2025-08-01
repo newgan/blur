@@ -102,6 +102,10 @@ public:
 		return m_video_name;
 	}
 
+	[[nodiscard]] std::filesystem::path get_input_video_path() const {
+		return m_video_path;
+	}
+
 	[[nodiscard]] std::filesystem::path get_output_video_path() const {
 		return m_output_path;
 	}

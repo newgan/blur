@@ -11,6 +11,11 @@
 #include "components/notifications.h"
 #include "components/configs/configs.h"
 
+namespace {
+	std::vector<Render> pending_renders;
+	std::mutex pending_renders_mutex;
+}
+
 void tasks::run(const std::vector<std::string>& arguments) {
 	gui::initialisation_res = blur.initialise(false, true);
 
@@ -101,6 +106,8 @@ void tasks::run(const std::vector<std::string>& arguments) {
 	add_files(wargs); // todo: mac packaged app support (& linux? does it work?)
 
 	while (!blur.exiting) {
+		process_pending_files();
+
 		if (!rendering.render_next_video()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		}
@@ -108,6 +115,8 @@ void tasks::run(const std::vector<std::string>& arguments) {
 }
 
 void tasks::add_files(const std::vector<std::wstring>& path_strs) {
+	std::lock_guard<std::mutex> lock(pending_renders_mutex);
+
 	auto app_config = config_app::get_app_config();
 
 	for (const std::wstring& path_str : path_strs) {
@@ -116,17 +125,10 @@ void tasks::add_files(const std::vector<std::wstring>& path_strs) {
 			continue;
 
 		auto video_info = u::get_video_info(path);
-		if (!video_info.has_video_stream) {
-			gui::components::notifications::add(
-				std::format("File is not a valid video or is unreadable: {}", u::tostring(path.wstring())),
-				ui::NotificationType::NOTIF_ERROR
-			);
-			continue;
-		}
-
-		u::log(L"queueing {}", path.wstring());
 
 		Render render(path, video_info);
+
+		u::log(L"queueing {}", path.wstring());
 
 		if (gui::renderer::screen != gui::renderer::Screens::MAIN) {
 			gui::components::notifications::add(
@@ -140,6 +142,36 @@ void tasks::add_files(const std::vector<std::wstring>& path_strs) {
 				gui::components::notifications::add(
 					"Using override config from video folder", ui::NotificationType::INFO
 				);
+		}
+
+		pending_renders.push_back(render);
+	}
+}
+
+void tasks::process_pending_files() {
+	std::vector<Render> renders_to_process;
+
+	{
+		std::lock_guard<std::mutex> lock(pending_renders_mutex);
+		if (pending_renders.empty())
+			return;
+
+		renders_to_process = std::move(pending_renders);
+		pending_renders.clear();
+	}
+
+	for (auto& render : renders_to_process) {
+		auto video_info = u::get_video_info(render.get_input_video_path());
+
+		if (!video_info.has_video_stream) {
+			gui::components::notifications::add(
+				std::format(
+					"File is not a valid video or is unreadable: {}",
+					u::tostring(render.get_input_video_path().wstring())
+				),
+				ui::NotificationType::NOTIF_ERROR
+			);
+			continue;
 		}
 
 		rendering.queue_render(std::move(render));
