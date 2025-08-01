@@ -4,8 +4,8 @@
 
 namespace {
 	bool init_hw = false;
-	std::set<std::string> hw_accels;
-	std::set<std::string> hw_encoders;
+	// std::set<std::string> hw_accels; // TODO: re-add?
+	// std::set<std::string> hw_encoders;
 }
 
 // NOLINTBEGIN gpt ass code
@@ -474,9 +474,9 @@ std::vector<std::string> u::get_supported_presets(bool gpu_encoding, const std::
 	std::vector<std::string> filtered_presets;
 
 	for (const auto& preset : available_presets) {
-		if (hw_encoders.contains(preset.codec)) {
-			filtered_presets.push_back(preset.name);
-		}
+		// if (hw_encoders.contains(preset.codec)) {
+		filtered_presets.push_back(preset.name);
+		// }
 	}
 
 	return filtered_presets;
