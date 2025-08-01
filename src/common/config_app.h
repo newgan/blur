@@ -1,6 +1,8 @@
 #pragma once
 
 struct GlobalAppSettings {
+	std::string output_prefix;
+
 	std::string gpu_type;
 	int rife_gpu_index = -1;
 

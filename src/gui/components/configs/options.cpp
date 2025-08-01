@@ -310,6 +310,8 @@ void configs::options(ui::Container& container) {
 
 	ui::add_checkbox("copy dates checkbox", container, "copy dates", settings.copy_dates, fonts::dejavu);
 
+	ui::add_text_input("output path input", container, app_settings.output_prefix, "output path", fonts::dejavu);
+
 	/*
 	    GPU Acceleration
 	*/

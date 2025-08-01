@@ -55,6 +55,9 @@ Render& Rendering::queue_render(Render&& render) {
 }
 
 void Render::build_output_filename() {
+	auto output_folder = this->m_video_folder / this->m_app_settings.output_prefix;
+	std::filesystem::create_directories(output_folder);
+
 	// build output filename
 	int num = 1;
 	do {
@@ -94,7 +97,7 @@ void Render::build_output_filename() {
 
 		output_filename += L"." + u::towstring(this->m_settings.advanced.video_container);
 
-		this->m_output_path = this->m_video_folder / output_filename;
+		this->m_output_path = output_folder / output_filename;
 
 		num++;
 	}
