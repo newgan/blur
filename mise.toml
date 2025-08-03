@@ -1,3 +1,8 @@
+[tasks.setup]
+run = """
+pre-commit install
+"""
+
 [tasks.check]
 run = """
 uv run ci/run-clangd-tidy.py -use-color \
@@ -9,5 +14,6 @@ uv run ci/run-clangd-tidy.py -use-color \
 cmake = "latest"
 meson = "latest"
 ninja = "latest"
+"pipx:pre-commit" = "latest"
 "pipx:clangd-tidy" = "latest"
 uv = "latest"
