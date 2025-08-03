@@ -33,10 +33,11 @@ struct BlurSettings {
 	float blur_gamma = 1.f;
 
 	bool interpolate = true;
-	std::string interpolated_fps = "1200";
 #ifdef __APPLE__
+	std::string interpolated_fps = "600";
 	std::string interpolation_method = "rife";
 #else
+	std::string interpolated_fps = "1200";
 	std::string interpolation_method = "svp";
 #endif
 
