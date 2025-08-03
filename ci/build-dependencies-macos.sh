@@ -270,8 +270,5 @@ for plugin in "$out_dir"/vapoursynth-plugins/*.dylib; do
   dylibbundler -cd -b -of -x "$plugin" -d "$out_dir/libs"
 done
 
-# fix that random issue
-install_name_tool -delete_rpath @executable_path/../libs/ "$out_dir/vapoursynth-plugins/libmvtools.dylib"
-
 dylibbundler -cd -b -of -x "$out_dir/vapoursynth/vspipe" -d "$out_dir/libs"
 dylibbundler -cd -b -of -x "$out_dir/python/lib/python3.12/site-packages/vapoursynth.so" -d "$out_dir/libs"
