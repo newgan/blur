@@ -377,10 +377,12 @@ tl::expected<RenderResult, std::string> Render::do_render(RenderCommands render_
 
 	m_status = RenderStatus{};
 	std::ostringstream vspipe_stderr_output;
+	std::ostringstream ffmpeg_stderr_output;
 
 	try {
 		bp::pipe vspipe_stdout;
 		bp::ipstream vspipe_stderr;
+		bp::ipstream ffmpeg_stderr;
 
 #ifndef _DEBUG
 		if (m_settings.advanced.debug) {
@@ -425,8 +427,7 @@ tl::expected<RenderResult, std::string> Render::do_render(RenderCommands render_
 		bp::child ffmpeg_process(
 			blur.ffmpeg_path.wstring(),
 			bp::args(render_commands.ffmpeg),
-			bp::std_in < vspipe_stdout,
-			bp::std_out.null(),
+			bp::std_in<vspipe_stdout, bp::std_out.null(), bp::std_err> ffmpeg_stderr,
 			env
 #ifdef _WIN32
 			,
@@ -477,6 +478,13 @@ tl::expected<RenderResult, std::string> Render::do_render(RenderCommands render_
 			}
 		});
 
+		std::thread ffmpeg_stderr_thread([&]() {
+			std::string line;
+			while (std::getline(ffmpeg_stderr, line)) {
+				ffmpeg_stderr_output << line << '\n';
+			}
+		});
+
 		bool killed = false;
 
 		while (vspipe_process.running() || ffmpeg_process.running()) {
@@ -494,6 +502,9 @@ tl::expected<RenderResult, std::string> Render::do_render(RenderCommands render_
 		// Clean up
 		if (progress_thread.joinable())
 			progress_thread.join();
+
+		if (ffmpeg_stderr_thread.joinable())
+			ffmpeg_stderr_thread.join();
 
 		m_vspipe_pid = -1;
 		m_ffmpeg_pid = -1;
@@ -518,8 +529,11 @@ tl::expected<RenderResult, std::string> Render::do_render(RenderCommands render_
 		float elapsed_seconds = elapsed_time.count();
 		u::log("render finished in {:.2f}s", elapsed_seconds);
 
-		if (vspipe_process.exit_code() != 0 || ffmpeg_process.exit_code() != 0)
-			return tl::unexpected(vspipe_stderr_output.str());
+		if (vspipe_process.exit_code() != 0 || ffmpeg_process.exit_code() != 0) {
+			return tl::unexpected(std::format(
+				"--- [vspipe] ---\n{}\n--- [ffmpeg] ---\n{}", vspipe_stderr_output.str(), ffmpeg_stderr_output.str()
+			));
+		}
 
 		return RenderResult{
 			.stopped = false,
