@@ -18,12 +18,19 @@
 		*_res;                                                                                                         \
 	})
 
+template<>
+struct fmt::formatter<std::filesystem::path> : fmt::formatter<std::string> {
+	auto format(const std::filesystem::path& p, format_context& ctx) const {
+		return fmt::formatter<std::string>::format(p.string(), ctx);
+	}
+};
+
 namespace u {
 	std::wstring towstring(const std::string& str);
 	std::string tostring(const std::wstring& wstr);
 
 	namespace detail {
-		inline std::shared_ptr<spdlog::logger>& get_logger() {
+		inline spdlog::logger& get_logger() {
 			static auto logger = []() {
 				auto l = spdlog::stdout_color_mt("console");
 #ifdef _DEBUG
@@ -33,118 +40,164 @@ namespace u {
 				l->set_pattern("%v");
 				l->set_level(spdlog::level::info);
 #endif
+				l->flush_on(spdlog::level::err);
 				return l;
 			}();
-			return logger;
+			return *logger;
 		}
 
-		inline std::shared_ptr<spdlog::logger>& get_error_logger() {
+		inline spdlog::logger& get_error_logger() {
 			static auto logger = []() {
 				auto l = spdlog::stderr_color_mt("stderr");
 				l->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
 				l->set_level(spdlog::level::err);
+				l->flush_on(spdlog::level::err);
 				return l;
 			}();
-			return logger;
+			return *logger;
 		}
 
-		enum class LogType {
+		enum class LogLevel {
 			LOG_INFO,
 			LOG_ERROR,
 			LOG_DEBUG
 		};
 
-		template<typename T>
-		inline void log_impl(LogType type, T&& msg) {
-			if (blur.in_atexit) {
-				if constexpr (std::is_convertible_v<T, std::wstring>) {
-					auto& stream = (type == LogType::LOG_ERROR) ? std::wcerr : std::wcout;
-					if (type == LogType::LOG_DEBUG)
-						stream << L"[debug] ";
-					stream << msg << L'\n';
+		template<typename S, typename... Args>
+		void fallback_log(LogLevel level, const S& fmt, Args&&... args) {
+			if (!blur.in_atexit)
+				return;
+
+			auto& stream = (level == LogLevel::LOG_ERROR) ? std::cerr : std::cout;
+			if (level == LogLevel::LOG_DEBUG)
+				stream << "[debug] ";
+
+			try {
+				if constexpr (std::is_same_v<S, std::wstring>) {
+					auto narrow_fmt = tostring(fmt);
+					stream << fmt::vformat(narrow_fmt, fmt::make_format_args(args...)) << '\n';
 				}
 				else {
-					auto& stream = (type == LogType::LOG_ERROR) ? std::cerr : std::cout;
-					if (type == LogType::LOG_DEBUG)
-						stream << "[debug] ";
-					stream << msg << '\n';
+					stream << fmt::vformat(fmt, fmt::make_format_args(args...)) << '\n';
 				}
-				return;
 			}
+			catch (...) {
+				if constexpr (std::is_convertible_v<S, std::string_view>) {
+					stream << fmt << '\n';
+				}
+				else if constexpr (std::is_convertible_v<S, std::wstring>) {
+					stream << tostring(fmt) << '\n';
+				}
+			}
+		}
 
-			switch (type) {
-				case LogType::LOG_INFO:
-					get_logger()->info(std::forward<T>(msg));
+		template<typename S, typename... Args>
+		void log_impl(LogLevel level, const S& fmt, Args&&... args) {
+			fallback_log(level, fmt, std::forward<Args>(args)...);
+			if (blur.in_atexit)
+				return;
+
+			switch (level) {
+				case LogLevel::LOG_INFO:
+					get_logger().info(fmt::runtime(fmt), std::forward<Args>(args)...);
 					break;
-				case LogType::LOG_ERROR:
-					get_error_logger()->error(std::forward<T>(msg));
+				case LogLevel::LOG_ERROR:
+					get_error_logger().error(fmt::runtime(fmt), std::forward<Args>(args)...);
 					break;
-				case LogType::LOG_DEBUG:
-					get_logger()->debug(std::forward<T>(msg));
+				case LogLevel::LOG_DEBUG:
+					get_logger().debug(fmt::runtime(fmt), std::forward<Args>(args)...);
+					break;
+			}
+		}
+
+		inline void log_impl(LogLevel level, const std::string& msg) {
+			fallback_log(level, msg);
+			if (blur.in_atexit)
+				return;
+
+			switch (level) {
+				case LogLevel::LOG_INFO:
+					get_logger().info(msg);
+					break;
+				case LogLevel::LOG_ERROR:
+					get_error_logger().error(msg);
+					break;
+				case LogLevel::LOG_DEBUG:
+					get_logger().debug(msg);
+					break;
+			}
+		}
+
+		inline void log_impl(LogLevel level, const std::wstring& msg) {
+			fallback_log(level, msg);
+			if (blur.in_atexit)
+				return;
+
+			auto str_msg = tostring(msg);
+			switch (level) {
+				case LogLevel::LOG_INFO:
+					get_logger().info(str_msg);
+					break;
+				case LogLevel::LOG_ERROR:
+					get_error_logger().error(str_msg);
+					break;
+				case LogLevel::LOG_DEBUG:
+					get_logger().debug(str_msg);
 					break;
 			}
 		}
 	}
 
-	// Regular log functions
+	template<typename S, typename... Args>
+	void log(const S& fmt, Args&&... args) {
+		static_assert(
+			!std::is_same_v<S, std::wstring>,
+			"Wide string formatting is not supported here. Use the single wstring overload."
+		);
+		detail::log_impl(detail::LogLevel::LOG_INFO, fmt, std::forward<Args>(args)...);
+	}
+
 	inline void log(const std::string& msg) {
-		detail::log_impl(detail::LogType::LOG_INFO, msg);
+		detail::log_impl(detail::LogLevel::LOG_INFO, msg);
 	}
 
 	inline void log(const std::wstring& msg) {
-		detail::log_impl(detail::LogType::LOG_INFO, tostring(msg));
+		detail::log_impl(detail::LogLevel::LOG_INFO, msg);
 	}
 
-	template<typename... Args>
-	void log(const std::format_string<Args...> format_str, Args&&... args) {
-		detail::log_impl(detail::LogType::LOG_INFO, std::format(format_str, std::forward<Args>(args)...));
+	template<typename S, typename... Args>
+	void log_error(const S& fmt, Args&&... args) {
+		static_assert(
+			!std::is_same_v<S, std::wstring>,
+			"Wide string formatting is not supported here. Use the single wstring overload."
+		);
+		detail::log_impl(detail::LogLevel::LOG_ERROR, fmt, std::forward<Args>(args)...);
 	}
 
-	template<typename... Args>
-	void log(const std::wformat_string<Args...> format_str, Args&&... args) {
-		auto formatted = std::format(format_str, std::forward<Args>(args)...);
-		detail::log_impl(detail::LogType::LOG_INFO, tostring(formatted));
-	}
-
-	// Error log functions
 	inline void log_error(const std::string& msg) {
-		detail::log_impl(detail::LogType::LOG_ERROR, msg);
+		detail::log_impl(detail::LogLevel::LOG_ERROR, msg);
 	}
 
 	inline void log_error(const std::wstring& msg) {
-		detail::log_impl(detail::LogType::LOG_ERROR, tostring(msg));
-	}
-
-	template<typename... Args>
-	void log_error(const std::format_string<Args...> format_str, Args&&... args) {
-		detail::log_impl(detail::LogType::LOG_ERROR, std::format(format_str, std::forward<Args>(args)...));
-	}
-
-	template<typename... Args>
-	void log_error(const std::wformat_string<Args...> format_str, Args&&... args) {
-		auto formatted = std::format(format_str, std::forward<Args>(args)...);
-		detail::log_impl(detail::LogType::LOG_ERROR, tostring(formatted));
+		detail::log_impl(detail::LogLevel::LOG_ERROR, msg);
 	}
 
 #ifdef _DEBUG
-	// Debug log functions
+	template<typename S, typename... Args>
+	void debug_log(const S& fmt, Args&&... args) {
+		static_assert(
+			!std::is_same_v<S, std::wstring>,
+			"Wide string formatting is not supported here. Use the single wstring overload."
+		);
+		detail::log_impl(detail::LogLevel::LOG_DEBUG, fmt, std::forward<Args>(args)...);
+	}
+
 	inline void debug_log(const std::string& msg) {
-		detail::log_impl(detail::LogType::LOG_DEBUG, msg);
+		detail::log_impl(detail::LogLevel::LOG_DEBUG, msg);
 	}
 
 	inline void debug_log(const std::wstring& msg) {
-		detail::log_impl(detail::LogType::LOG_DEBUG, tostring(msg));
-	}
-
-	template<typename... Args>
-	void debug_log(const std::format_string<Args...> format_str, Args&&... args) {
-		detail::log_impl(detail::LogType::LOG_DEBUG, std::format(format_str, std::forward<Args>(args)...));
-	}
-
-	template<typename... Args>
-	void debug_log(const std::wformat_string<Args...> format_str, Args&&... args) {
-		auto formatted = std::format(format_str, std::forward<Args>(args)...);
-		detail::log_impl(detail::LogType::LOG_DEBUG, tostring(formatted));
+		detail::log_impl(detail::LogLevel::LOG_DEBUG, msg);
 	}
 #endif
 

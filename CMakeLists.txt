@@ -72,7 +72,7 @@ target_link_libraries(
          spdlog::spdlog)
 target_precompile_headers(blur-common PUBLIC src/common/common_pch.h)
 target_compile_definitions(blur-common PUBLIC NOMINMAX BOOST_FILESYSTEM_NO_LIB
-                                              BOOST_FILESYSTEM_STATIC_LINK=1)
+                                              BOOST_FILESYSTEM_STATIC_LINK=1 SPDLOG_NO_EXCEPTIONS)
 
 # common settings
 function(setup_target target)
