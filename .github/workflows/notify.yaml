@@ -3,78 +3,90 @@ name: Discord Release Notification
 on:
   release:
     types: [published]
-  workflow_dispatch: # manual trigger
+  workflow_dispatch:
 
 jobs:
   notify-discord:
     runs-on: ubuntu-latest
     steps:
-      - name: Get latest release
-        id: release
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            RELEASE_DATA=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest")
-          else
-            RELEASE_DATA='${{ toJson(github.event.release) }}'
-          fi
-
-          echo "tag=$(echo "$RELEASE_DATA" | jq -r '.tag_name')" >> $GITHUB_OUTPUT
-          echo "name=$(echo "$RELEASE_DATA" | jq -r '.name // .tag_name')" >> $GITHUB_OUTPUT
-          echo "url=$(echo "$RELEASE_DATA" | jq -r '.html_url')" >> $GITHUB_OUTPUT
-          echo "prerelease=$(echo "$RELEASE_DATA" | jq -r '.prerelease')" >> $GITHUB_OUTPUT
-          echo "published_at=$(echo "$RELEASE_DATA" | jq -r '.published_at')" >> $GITHUB_OUTPUT
-
-          # handle multiline body with EOF delimiter
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "$RELEASE_DATA" | jq -r '.body' >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
       - name: Send Discord notification
-        run: |
-          if [[ "${{ steps.release.outputs.prerelease }}" == "true" ]]; then
-            WEBHOOK_URL="${{ secrets.DISCORD_WEBHOOK_RELEASES_BETA }}"
-            ROLE_ID="${{ vars.DISCORD_ROLE_RELEASES_BETA }}"
-            TYPE="Beta Release"
-          else
-            WEBHOOK_URL="${{ secrets.DISCORD_WEBHOOK_RELEASES }}"
-            ROLE_ID="${{ vars.DISCORD_ROLE_RELEASES }}"
-            TYPE="Release"
-          fi
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // get release data
+            let release;
+            if (context.eventName === 'workflow_dispatch') {
+              const { data } = await github.rest.repos.getLatestRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
+              release = data;
+            } else {
+              release = context.payload.release;
+            }
 
-          # Write body to file to avoid shell quoting issues
-          cat << 'BODY_EOF' > /tmp/body.txt
-          ${{ steps.release.outputs.body }}
-          BODY_EOF
+            // determine notification type and webhook
+            const isPrerelease = release.prerelease;
+            const webhookUrl = isPrerelease
+              ? process.env.DISCORD_WEBHOOK_RELEASES_BETA
+              : process.env.DISCORD_WEBHOOK_RELEASES;
+            const roleId = isPrerelease
+              ? process.env.DISCORD_ROLE_RELEASES_BETA
+              : process.env.DISCORD_ROLE_RELEASES;
+            const releaseType = isPrerelease ? 'Beta Release' : 'Release';
 
-          # strip up to+including first '---', then drop any blank lines that follow
-          sed -E '1,/^[[:space:]]*---[[:space:]]*$/d' /tmp/body.txt \
-            | sed '/^[[:space:]]*$/d' > /tmp/changelog.txt
+            if (!webhookUrl) {
+              core.setFailed(`Missing webhook URL for ${releaseType}`);
+              return;
+            }
 
-          cat /tmp/changelog.txt
+            // process changelog - remove everything up to and including first '---'
+            let changelog = release.body || '';
+            const dividerIndex = changelog.search(/^\s*---\s*$/m);
+            if (dividerIndex !== -1) {
+              changelog = changelog.substring(dividerIndex).replace(/^\s*---\s*\n?/m, '');
+            }
+            // remove leading blank lines
+            changelog = changelog.replace(/^\s*\n+/, '');
 
-          PAYLOAD=$(jq -n \
-            --arg content "<@&$ROLE_ID>" \
-            --arg title "New $TYPE: ${{ steps.release.outputs.name }}" \
-            --arg url "${{ steps.release.outputs.url }}" \
-            --arg repo "${{ github.repository }}" \
-            --arg tag "${{ steps.release.outputs.tag }}" \
-            --rawfile changelog /tmp/changelog.txt \
-            --arg timestamp "${{ steps.release.outputs.published_at }}" \
-            '{
-              content: $content,
+            // build discord payload
+            const payload = {
+              content: roleId ? `<@&${roleId}>` : '',
               embeds: [{
-                title: $title,
-                url: $url,
-                description: (
-                  "## Downloads\n" +
-                  "- [Windows (.exe)](https://github.com/" + $repo + "/releases/download/" + $tag + "/blur-Windows-Installer-x64.exe)\n" +
-                  "- [macOS (.dmg)](https://github.com/" + $repo + "/releases/download/" + $tag + "/blur-macOS-Release-arm64.dmg)\n" +
-                  "- [Linux (.tar.gz)](https://github.com/" + $repo + "/releases/download/" + $tag + "/blur-Linux-Release-x64.tar.gz)\n" +
-                  $changelog
-                ),
+                title: `New ${releaseType}: ${release.name || release.tag_name}`,
+                url: release.html_url,
+                description: [
+                  '## Downloads',
+                  `- [Windows (.exe)](https://github.com/${context.repo.owner}/${context.repo.repo}/releases/download/${release.tag_name}/blur-Windows-Installer-x64.exe)`,
+                  `- [macOS (.dmg)](https://github.com/${context.repo.owner}/${context.repo.repo}/releases/download/${release.tag_name}/blur-macOS-Release-arm64.dmg)`,
+                  `- [Linux (.tar.gz)](https://github.com/${context.repo.owner}/${context.repo.repo}/releases/download/${release.tag_name}/blur-Linux-Release-x64.tar.gz)`,
+                  '',
+                  changelog
+                ].join('\n'),
                 color: 3447003,
-                timestamp: $timestamp
+                timestamp: release.published_at
               }]
-            }')
+            };
 
-          curl -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$WEBHOOK_URL"
+            // send to discord
+            try {
+              const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+
+              if (!response.ok) {
+                const error = await response.text();
+                core.setFailed(`Discord webhook failed: ${response.status} ${error}`);
+              } else {
+                console.log('Discord notification sent successfully');
+              }
+            } catch (error) {
+              core.setFailed(`Failed to send Discord notification: ${error.message}`);
+            }
+        env:
+          DISCORD_WEBHOOK_RELEASES: ${{ secrets.DISCORD_WEBHOOK_RELEASES }}
+          DISCORD_WEBHOOK_RELEASES_BETA: ${{ secrets.DISCORD_WEBHOOK_RELEASES_BETA }}
+          DISCORD_ROLE_RELEASES: ${{ vars.DISCORD_ROLE_RELEASES }}
+          DISCORD_ROLE_RELEASES_BETA: ${{ vars.DISCORD_ROLE_RELEASES_BETA }}
