@@ -12,8 +12,8 @@
 #include "components/configs/configs.h"
 
 namespace {
-	std::vector<Render> pending_renders;
-	std::mutex pending_renders_mutex;
+	std::vector<std::filesystem::path> pending_video_paths;
+	std::mutex pending_video_paths_mutex;
 }
 
 void tasks::run(const std::vector<std::string>& arguments) {
@@ -105,9 +105,15 @@ void tasks::run(const std::vector<std::string>& arguments) {
 
 	add_files(paths); // todo: mac packaged app support (& linux? does it work?)
 
-	while (!blur.exiting) {
-		process_pending_files();
+	std::thread([] {
+		while (!blur.exiting) {
+			process_pending_files();
 
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		}
+	}).detach();
+
+	while (!blur.exiting) {
 		if (!rendering.render_next_video()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		}
@@ -115,52 +121,41 @@ void tasks::run(const std::vector<std::string>& arguments) {
 }
 
 void tasks::add_files(const std::vector<std::filesystem::path>& path_strs) {
-	std::lock_guard<std::mutex> lock(pending_renders_mutex);
-
-	auto app_config = config_app::get_app_config();
+	std::lock_guard<std::mutex> lock(pending_video_paths_mutex);
 
 	for (const auto& path_str : path_strs) {
 		std::filesystem::path path = std::filesystem::canonical(path_str);
 		if (path.empty() || !std::filesystem::exists(path))
 			continue;
 
-		auto video_info = u::get_video_info(path);
-
-		Render render(path, video_info);
-
 		u::log("queueing {}", path);
 
-		if (gui::renderer::screen != gui::renderer::Screens::MAIN) {
-			gui::components::notifications::add(
-				std::format("Queued '{}' for rendering", render.get_video_name()), ui::NotificationType::INFO
-			);
-		}
+		gui::components::notifications::add(
+			std::format("Queued '{}' for rendering", path.filename()), ui::NotificationType::INFO
+		);
 
-		if (app_config.notify_about_config_override) {
-			if (!render.is_global_config())
-				gui::components::notifications::add(
-					"Using override config from video folder", ui::NotificationType::INFO
-				);
-		}
-
-		pending_renders.push_back(render);
+		pending_video_paths.push_back(path);
 	}
 }
 
 void tasks::process_pending_files() {
-	std::vector<Render> renders_to_process;
+	std::vector<std::filesystem::path> video_paths_to_process;
 
 	{
-		std::lock_guard<std::mutex> lock(pending_renders_mutex);
-		if (pending_renders.empty())
+		std::lock_guard<std::mutex> lock(pending_video_paths_mutex);
+		if (pending_video_paths.empty())
 			return;
 
-		renders_to_process = std::move(pending_renders);
-		pending_renders.clear();
+		video_paths_to_process = std::move(pending_video_paths);
+		pending_video_paths.clear();
 	}
 
-	for (auto& render : renders_to_process) {
-		auto video_info = u::get_video_info(render.get_input_video_path());
+	auto app_config = config_app::get_app_config();
+
+	for (auto& video_path : video_paths_to_process) {
+		auto video_info = u::get_video_info(video_path);
+
+		Render render(video_path, video_info);
 
 		if (!video_info.has_video_stream) {
 			gui::components::notifications::add(
@@ -168,6 +163,13 @@ void tasks::process_pending_files() {
 				ui::NotificationType::NOTIF_ERROR
 			);
 			continue;
+		}
+
+		if (app_config.notify_about_config_override) {
+			if (!render.is_global_config())
+				gui::components::notifications::add(
+					"Using override config from video folder", ui::NotificationType::INFO
+				);
 		}
 
 		rendering.queue_render(std::move(render));
