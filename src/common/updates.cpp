@@ -57,8 +57,7 @@ namespace {
 }
 
 tl::expected<updates::UpdateCheckRes, std::string> updates::is_latest_version(bool include_beta) {
-	std::string url = include_beta ? "https://api.github.com/repos/f0e/blur/releases"
-	                               : "https://api.github.com/repos/f0e/blur/releases/latest";
+	std::string url = "https://api.github.com/repos/f0e/blur/releases";
 
 	auto response = cpr::Get(cpr::Url{ url });
 
@@ -70,48 +69,44 @@ tl::expected<updates::UpdateCheckRes, std::string> updates::is_latest_version(bo
 	try {
 		std::string latest_tag;
 
-		if (include_beta) {
-			json releases = json::parse(response.text);
+		json releases = json::parse(response.text);
 
-			if (releases.empty() || !releases.is_array()) {
-				u::log("Update check failed: No releases found");
-				return tl::unexpected("Update check failed");
-			}
+		if (releases.empty() || !releases.is_array()) {
+			u::log("Update check failed: No releases found");
+			return tl::unexpected("Update check failed");
+		}
 
-			// get most recent release (needs to have an installer, might make a release without one temporarily - don't
-			// want anyone updating until i have)
-			for (const auto& release : releases) {
-				std::string release_tag = release["tag_name"];
+		// get most recent release (needs to have an installer, might make a release without one temporarily - don't
+		// want anyone updating until i have)
+		for (const auto& release : releases) {
+			bool is_prerelease = release["prerelease"];
+			if (!include_beta && is_prerelease)
+				continue;
 
-				for (const auto& asset : release["assets"]) {
+			std::string release_tag = release["tag_name"];
+
+			for (const auto& asset : release["assets"]) {
 #if defined(_WIN32)
-					if (asset["name"] == WINDOWS_INSTALLER_NAME) {
+				if (asset["name"] == WINDOWS_INSTALLER_NAME) {
 #elif defined(__linux__)
-					// todo when there's an installer
-					{
+				// todo when there's an installer
+				{
 #elif defined(__APPLE__)
-					if (asset["name"] == MACOS_INSTALLER_NAME) {
+				if (asset["name"] == MACOS_INSTALLER_NAME) {
 #endif
-						// NOLINTBEGIN(readability-suspicious-call-argument) it's okay bro
-						if (latest_tag.empty() || is_version_newer(latest_tag, release_tag)) {
-							// NOLINTEND(readability-suspicious-call-argument)
-							latest_tag = release_tag;
-							break;
-						}
+					// NOLINTBEGIN(readability-suspicious-call-argument) it's okay bro
+					if (latest_tag.empty() || is_version_newer(latest_tag, release_tag)) {
+						// NOLINTEND(readability-suspicious-call-argument)
+						latest_tag = release_tag;
+						break;
 					}
 				}
 			}
 		}
-		else {
-			json release = json::parse(response.text);
 
-			if (release.contains("tag_name")) {
-				latest_tag = release["tag_name"];
-			}
-			else {
-				u::log("Update check failed: Release information not found");
-				return tl::unexpected("Update check failed");
-			}
+		if (latest_tag.empty()) {
+			u::log("Update check failed: No suitable release found");
+			return tl::unexpected("Update check failed");
 		}
 
 		// remove 'v' prefix if it exists
