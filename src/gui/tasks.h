@@ -1,6 +1,8 @@
 #pragma once
 
 namespace tasks {
+	inline int finished_renders = 0;
+
 	void run(const std::vector<std::string>& arguments);
 
 	void add_files(const std::vector<std::filesystem::path>& path_strs);

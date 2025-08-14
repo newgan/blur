@@ -60,10 +60,20 @@ void main::render_screen(
 	// todo: ui concept
 	// screen start|      [faded]last_video current_video [faded]next_video next_video2 next_video3 (+5) |
 	// screen end animate sliding in as it moves along the queue
+
+	std::string render_title_text = render.get_video_name();
+
+	if (current) {
+		int queue_size = rendering.get_queue().size() + tasks::finished_renders;
+		if (queue_size > 1) {
+			render_title_text = std::format("{} ({}/{})", render_title_text, tasks::finished_renders + 1, queue_size);
+		}
+	}
+
 	ui::add_text(
 		std::format("video {} name text", render.get_render_id()),
 		container,
-		render.get_video_name(),
+		render_title_text,
 		gfx::Color(255, 255, 255, (current ? 255 : 100)),
 		fonts::smaller_header_font,
 		FONT_CENTERED_X

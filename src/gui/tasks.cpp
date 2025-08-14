@@ -115,7 +115,11 @@ void tasks::run(const std::vector<std::string>& arguments) {
 
 	while (!blur.exiting) {
 		if (!rendering.render_next_video()) {
+			finished_renders = 0;
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		}
+		else {
+			finished_renders++;
 		}
 	}
 }
