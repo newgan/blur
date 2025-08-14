@@ -26,7 +26,7 @@ I often release beta versions with new functionality before I think they're stab
 
 > After opening on Mac for the first time you'll get a 'Blur is damaged and can't be opened.' error. To fix this, run `xattr -dr com.apple.quarantine /Applications/blur.app` in Terminal to unquarantine it.\*
 
-> Using SVP for interpolation requires that [SVP Manager](https://www.svp-team.com/get/) be running, or you'll get a red border around videos. This is because the older, free version of SVPflow (the interpolation plugin) that's used on Windows and Linux doesn't have an ARM build unfortunately.
+> The default interpolation program on macOS is RIFE, unlike Windows and Linux. RIFE is more accurate than SVP, but quite a bit slower. The reason for this difference is because because using SVP for interpolation on macOS requires that [SVP Manager](https://www.svp-team.com/get/) be running, or you'll get a red border around videos. (This software is paid, and not affiliated with Blur)
 
 ### Linux notes
 
@@ -114,8 +114,8 @@ Blur supports rendering from frameservers. This means you can avoid having to ru
 - interpolate - whether or not the input video file will be interpolated to a higher fps
 - interpolated fps - if interpolate is enabled, this is the fps that the input file will be interpolated to (before blurring). can be a set fps number or a multiplier (append x to end e.g. `5x`)
 - interpolation method - method used for interpolation:
-  - Quality: rife > svp
-  - Speed: svp > rife
+  - Quality: RIFE > svp
+  - Speed: svp > RIFE
   - Note: On macOS, SVP requires SVP Manager to be open or a red border will appear. It provides a 30-day trial, but then costs $24.99 for a lifetime license. RIFE can always be used however, but it is slower than SVP.
 
 ### pre-interpolation
@@ -130,8 +130,8 @@ Blur supports rendering from frameservers. This means you can avoid having to ru
 - deduplicate range - amount of frames beyond the current frame to look for unique frames when deduplicating. make it higher if your footage is at a lower FPS than it should be (e.g. choppy 120fps gameplay recorded at 240fps), lower it if your blurred footage starts blurring static elements such as menu screens
 - deduplicate threshold - threshold of movement that triggers deduplication. turn on debug in advanced and render a video to embed text showing the movement in each frame
 - deduplicate method - method used for deduplication:
-  - Quality: rife > svp
-  - Speed: old > svp > rife
+  - Quality: RIFE > svp
+  - Speed: old > svp > RIFE
 - preview - opens a render preview window
 - detailed filenames - adds blur settings to generated filenames
 - copy dates - copies over the modified date from the input file to the output file
