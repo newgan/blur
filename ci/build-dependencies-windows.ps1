@@ -175,12 +175,12 @@ foreach ($plugin in $plugins) {
 }
 
 # Download and process FFmpeg
-$ffmpegUrl = "https://github.com/GyanD/codexffmpeg/releases/download/2025-04-21-git-9e1162bdf1/ffmpeg-2025-04-21-git-9e1162bdf1-essentials_build.7z"
+$ffmpegUrl = "https://github.com/GyanD/codexffmpeg/releases/download/2025-08-14-git-cdbb5f1b93/ffmpeg-2025-08-14-git-cdbb5f1b93-full_build.7z"
 $ffmpegArchive = Join-Path $ffmpegDir "ffmpeg-git-essentials.7z"
 Download-File -Url $ffmpegUrl -OutFile $ffmpegArchive
 Extract-Files -ArchivePath $ffmpegArchive -FilePatterns @(
-    "ffmpeg-2025-04-21-git-9e1162bdf1-essentials_build\bin\ffmpeg.exe",
-    "ffmpeg-2025-04-21-git-9e1162bdf1-essentials_build\bin\ffprobe.exe"
+    "ffmpeg-2025-08-14-git-cdbb5f1b93-full_build\\bin\ffmpeg.exe",
+    "ffmpeg-2025-08-14-git-cdbb5f1b93-full_build\\bin\ffprobe.exe"
 ) -DestinationPath $ffmpegDir
 
 # Define model downloads
