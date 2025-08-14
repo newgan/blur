@@ -299,6 +299,8 @@ void configs::preview(ui::Container& header_container, ui::Container& content_co
 
 			try {
 				auto clipboard_settings = config_blur::parse(clipboard_text);
+
+				ui::reset_tied_sliders();
 				settings = clipboard_settings;
 
 				gui::components::notifications::add(
