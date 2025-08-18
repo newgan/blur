@@ -130,126 +130,97 @@ jobs:
         id: prep
         shell: bash
         run: |
-          # Set up configuration variables
+          # Set up variables
           build_dir="bin/${{ matrix.build-type }}"
           os="${{ runner.os }}"
-          build_type="${{ matrix.build-type }}"
-          arch="$(echo "${{ runner.arch }}" | tr '[:upper:]' '[:lower:]')"
-          configuration="$os-$build_type-$arch"
+          config="${{ runner.os }}-${{ matrix.build-type }}-$(echo "${{ runner.arch }}" | tr '[:upper:]' '[:lower:]')"
 
           cd "$build_dir"
 
-          # Determine source and binary names
-          if [[ "$os" == "Windows" ]]; then
-            cli_source="blur-cli.exe"
-            gui_source="blur-gui.exe"
+          # Platform-specific packaging
+          case "$os" in
+            "Windows")
+              mv blur-cli.exe "blur-cli-$config.exe"
+              mv blur-gui.exe "blur-$config.exe"
 
-            cli_binary="blur-cli-$configuration.exe"
-            gui_binary="blur-$configuration.exe"
+              files=(
+                "$PWD/blur-cli-$config.exe"
+                "$PWD/blur-$config.exe"
+              )
 
-            mv "$cli_source" "$cli_binary"
-            mv "$gui_source" "$gui_binary"
+              # Prepare dependencies for installer
+              cd ../../
+              cp -r ci/out/* installer/dependencies/lib
+              curl -L https://aka.ms/vs/17/release/vc_redist.x64.exe -o installer/redist/vc_redist.x64.exe
+              cp "$build_dir/blur-cli-$config.exe" installer/resources/blur-cli.exe
+              cp "$build_dir/blur-$config.exe" installer/resources/blur-gui.exe
 
-            gui_path="$gui_binary"
-            cli_path="$cli_binary"
-          elif [[ "$os" == "Linux" ]]; then
-            cli_source="blur-cli"
-            gui_source="blur"
+              # Build installer
+              iscc installer/setup.iss
+              mv installer/output/blur-installer.exe installer/output/blur-Windows-Installer-x64.exe
 
-            cli_binary="blur-cli-$configuration"
-            gui_binary="blur-$configuration"
+              files+=(
+                "$PWD/installer/output/blur-Windows-Installer-x64.exe"
+              )
+              ;;
 
-            # rename binaries
-            mv "$cli_source" "$cli_binary"
-            mv "$gui_source" "$gui_binary"
+            "Linux")
+              mkdir -p package
+              mv blur-cli "package/blur-cli-$config"
+              mv blur "package/blur-$config"
+              mv lib/ package/
+              cp -r ../../ci/out/* package/
 
-            # copy dependencies
-            cp -r ../../ci/out/* .
+              archive="blur-$config.tar.gz"
+              tar -czf "$archive" -C package .
+              rm -rf package
 
-            # note: vapoursynth already copied
+              files=(
+                "$PWD/$archive"
+              )
+              ;;
 
-            # create archive
-            package_name="blur-$configuration.tar.gz"
-            tar -czvf $package_name *
+            "macOS")
+              mv blur-cli "blur-cli-$config"
+              tar -czf "blur-cli-$config.tar.gz" "blur-cli-$config"
 
-            # clean up everything except the archive
-            find . -mindepth 1 -not -name "$package_name" -exec rm -rf {} +
+              brew install create-dmg
+              mkdir source_folder && mv blur.app source_folder/
 
-            cli_path="" # empty - cli & gui are combined
-            gui_path="$package_name"
-          elif [[ "$os" == "macOS" ]]; then
-            cli_source="blur-cli"
-            gui_source="blur.app"
+              dmg="blur-$config.dmg"
+              create-dmg \
+                --volname "Blur Installer" \
+                --window-pos 200 120 \
+                --window-size 600 400 \
+                --icon-size 100 \
+                --icon "blur.app" 175 120 \
+                --hide-extension "blur.app" \
+                --app-drop-link 425 120 \
+                "$dmg" source_folder
 
-            cli_binary="blur-cli-$configuration"
-            gui_binary="blur-$configuration.dmg"
+              files=(
+                "$PWD/blur-cli-$config.tar.gz"
+                "$PWD/$dmg"
+              )
+              ;;
+          esac
 
-            mv "$cli_source" "$cli_binary"
-            tar -cvf "$cli_binary.tar.gz" "$cli_binary"
-            cli_path="$cli_binary.tar.gz"
-
-            brew install create-dmg
-
-            mkdir source_folder
-            mv "$gui_source" source_folder
-
-            create-dmg \
-              --volname "Blur Installer" \
-              --window-pos 200 120 \
-              --window-size 600 400 \
-              --icon-size 100 \
-              --icon "Blur.app" 175 120 \
-              --hide-extension "Blur.app" \
-              --app-drop-link 425 120 \
-              "$gui_binary" \
-              "source_folder"
-
-            gui_path="$gui_binary"
-          fi
-
-          # Output for subsequent steps
           echo "build_dir=$build_dir" >> $GITHUB_OUTPUT
-          echo "cli_path=$cli_path" >> $GITHUB_OUTPUT
-          echo "gui_path=$gui_path" >> $GITHUB_OUTPUT
-          echo "configuration=$configuration" >> $GITHUB_OUTPUT
-
-      - name: Copy installer requirements (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          cp -r ci/out/* installer/dependencies/lib
-
-          curl -L https://aka.ms/vs/17/release/vc_redist.x64.exe -o installer/redist/vc_redist.x64.exe
-
-          cp ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.gui_path }} installer/resources/blur-gui.exe
-          cp ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.cli_path }} installer/resources/blur-cli.exe
-
-      - name: Build installer (Windows)
-        if: runner.os == 'Windows'
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-        with:
-          path: installer/setup.iss
-          options: /O+
-
-      - name: Rename Installer (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          mv installer/output/blur-installer.exe installer/output/blur-Windows-Installer-x64.exe
+          echo "config=$config" >> $GITHUB_OUTPUT
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          printf "%s\n" "${files[@]}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Blur-${{ steps.prep.outputs.configuration }}
+          name: Blur-${{ steps.prep.outputs.config }}
           path: |
-            ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.cli_path }}
-            ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.gui_path }}
-            ${{ runner.os == 'Windows' && 'installer/output/blur-Windows-Installer-x64.exe' || '' }}
+            ${{ steps.prep.outputs.files }}
 
       - name: Release
         uses: softprops/action-gh-release@v2
-        if: ${{ github.event_name == 'push' && contains(github.ref, 'refs/tags/') }}
+        if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
         with:
           files: |
-            ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.cli_path }}
-            ${{ steps.prep.outputs.build_dir }}/${{ steps.prep.outputs.gui_path }}
-            ${{ runner.os == 'Windows' && 'installer/output/blur-Windows-Installer-x64.exe' || '' }}
+            ${{ steps.prep.outputs.files }}
