@@ -266,7 +266,7 @@ echo "done"
 
 echo "fixing all library dependencies with dylibbundler..."
 
-for plugin in "$out_dir"/vapoursynth-plugins/*.dylib; do
+for plugin in $out_dir/vapoursynth-plugins/*.dylib; do
   dylibbundler -cd -b -of -x "$plugin" -d "$out_dir/libs"
 done
 
