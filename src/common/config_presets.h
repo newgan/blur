@@ -25,14 +25,14 @@ struct PresetSettings {
 			.gpu_type="amd",
 			.presets={
 				{ .name = "h264",
-		          .args = "-c:v h264_amf -cq {quality} -rc vbr_quality -quality quality",
-		          .is_default = true },
+							.args = "-c:v h264_amf -rc cqp -qp_i {quality} -qp_p {quality} -qp_b {quality}",
+							.is_default = true },
 				{ .name = "h265",
-		          .args = "-c:v hevc_amf -cq {quality} -rc vbr_quality -quality quality",
-		          .is_default = true },
+							.args = "-c:v hevc_amf -rc cqp -qp_i {quality} -qp_p {quality} -qp_b {quality}",
+							.is_default = true },
 				{ .name = "av1",
-		          .args = "-c:v av1_amf -cq {quality} -rc vbr_quality -quality quality",
-		          .is_default = true },
+							.args = "-c:v av1_amf -rc cqp -qp_i {quality} -qp_p {quality} -qp_b {quality}",
+							.is_default = true },
 			},
 		},
 		{
@@ -69,9 +69,8 @@ struct PresetSettings {
 		},
 	};
 
-	[[nodiscard]] const std::string* find_preset_params(
-		const std::string& gpu_type, const std::string& preset_name
-	) const {
+	[[nodiscard]] const std::string* find_preset_params(const std::string& gpu_type, const std::string& preset_name)
+		const {
 		for (const auto& gpu_presets : all_gpu_presets) {
 			if (gpu_presets.gpu_type == gpu_type) {
 				for (const auto& preset : gpu_presets.presets) {
