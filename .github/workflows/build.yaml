@@ -144,23 +144,23 @@ jobs:
               mv blur-gui.exe "blur-$config.exe"
 
               files=(
-                "$PWD/blur-cli-$config.exe"
-                "$PWD/blur-$config.exe"
+                "$build_dir/blur-cli-$config.exe"
+                "$build_dir/blur-$config.exe"
               )
 
-              # Prepare dependencies for installer
-              cd ../../
-              cp -r ci/out/* installer/dependencies/lib
-              curl -L https://aka.ms/vs/17/release/vc_redist.x64.exe -o installer/redist/vc_redist.x64.exe
-              cp "$build_dir/blur-cli-$config.exe" installer/resources/blur-cli.exe
-              cp "$build_dir/blur-$config.exe" installer/resources/blur-gui.exe
+              # # Prepare dependencies for installer
+              # cd ../../
+              # cp -r ci/out/* installer/dependencies/lib
+              # curl -L https://aka.ms/vs/17/release/vc_redist.x64.exe -o installer/redist/vc_redist.x64.exe
+              # cp "$build_dir/blur-cli-$config.exe" installer/resources/blur-cli.exe
+              # cp "$build_dir/blur-$config.exe" installer/resources/blur-gui.exe
 
-              # Build installer
-              iscc installer/setup.iss
-              mv installer/output/blur-installer.exe installer/output/blur-Windows-Installer-x64.exe
+              # # Build installer
+              # iscc installer/setup.iss
+              # mv installer/output/blur-installer.exe installer/output/blur-Windows-Installer-x64.exe
 
               files+=(
-                "$PWD/installer/output/blur-Windows-Installer-x64.exe"
+                "./installer/output/blur-Windows-Installer-x64.exe"
               )
               ;;
 
