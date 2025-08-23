@@ -132,62 +132,51 @@ jobs:
         run: |
           # Set up variables
           build_dir="bin/${{ matrix.build-type }}"
-          os="${{ runner.os }}"
           config="${{ runner.os }}-${{ matrix.build-type }}-$(echo "${{ runner.arch }}" | tr '[:upper:]' '[:lower:]')"
+          bundle_dir="$PWD/bundle"
 
+          # Create bundle directory for all outputs
+          mkdir -p "$bundle_dir"
           cd "$build_dir"
 
-          # Platform-specific packaging
-          case "$os" in
+          case "${{ runner.os }}" in
             "Windows")
+              # Rename binaries
               mv blur-cli.exe "blur-cli-$config.exe"
               mv blur-gui.exe "blur-$config.exe"
 
-              files=(
-                "$build_dir/blur-cli-$config.exe"
-                "$build_dir/blur-$config.exe"
-              )
+              # Build installer
+              cd ../../
+              cp -r ci/out/* installer/dependencies/lib
+              curl -L https://aka.ms/vs/17/release/vc_redist.x64.exe -o installer/redist/vc_redist.x64.exe
+              cp "$build_dir/blur-cli-$config.exe" installer/resources/blur-cli.exe
+              cp "$build_dir/blur-$config.exe" installer/resources/blur-gui.exe
+              iscc installer/setup.iss
 
-              # # Prepare dependencies for installer
-              # cd ../../
-              # cp -r ci/out/* installer/dependencies/lib
-              # curl -L https://aka.ms/vs/17/release/vc_redist.x64.exe -o installer/redist/vc_redist.x64.exe
-              # cp "$build_dir/blur-cli-$config.exe" installer/resources/blur-cli.exe
-              # cp "$build_dir/blur-$config.exe" installer/resources/blur-gui.exe
-
-              # # Build installer
-              # iscc installer/setup.iss
-              # mv installer/output/blur-installer.exe installer/output/blur-Windows-Installer-x64.exe
-
-              files+=(
-                "./installer/output/blur-Windows-Installer-x64.exe"
-              )
+              # Copy everything to bundle
+              cp "$build_dir/blur-cli-$config.exe" "$bundle_dir/"
+              cp "$build_dir/blur-$config.exe" "$bundle_dir/"
+              cp installer/output/blur-installer.exe "$bundle_dir/blur-Windows-Installer-x64.exe"
               ;;
 
             "Linux")
+              # Package everything
               mkdir -p package
               mv blur-cli "package/blur-cli-$config"
               mv blur "package/blur-$config"
               mv lib/ package/
               cp -r ../../ci/out/* package/
-
-              archive="blur-$config.tar.gz"
-              tar -czf "$archive" -C package .
-              rm -rf package
-
-              files=(
-                "$PWD/$archive"
-              )
+              tar -czf "$bundle_dir/blur-$config.tar.gz" -C package .
               ;;
 
             "macOS")
+              # Package CLI
               mv blur-cli "blur-cli-$config"
-              tar -czf "blur-cli-$config.tar.gz" "blur-cli-$config"
+              tar -czf "$bundle_dir/blur-cli-$config.tar.gz" "blur-cli-$config"
 
+              # Create DMG
               brew install create-dmg
               mkdir source_folder && mv blur.app source_folder/
-
-              dmg="blur-$config.dmg"
               create-dmg \
                 --volname "Blur Installer" \
                 --window-pos 200 120 \
@@ -196,31 +185,21 @@ jobs:
                 --icon "blur.app" 175 120 \
                 --hide-extension "blur.app" \
                 --app-drop-link 425 120 \
-                "$dmg" source_folder
-
-              files=(
-                "$PWD/blur-cli-$config.tar.gz"
-                "$PWD/$dmg"
-              )
+                "$bundle_dir/blur-$config.dmg" source_folder
               ;;
           esac
 
-          echo "build_dir=$build_dir" >> $GITHUB_OUTPUT
+          # Set outputs
           echo "config=$config" >> $GITHUB_OUTPUT
-          echo "files<<EOF" >> $GITHUB_OUTPUT
-          printf "%s\n" "${files[@]}" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Blur-${{ steps.prep.outputs.config }}
-          path: |
-            ${{ steps.prep.outputs.files }}
+          path: bundle/
 
       - name: Release
         uses: softprops/action-gh-release@v2
         if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
         with:
-          files: |
-            ${{ steps.prep.outputs.files }}
+          files: bundle/*
