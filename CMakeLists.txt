@@ -71,8 +71,9 @@ target_link_libraries(
          tl::expected
          spdlog::spdlog)
 target_precompile_headers(blur-common PUBLIC src/common/common_pch.h)
-target_compile_definitions(blur-common PUBLIC NOMINMAX BOOST_FILESYSTEM_NO_LIB
-                                              BOOST_FILESYSTEM_STATIC_LINK=1 SPDLOG_NO_EXCEPTIONS)
+target_compile_definitions(
+  blur-common PUBLIC NOMINMAX BOOST_FILESYSTEM_NO_LIB
+                     BOOST_FILESYSTEM_STATIC_LINK=1 SPDLOG_NO_EXCEPTIONS)
 
 # common settings
 function(setup_target target)
@@ -130,7 +131,8 @@ setup_target(blur-cli)
 # gui
 add_executable(blur WIN32 ${GUI_SOURCES} ${IMGUI_SOURCES} ${RESOURCES})
 
-# name the executable blur-gui on windows to stop nvidia from detecting it as a game (blur 2010)
+# name the executable blur-gui on windows to stop nvidia from detecting it as a
+# game (blur 2010)
 if(WIN32)
   set_target_properties(blur PROPERTIES OUTPUT_NAME "blur-gui")
 endif()
