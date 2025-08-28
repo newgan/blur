@@ -8,7 +8,7 @@
 
 [![Downloads](https://img.shields.io/github/downloads/f0e/blur/total?label=Downloads)](https://github.com/f0e/blur/releases/latest) [![Discord](https://img.shields.io/discord/1392389164153962640?style=flat&label=Discord)](https://discord.gg/B5BK9GMN87)
 
-Blur is a native desktop application made for easily and efficiently adding motion blur to videos through frame blending, with the ability to utilise frame interpolation and more. [YouTube Showcase](https://www.youtube.com/watch?v=HicPaXNxtUw)
+Blur is a native desktop application made for easily and efficiently adding motion blur to videos through frame blending, with the ability to utilise frame interpolation and more.
 
 Join the [Discord](https://discord.gg/B5BK9GMN87) to share your configs, render tests and ask the community for help.
 
