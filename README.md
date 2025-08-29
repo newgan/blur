@@ -107,7 +107,7 @@ Blur supports rendering from frameservers. This means you can avoid having to ru
   - ascending
   - descending
   - gaussian_reverse
-  - custom weights - custom frame weights, e.g. [5, 3, 3, 2, 1]. higher numbers indicate frames being more visible when blending, lower numbers mean they are less so.
+  - custom weights - custom comma-separated frame weights, e.g. 5, 3, 3, 2, 1. higher numbers indicate frames being more visible when blending, lower numbers mean they are less so.
 
 ### interpolation
 
