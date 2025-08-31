@@ -623,13 +623,15 @@ rendering::QueueAddRes rendering::VideoRenderQueue::add(
 
 	std::lock_guard lock(m_mutex);
 	auto added = m_queue.emplace_back(
-		input_path,
-		video_info,
-		config_res.config,
-		app_settings,
-		output_path_override,
-		progress_callback,
-		finish_callback
+		VideoRenderDetails{
+			.input_path = input_path,
+			.video_info = video_info,
+			.settings = config_res.config,
+			.app_settings = app_settings,
+			.output_path_override = output_path_override,
+			.progress_callback = progress_callback,
+			.finish_callback = finish_callback,
+		}
 	);
 
 	return {
