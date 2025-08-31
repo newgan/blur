@@ -293,13 +293,13 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 		std::ostringstream vspipe_errors;
 		std::ostringstream ffmpeg_errors;
 
-		std::jthread progress_thread([&](const std::stop_token& stop_token) {
+		std::thread progress_thread([&]() {
 			std::string line;
 
 			std::string progress_line;
 			char ch = 0;
 
-			while (!stop_token.stop_requested() && ffmpeg_process.running() && vspipe_stderr.get(ch)) {
+			while (ffmpeg_process.running() && vspipe_stderr.get(ch)) {
 				if (ch == '\n') {
 					// Handle full line for logging
 					vspipe_errors << line << '\n';
@@ -373,9 +373,9 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 			}
 		});
 
-		std::jthread stderr_thread([&](const std::stop_token& stop_token) {
+		std::thread ffmpeg_stderr_thread([&]() {
 			std::string line;
-			while (!stop_token.stop_requested() && std::getline(ffmpeg_stderr, line)) {
+			while (std::getline(ffmpeg_stderr, line)) {
 				ffmpeg_errors << line << '\n';
 			}
 		});
@@ -396,6 +396,13 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		}
+
+		// clean up
+		if (progress_thread.joinable())
+			progress_thread.join();
+
+		if (ffmpeg_stderr_thread.joinable())
+			ffmpeg_stderr_thread.join();
 
 		if (killed)
 			return PipelineResult{ .stopped = true };
