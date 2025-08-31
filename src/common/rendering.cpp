@@ -601,7 +601,7 @@ tl::expected<rendering::RenderResult, std::string> rendering::detail::render_vid
 	return RenderResult{ .output_path = output_path, .stopped = pipeline_result->stopped };
 }
 
-rendering::QueueAddRes rendering::RenderQueue::add(
+rendering::QueueAddRes rendering::VideoRenderQueue::add(
 	const std::filesystem::path& input_path,
 	const u::VideoInfo& video_info,
 	const std::optional<std::filesystem::path>& config_path,

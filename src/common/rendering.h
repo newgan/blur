@@ -195,7 +195,7 @@ namespace rendering {
 		std::shared_ptr<rendering::RenderState> state;
 	};
 
-	class RenderQueue {
+	class VideoRenderQueue {
 	public:
 		QueueAddRes add(
 			const std::filesystem::path& input_path,
@@ -282,7 +282,7 @@ namespace rendering {
 		std::atomic<bool> m_active = true;
 	};
 
-	inline RenderQueue queue;
+	inline VideoRenderQueue video_render_queue;
 
 	tl::expected<RenderResult, std::string> render_frame(
 		const std::filesystem::path& input_path,

@@ -89,7 +89,7 @@ void tasks::run(const std::vector<std::string>& arguments) {
 	}).detach();
 
 	while (!blur.exiting) {
-		if (!rendering::queue.process_next()) {
+		if (!rendering::video_render_queue.process_next()) {
 			finished_renders = 0;
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		}
@@ -142,7 +142,7 @@ void tasks::process_pending_files() {
 			continue;
 		}
 
-		auto queue_config_res = rendering::queue.add(
+		auto queue_config_res = rendering::video_render_queue.add(
 			video_path,
 			video_info,
 			{},

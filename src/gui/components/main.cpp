@@ -65,7 +65,7 @@ void main::render_screen(
 	std::string render_title_text = render.input_path.stem().string();
 
 	if (current) {
-		int queue_size = rendering::queue.size() + tasks::finished_renders;
+		int queue_size = rendering::video_render_queue.size() + tasks::finished_renders;
 		if (queue_size > 1) {
 			render_title_text = std::format("{} ({}/{})", render_title_text, tasks::finished_renders + 1, queue_size);
 		}
@@ -210,7 +210,7 @@ void main::render_screen(
 void main::home_screen(ui::Container& container, float delta_time) {
 	static float bar_percent = 0.f;
 
-	const auto& queue = rendering::queue.get_queue_copy();
+	const auto& queue = rendering::video_render_queue.get_queue_copy();
 
 	if (queue.empty()) {
 		bar_percent = 0.f;

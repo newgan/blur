@@ -143,7 +143,7 @@ bool gui::renderer::redraw_window(bool rendered_last, bool want_to_render) {
 			components::main::home_screen(main_container, delta_time);
 
 			if (initialisation_res) {
-				auto current_render = rendering::queue.front();
+				auto current_render = rendering::video_render_queue.front();
 				if (current_render) {
 					ui::add_button(
 						current_render->state->is_paused() ? "resume render button" : "pause render button",
