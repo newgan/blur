@@ -201,7 +201,7 @@ std::vector<std::wstring> rendering::detail::build_encoding_args(
 }
 
 void rendering::detail::pause(int pid, const std::shared_ptr<RenderState>& state) {
-	if (state->paused)
+	if (state->m_paused)
 		return;
 
 	if (pid > 0) {
@@ -212,18 +212,18 @@ void rendering::detail::pause(int pid, const std::shared_ptr<RenderState>& state
 #endif
 	}
 	{
-		std::lock_guard lock(state->mutex);
-		state->paused = true;
+		std::lock_guard lock(state->m_mutex);
+		state->m_paused = true;
 	}
 
-	state->progress.fps_initialised = false;
-	state->progress.fps = 0.f;
+	state->m_progress.fps_initialised = false;
+	state->m_progress.fps = 0.f;
 
 	u::log("Render paused");
 }
 
 void rendering::detail::resume(int pid, const std::shared_ptr<RenderState>& state) {
-	if (!state->paused)
+	if (!state->m_paused)
 		return;
 
 	if (pid > 0) {
@@ -235,8 +235,8 @@ void rendering::detail::resume(int pid, const std::shared_ptr<RenderState>& stat
 	}
 
 	{
-		std::lock_guard lock(state->mutex);
-		state->paused = false;
+		std::lock_guard lock(state->m_mutex);
+		state->m_paused = false;
 	}
 
 	u::log("Render resumed");
@@ -309,44 +309,45 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 					std::smatch match;
 					if (std::regex_match(line, match, frame_regex)) {
 						{
-							std::lock_guard lock(state->mutex);
+							std::lock_guard lock(state->m_mutex);
 
-							state->progress.current_frame = std::stoi(match[1]);
-							state->progress.total_frames = std::stoi(match[2]);
-							state->progress.rendered_a_frame = true;
+							state->m_progress.current_frame = std::stoi(match[1]);
+							state->m_progress.total_frames = std::stoi(match[2]);
+							state->m_progress.rendered_a_frame = true;
 
-							float progress = state->progress.current_frame / (float)state->progress.total_frames;
+							float progress = state->m_progress.current_frame / (float)state->m_progress.total_frames;
 
-							if (!state->progress.fps_initialised) {
-								state->progress.fps_initialised = true;
-								state->progress.start_time = std::chrono::steady_clock::now();
-								state->progress.start_frame = state->progress.current_frame;
-								state->progress.fps = 0.f;
+							if (!state->m_progress.fps_initialised) {
+								state->m_progress.fps_initialised = true;
+								state->m_progress.start_time = std::chrono::steady_clock::now();
+								state->m_progress.start_frame = state->m_progress.current_frame;
+								state->m_progress.fps = 0.f;
 
-								state->progress.string = std::format(
+								state->m_progress.string = std::format(
 									"{:.1f}% complete ({}/{})",
 									progress * 100,
-									state->progress.current_frame,
-									state->progress.total_frames
+									state->m_progress.current_frame,
+									state->m_progress.total_frames
 								);
 							}
 							else {
 								auto current_time = std::chrono::steady_clock::now();
-								state->progress.elapsed_time = current_time - state->progress.start_time;
+								state->m_progress.elapsed_time = current_time - state->m_progress.start_time;
 
-								state->progress.fps = (state->progress.current_frame - state->progress.start_frame) /
-								                      state->progress.elapsed_time.count();
+								state->m_progress.fps =
+									(state->m_progress.current_frame - state->m_progress.start_frame) /
+									state->m_progress.elapsed_time.count();
 
-								state->progress.string = std::format(
+								state->m_progress.string = std::format(
 									"{:.1f}% complete ({}/{}, {:.2f} fps)",
 									progress * 100,
-									state->progress.current_frame,
-									state->progress.total_frames,
-									state->progress.fps
+									state->m_progress.current_frame,
+									state->m_progress.total_frames,
+									state->m_progress.fps
 								);
 							}
 
-							u::log(state->progress.string);
+							u::log(state->m_progress.string);
 						}
 
 						if (progress_callback)
@@ -378,7 +379,7 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 
 		bool killed = false;
 		while (vspipe_process.running() || ffmpeg_process.running()) {
-			if (state->to_stop) {
+			if (state->m_to_stop) {
 				vspipe_process.terminate();
 				ffmpeg_process.terminate();
 				killed = true;
@@ -386,8 +387,8 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 				break;
 			}
 
-			if (state->to_pause != state->paused) {
-				auto fn = state->to_pause ? pause : resume;
+			if (state->m_to_pause != state->m_paused) {
+				auto fn = state->m_to_pause ? pause : resume;
 				fn(vspipe_process.id(), state);
 			}
 
@@ -547,8 +548,8 @@ tl::expected<rendering::RenderResult, std::string> rendering::detail::render_vid
 		auto temp_preview = detail::create_temp_output_path("preview");
 		if (temp_preview) {
 			{
-				std::lock_guard lock(state->mutex);
-				state->preview_path = temp_preview.value();
+				std::lock_guard lock(state->m_mutex);
+				state->m_preview_path = temp_preview.value();
 			}
 
 			ffmpeg_args.insert(
@@ -563,7 +564,7 @@ tl::expected<rendering::RenderResult, std::string> rendering::detail::render_vid
 					L"-atomic_writing",
 					L"1",
 					L"-y",
-					state->preview_path.wstring(),
+					state->m_preview_path.wstring(),
 				}
 			);
 		}
