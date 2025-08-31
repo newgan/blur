@@ -3,8 +3,8 @@
 #include "config_app.h"
 
 struct RenderCommands {
-	std::vector<std::wstring> vspipe;
-	std::vector<std::wstring> ffmpeg;
+	std::vector<std::string> vspipe;
+	std::vector<std::string> ffmpeg;
 	bool vspipe_will_stop_early; // for frame renders, stopping early is expected, so using this to selectively ignore
 	                             // vspipe response code not being 0
 };
@@ -145,7 +145,7 @@ namespace rendering {
 			const BlurSettings& blur_settings, const GlobalAppSettings& app_settings
 		);
 
-		std::vector<std::wstring> build_base_vspipe_args(
+		std::vector<std::string> build_base_vspipe_args(
 			const std::filesystem::path& input_path, const nlohmann::json& merged_settings
 		);
 
@@ -159,11 +159,11 @@ namespace rendering {
 			const std::filesystem::path& input_path, const BlurSettings& settings, const GlobalAppSettings& app_settings
 		);
 
-		std::vector<std::wstring> build_color_metadata_args(const u::VideoInfo& video_info);
+		std::vector<std::string> build_color_metadata_args(const u::VideoInfo& video_info);
 
-		std::vector<std::wstring> build_audio_filter_args(const BlurSettings& settings, const u::VideoInfo& video_info);
+		std::vector<std::string> build_audio_filter_args(const BlurSettings& settings, const u::VideoInfo& video_info);
 
-		std::vector<std::wstring> build_encoding_args(
+		std::vector<std::string> build_encoding_args(
 			const BlurSettings& settings, const GlobalAppSettings& app_settings
 		);
 
