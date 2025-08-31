@@ -1,194 +1,201 @@
 #pragma once
 
-#include "config_blur.h"
 #include "config_app.h"
 
 struct RenderCommands {
 	std::vector<std::wstring> vspipe;
 	std::vector<std::wstring> ffmpeg;
+	bool vspipe_will_stop_early; // for frame renders, stopping early is expected, so using this to selectively ignore
+	                             // vspipe response code not being 0
 };
 
-struct RenderResult {
-	bool stopped;
-};
+namespace rendering {
+	struct RenderResult {
+		std::filesystem::path output_path;
+		bool stopped = false;
+	};
 
-struct RenderStatus {
-	bool finished = false;
+	struct RenderState {
+		std::mutex mutex;
 
-	bool init_frames = false;
-	int current_frame = 0;
-	int total_frames = 0;
+		std::filesystem::path preview_path;
 
-	bool init_fps = false;
-	std::chrono::steady_clock::time_point start_time;
-	int start_frame = 0;
-	std::chrono::duration<double> elapsed_time;
-	float fps = 0.f;
+		std::atomic<bool> to_pause = false;
+		bool paused = false;
 
-	void update_progress_string(bool first);
-	void on_pause();
+		std::atomic<bool> to_stop = false;
 
-	std::string progress_string;
-};
+		bool finished = false;
 
-class Render {
-private:
-	uint32_t m_render_id;
+		bool rendered_a_frame = false;
+		int current_frame = 0;
+		int total_frames = 0;
 
-	RenderStatus m_status;
+		bool fps_initialised = false;
+		std::chrono::steady_clock::time_point start_time;
+		int start_frame = 0;
+		std::chrono::duration<double> elapsed_time;
+		float fps = 0.f;
 
-	std::string m_video_name;
+		std::string progress_string;
+	};
 
-	std::filesystem::path m_video_path;
-	std::filesystem::path m_video_folder;
+	struct QueuedRender {
+		std::filesystem::path input_path;
+		u::VideoInfo video_info;
+		BlurSettings settings;
+		GlobalAppSettings app_settings;
+		std::optional<std::filesystem::path> output_path_override;
+		std::function<void()> progress_callback;
+		std::function<
+			void(const QueuedRender& render, const tl::expected<rendering::RenderResult, std::string>& result)>
+			finish_callback;
 
-	std::filesystem::path m_output_path;
-	std::filesystem::path m_temp_path;
-	std::filesystem::path m_preview_path;
+		std::shared_ptr<RenderState> state = std::make_shared<RenderState>();
+	};
 
-	u::VideoInfo m_video_info;
+	namespace detail {
+		struct PipelineResult {
+			bool stopped;
+		};
 
-	BlurSettings m_settings;
-	bool m_is_global_config = false;
+		tl::expected<nlohmann::json, std::string> merge_settings(
+			const BlurSettings& blur_settings, const GlobalAppSettings& app_settings
+		);
 
-	GlobalAppSettings m_app_settings;
+		std::vector<std::wstring> build_base_vspipe_args(
+			const std::filesystem::path& input_path, const nlohmann::json& merged_settings
+		);
 
-	bool m_to_kill = false;
-	bool m_paused = false;
-	int m_vspipe_pid = -1;
-	int m_ffmpeg_pid = -1;
+		boost::process::native_environment setup_environment();
 
-	void build_output_filename();
+		tl::expected<std::filesystem::path, std::string> create_temp_output_path(
+			const std::string& prefix, const std::string& extension = "jpg"
+		);
 
-	tl::expected<RenderCommands, std::string> build_render_commands();
+		std::filesystem::path build_output_filename(
+			const std::filesystem::path& input_path, const BlurSettings& settings, const GlobalAppSettings& app_settings
+		);
 
-	void update_progress(int current_frame, int total_frames);
+		std::vector<std::wstring> build_color_metadata_args(const u::VideoInfo& video_info);
 
-	tl::expected<RenderResult, std::string> do_render(RenderCommands render_commands);
+		std::vector<std::wstring> build_audio_filter_args(const BlurSettings& settings, const u::VideoInfo& video_info);
 
-public:
-	Render(
-		std::filesystem::path input_path,
-		u::VideoInfo video_info,
-		const std::optional<std::filesystem::path>& output_path = {},
-		const std::optional<std::filesystem::path>& config_path = {}
-	);
+		std::vector<std::wstring> build_encoding_args(
+			const BlurSettings& settings, const GlobalAppSettings& app_settings
+		);
 
-	bool operator==(const Render& other) const {
-		return m_render_id == other.m_render_id;
+		void pause(int pid, const std::shared_ptr<RenderState>& state);
+		void resume(int pid, const std::shared_ptr<RenderState>& state);
+
+		tl::expected<PipelineResult, std::string> execute_pipeline(
+			const RenderCommands& commands,
+			const std::shared_ptr<RenderState>& state,
+			bool debug,
+			const std::function<void()>& progress_callback
+		);
+
+		void copy_file_timestamp(const std::filesystem::path& from, const std::filesystem::path& to);
+
+		tl::expected<RenderResult, std::string> render_video(
+			const std::filesystem::path& input_path,
+			const u::VideoInfo& video_info,
+			const BlurSettings& settings,
+			const std::shared_ptr<RenderState>& state,
+			const GlobalAppSettings& app_settings = config_app::get_app_config(),
+			const std::optional<std::filesystem::path>& output_path_override = {},
+			const std::function<void()>& progress_callback = {}
+		);
 	}
 
-	bool create_temp_path();
-	bool remove_temp_path();
+	struct QueueAddRes {
+		bool is_global_config;
+		std::shared_ptr<rendering::RenderState> state;
+	};
 
-	tl::expected<RenderResult, std::string> render();
+	class RenderQueue {
+	public:
+		QueueAddRes add(
+			const std::filesystem::path& input_path,
+			const u::VideoInfo& video_info,
+			const std::optional<std::filesystem::path>& config_path = {},
+			const GlobalAppSettings& app_settings = config_app::get_app_config(),
+			const std::optional<std::filesystem::path>& output_path_override = {},
+			const std::function<void()>& progress_callback = {},
+			const std::function<
+				void(const QueuedRender& render, const tl::expected<rendering::RenderResult, std::string>& result)>&
+				finish_callback = {}
+		);
 
-	void pause();
-	void resume();
+		bool process_next() {
+			if (m_queue.empty() || m_should_stop)
+				return false;
 
-	[[nodiscard]] bool is_paused() const {
-		return m_paused;
-	}
+			auto cur = m_queue.front();
 
-	void stop() {
-		m_to_kill = true;
-	}
+			auto res = detail::render_video(
+				cur.input_path,
+				cur.video_info,
+				cur.settings,
+				cur.state,
+				cur.app_settings,
+				cur.output_path_override,
+				cur.progress_callback
+			);
 
-	[[nodiscard]] uint32_t get_render_id() const {
-		return m_render_id;
-	}
+			if (cur.finish_callback)
+				cur.finish_callback(cur, res);
 
-	[[nodiscard]] std::string get_video_name() const {
-		return m_video_name;
-	}
+			std::unique_lock lock(m_mutex);
+			m_queue.erase(m_queue.begin());
 
-	[[nodiscard]] std::filesystem::path get_input_video_path() const {
-		return m_video_path;
-	}
-
-	[[nodiscard]] std::filesystem::path get_output_video_path() const {
-		return m_output_path;
-	}
-
-	[[nodiscard]] BlurSettings get_settings() const {
-		return m_settings;
-	}
-
-	[[nodiscard]] RenderStatus get_status() const {
-		return m_status;
-	}
-
-	[[nodiscard]] std::filesystem::path get_preview_path() const {
-		return m_preview_path;
-	}
-
-	[[nodiscard]] bool is_global_config() const {
-		return m_is_global_config;
-	}
-};
-
-class Rendering {
-private:
-	std::unique_ptr<std::thread> m_thread_ptr;
-	std::vector<std::unique_ptr<Render>> m_queue;
-	std::optional<uint32_t> m_current_render_id;
-
-	std::optional<std::function<void()>> m_progress_callback;
-	std::optional<std::function<void(Render*, tl::expected<RenderResult, std::string>)>> m_render_finished_callback;
-
-	std::mutex m_lock;
-
-public:
-	bool render_next_video();
-
-	Render& queue_render(Render&& render);
-
-	void stop_renders_and_wait();
-
-	const std::vector<std::unique_ptr<Render>>& get_queue() {
-		return m_queue;
-	}
-
-	std::optional<Render*> get_current_render() {
-		for (const auto& render : m_queue) {
-			if (render->get_render_id() == m_current_render_id)
-				return { render.get() };
+			return true;
 		}
 
-		return {};
-	}
+		void stop() {
+			m_should_stop = true;
+		}
 
-	std::optional<uint32_t> get_current_render_id() {
-		return m_current_render_id;
-	}
+		void stop_and_wait() {
+			stop();
+			while (!is_empty()) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			}
+		}
 
-	void set_progress_callback(std::function<void()>&& callback) {
-		m_progress_callback = std::move(callback);
-	}
+		bool is_empty() const {
+			std::lock_guard lock(m_mutex);
+			return m_queue.empty();
+		}
 
-	void set_render_finished_callback(
-		std::function<void(Render*, const tl::expected<RenderResult, std::string>& result)>&& callback
-	) {
-		m_render_finished_callback = std::move(callback);
-	}
+		size_t size() const {
+			std::lock_guard lock(m_mutex);
+			return m_queue.size();
+		}
 
-	void call_progress_callback() {
-		if (m_progress_callback)
-			(*m_progress_callback)();
-	}
+		std::optional<QueuedRender> front() {
+			std::lock_guard lock(m_mutex);
+			if (m_queue.empty())
+				return {};
+			return m_queue.front();
+		}
 
-	void call_render_finished_callback(Render* render, const tl::expected<RenderResult, std::string>& result) {
-		if (m_render_finished_callback)
-			(*m_render_finished_callback)(render, result);
-	}
+		std::vector<QueuedRender> get_queue_copy() {
+			return m_queue;
+		}
 
-	void lock() {
-		m_lock.lock();
-	}
+	private:
+		std::vector<QueuedRender> m_queue;
+		mutable std::mutex m_mutex;
+		std::atomic<bool> m_should_stop = false;
+	};
 
-	void unlock() {
-		m_lock.unlock();
-	}
-};
+	inline RenderQueue queue;
 
-inline Rendering rendering;
+	tl::expected<RenderResult, std::string> render_frame(
+		const std::filesystem::path& input_path,
+		const BlurSettings& settings,
+		const GlobalAppSettings& app_settings = config_app::get_app_config(),
+		const std::shared_ptr<RenderState>& state = std::make_shared<RenderState>()
+	);
+}

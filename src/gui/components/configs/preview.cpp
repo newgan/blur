@@ -1,6 +1,6 @@
 #include "configs.h"
 
-#include "common/rendering_frame.h"
+#include "common/rendering.h"
 #include "common/weighting.h"
 
 #include "../../tasks.h"
@@ -59,22 +59,22 @@ void configs::config_preview(ui::Container& container) {
 		auto local_settings = settings;
 		auto local_app_settings = app_settings;
 		std::thread([sample_video_path, local_settings, local_app_settings] {
-			FrameRender* render = nullptr;
+			std::shared_ptr<PreviewRenderState> state = nullptr;
 
 			{
 				std::lock_guard<std::mutex> lock(render_mutex);
 
 				// stop ongoing renders early, a new render's coming bro
-				for (auto& render : renders) {
-					render->stop();
+				for (auto& render : render_states) {
+					render->state->to_stop = true;
 				}
 
-				render = renders.emplace_back(std::make_unique<FrameRender>()).get();
+				state = render_states.emplace_back(std::make_shared<PreviewRenderState>());
 			}
 
-			auto res = render->render(sample_video_path, local_settings, local_app_settings);
+			auto res = rendering::render_frame(sample_video_path, local_settings, local_app_settings, state->state);
 
-			if (render == renders.back().get())
+			if (state == render_states.back())
 			{ // todo: this should be correct right? any cases where this doesn't work?
 				loading = false;
 
@@ -84,7 +84,7 @@ void configs::config_preview(ui::Container& container) {
 
 					Blur::remove_temp_path(preview_path.parent_path());
 
-					preview_path = *res;
+					preview_path = res->output_path;
 
 					u::log("config preview finished rendering");
 				}
@@ -110,7 +110,7 @@ void configs::config_preview(ui::Container& container) {
 				}
 			}
 
-			render->set_can_delete();
+			state->can_delete = true;
 		}).detach();
 	};
 
@@ -119,8 +119,8 @@ void configs::config_preview(ui::Container& container) {
 	// remove finished renders
 	{
 		std::lock_guard<std::mutex> lock(render_mutex);
-		std::erase_if(renders, [](const auto& render) {
-			return render->can_delete();
+		std::erase_if(render_states, [](const auto& state) {
+			return state->can_delete;
 		});
 	}
 

@@ -19,31 +19,6 @@ namespace {
 void tasks::run(const std::vector<std::string>& arguments) {
 	gui::initialisation_res = blur.initialise(false, true);
 
-	rendering.set_progress_callback([] {
-		std::optional<Render*> current_render_opt = rendering.get_current_render();
-		if (current_render_opt) {
-			Render& current_render = **current_render_opt;
-
-			RenderStatus status = current_render.get_status();
-			if (status.finished) {
-				u::log("current render is finished, copying it so its final state can be displayed once by gui");
-
-				// its about to be deleted, store a copy to be rendered at least once
-				gui::components::main::current_render_copy = current_render;
-				gui::to_render = true;
-			}
-		}
-
-		// idk what you're supposed to do to trigger a redraw in a separate thread!!! I dont do gui!!! this works
-		// tho :  ) todo: revisit this
-		// TODO PORT:
-		// ^ actually might not be needed since progress will update anyway
-	});
-
-	rendering.set_render_finished_callback([](Render* render, const tl::expected<RenderResult, std::string>& result) {
-		gui::renderer::on_render_finished(render, result);
-	});
-
 	auto update_res = Blur::check_updates();
 	if (update_res && !update_res->is_latest) {
 		static const auto update_notification_duration = std::chrono::duration<float>(15.f);
@@ -114,7 +89,7 @@ void tasks::run(const std::vector<std::string>& arguments) {
 	}).detach();
 
 	while (!blur.exiting) {
-		if (!rendering.render_next_video()) {
+		if (!rendering::queue.process_next()) {
 			finished_renders = 0;
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		}
@@ -135,7 +110,7 @@ void tasks::add_files(const std::vector<std::filesystem::path>& path_strs) {
 		u::log("queueing {}", path);
 
 		gui::components::notifications::add(
-			std::format("Queued '{}' for rendering", path.filename()), ui::NotificationType::INFO
+			std::format("Queued '{}' for rendering", path.stem().string()), ui::NotificationType::INFO
 		);
 
 		pending_video_paths.push_back(path);
@@ -159,24 +134,33 @@ void tasks::process_pending_files() {
 	for (auto& video_path : video_paths_to_process) {
 		auto video_info = u::get_video_info(video_path);
 
-		Render render(video_path, video_info);
-
 		if (!video_info.has_video_stream) {
 			gui::components::notifications::add(
-				std::format("File is not a valid video or is unreadable: {}", render.get_input_video_path()),
+				std::format("File is not a valid video or is unreadable: {}", video_path.filename().string()),
 				ui::NotificationType::NOTIF_ERROR
 			);
 			continue;
 		}
 
+		auto queue_config_res = rendering::queue.add(
+			video_path,
+			video_info,
+			{},
+			config_app::get_app_config(),
+			{},
+			{},
+			[](const rendering::QueuedRender& render,
+		       const tl::expected<rendering::RenderResult, std::string>& result) {
+				gui::renderer::on_render_finished(render, result);
+			}
+		);
+
 		if (app_config.notify_about_config_override) {
-			if (!render.is_global_config())
+			if (!queue_config_res.is_global_config)
 				gui::components::notifications::add(
 					"Using override config from video folder", ui::NotificationType::INFO
 				);
 		}
-
-		rendering.queue_render(std::move(render));
 	}
 }
 

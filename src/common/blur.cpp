@@ -136,8 +136,8 @@ void Blur::cleanup() {
 
 	exiting = true;
 
-	// stop renders
-	rendering.stop_renders_and_wait();
+	// stop renders & wait for them to finish stopping
+	rendering::queue.stop_and_wait();
 
 	// remove temp dirs
 	DEBUG_LOG("removing temp path {}", temp_path);

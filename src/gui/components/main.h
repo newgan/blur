@@ -4,13 +4,12 @@
 #include "../ui/ui.h"
 
 namespace gui::components::main {
-	inline std::optional<Render> current_render_copy;
-
 	void open_files_button(ui::Container& container, const std::string& label);
 
 	void render_screen(
 		ui::Container& container,
-		Render& render,
+		const rendering::QueuedRender& render,
+		size_t render_index,
 		bool current,
 		float delta_time,
 		bool& is_progress_shown,

@@ -263,6 +263,27 @@ std::filesystem::path u::get_settings_path() {
 	return settings_path;
 }
 
+boost::process::native_environment u::setup_vspipe_environment() {
+	auto env = boost::this_process::environment();
+
+#ifdef __APPLE__
+	if (blur.used_installer) {
+		env["PYTHONHOME"] = (blur.resources_path / "python").native();
+		env["PYTHONPATH"] = (blur.resources_path / "python/lib/python3.12/site-packages").native();
+	}
+#endif
+
+#ifdef __linux__
+	auto app_config = config_app::get_app_config();
+	if (!app_config.vapoursynth_lib_path.empty()) {
+		env["LD_LIBRARY_PATH"] = app_config.vapoursynth_lib_path;
+		env["PYTHONPATH"] = app_config.vapoursynth_lib_path + "/python3.12/site-packages";
+	}
+#endif
+
+	return env;
+}
+
 u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 	namespace bp = boost::process;
 
@@ -518,14 +539,7 @@ std::vector<std::string> u::ffmpeg_string_to_args(const std::string& str) {
 std::map<int, std::string> u::get_rife_gpus() {
 	namespace bp = boost::process;
 
-	bp::environment env = boost::this_process::environment();
-
-#if defined(__APPLE__)
-	if (blur.used_installer) {
-		env["PYTHONHOME"] = (blur.resources_path / "python").native();
-		env["PYTHONPATH"] = (blur.resources_path / "python/lib/python3.12/site-packages").native();
-	}
-#endif
+	auto env = setup_vspipe_environment();
 
 #if defined(__linux__)
 	bool vapoursynth_plugins_bundled = std::filesystem::exists(blur.resources_path / "vapoursynth-plugins");
@@ -594,14 +608,7 @@ int u::get_fastest_rife_gpu_index(
 	std::filesystem::path benchmark_gpus_script_path = (blur.resources_path / "lib/benchmark_rife_gpus.py");
 
 	for (const auto& [gpu_index, gpu_name] : gpu_map) {
-		bp::environment env = boost::this_process::environment();
-
-#if defined(__APPLE__)
-		if (blur.used_installer) {
-			env["PYTHONHOME"] = (blur.resources_path / "python").native();
-			env["PYTHONPATH"] = (blur.resources_path / "python/lib/python3.12/site-packages").native();
-		}
-#endif
+		auto env = setup_vspipe_environment();
 
 #if defined(__linux__)
 		bool vapoursynth_plugins_bundled = std::filesystem::exists(blur.resources_path / "vapoursynth-plugins");

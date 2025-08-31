@@ -357,6 +357,8 @@ namespace u {
 	std::filesystem::path get_resources_path();
 	std::filesystem::path get_settings_path();
 
+	boost::process::native_environment setup_vspipe_environment();
+
 	struct VideoInfo {
 		bool has_video_stream = false;
 		std::optional<std::string> color_range;

@@ -143,27 +143,21 @@ bool gui::renderer::redraw_window(bool rendered_last, bool want_to_render) {
 			components::main::home_screen(main_container, delta_time);
 
 			if (initialisation_res) {
-				auto current_render = rendering.get_current_render();
+				auto current_render = rendering::queue.front();
 				if (current_render) {
 					ui::add_button(
-						(*current_render)->is_paused() ? "resume render button" : "pause render button",
+						current_render->state->to_pause ? "resume render button" : "pause render button",
 						nav_container,
-						(*current_render)->is_paused() ? "Resume" : "Pause",
+						current_render->state->to_pause ? "Resume" : "Pause",
 						fonts::dejavu,
-						[] {
-							auto current_render = rendering.get_current_render();
-							if ((*current_render)->is_paused())
-								(*current_render)->resume();
-							else
-								(*current_render)->pause();
+						[&current_render] {
+							current_render->state->to_pause = !current_render->state->to_pause;
 						}
 					);
 
 					ui::set_next_same_line(nav_container);
-					ui::add_button("stop render button", nav_container, "Cancel", fonts::dejavu, [] {
-						auto current_render = rendering.get_current_render();
-						if (current_render)
-							(*current_render)->stop();
+					ui::add_button("stop render button", nav_container, "Cancel", fonts::dejavu, [&current_render] {
+						current_render->state->to_stop = true;
 					});
 
 					ui::set_next_same_line(nav_container);
@@ -288,10 +282,14 @@ bool gui::renderer::redraw_window(bool rendered_last, bool want_to_render) {
 	return true;
 }
 
-void gui::renderer::on_render_finished(Render* render, const tl::expected<RenderResult, std::string>& result) {
+void gui::renderer::on_render_finished(
+	const rendering::QueuedRender& render, const tl::expected<rendering::RenderResult, std::string>& result
+) {
+	std::string video_name = render.input_path.stem().string();
+
 	if (!result) {
 		gui::components::notifications::add(
-			std::format("Render '{}' failed. Click to copy error message", render->get_video_name()),
+			std::format("Render '{}' failed. Click to copy error message", video_name),
 			ui::NotificationType::NOTIF_ERROR,
 			[result](const std::string& id) {
 				SDL_SetClipboardText(result.error().c_str());
@@ -316,19 +314,15 @@ void gui::renderer::on_render_finished(Render* render, const tl::expected<Render
 	}
 
 	if (result->stopped) {
-		gui::components::notifications::add(
-			std::format("Render '{}' stopped", render->get_video_name()), ui::NotificationType::INFO
-		);
+		gui::components::notifications::add(std::format("Render '{}' stopped", video_name), ui::NotificationType::INFO);
 		return;
 	}
 
-	auto output_path = render->get_output_video_path();
-
 	gui::components::notifications::add(
-		std::format("Render '{}' completed", render->get_video_name()),
+		std::format("Render '{}' completed", video_name),
 		ui::NotificationType::SUCCESS,
-		[output_path](const std::string& id) {
-			std::string file_url = std::format("file://{}", output_path);
+		[&result](const std::string& id) {
+			std::string file_url = std::format("file://{}", result->output_path);
 			if (!SDL_OpenURL(file_url.c_str())) {
 				u::log_error("Failed to open output folder: {}", SDL_GetError());
 			}

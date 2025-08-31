@@ -51,7 +51,8 @@ void main::open_files_button(ui::Container& container, const std::string& label)
 
 void main::render_screen(
 	ui::Container& container,
-	Render& render,
+	const rendering::QueuedRender& render,
+	size_t render_index,
 	bool current,
 	float delta_time,
 	bool& is_progress_shown,
@@ -61,17 +62,17 @@ void main::render_screen(
 	// screen start|      [faded]last_video current_video [faded]next_video next_video2 next_video3 (+5) |
 	// screen end animate sliding in as it moves along the queue
 
-	std::string render_title_text = render.get_video_name();
+	std::string render_title_text = render.input_path.stem().string();
 
 	if (current) {
-		int queue_size = rendering.get_queue().size() + tasks::finished_renders;
+		int queue_size = rendering::queue.size() + tasks::finished_renders;
 		if (queue_size > 1) {
 			render_title_text = std::format("{} ({}/{})", render_title_text, tasks::finished_renders + 1, queue_size);
 		}
 	}
 
 	ui::add_text(
-		std::format("video {} name text", render.get_render_id()),
+		std::format("video {} name text", render_index),
 		container,
 		render_title_text,
 		gfx::Color(255, 255, 255, (current ? 255 : 100)),
@@ -82,25 +83,24 @@ void main::render_screen(
 	if (!current)
 		return;
 
-	auto render_status = render.get_status();
 	int bar_width = 300;
 
-	std::string preview_path = render.get_preview_path().string();
-	if (!preview_path.empty() && render_status.current_frame > 0) {
+	std::string preview_path = render.state->preview_path;
+	if (!preview_path.empty() && render.state->current_frame > 0) {
 		auto element = ui::add_image(
 			"preview image",
 			container,
 			preview_path,
 			gfx::Size(container.get_usable_rect().w, container.get_usable_rect().h / 2),
-			std::to_string(render_status.current_frame)
+			std::to_string(render.state->current_frame)
 		);
 		if (element) {
 			bar_width = (*element)->element->rect.w;
 		}
 	}
 
-	if (render_status.init_frames) {
-		float render_progress = (float)render_status.current_frame / (float)render_status.total_frames;
+	if (render.state->rendered_a_frame) {
+		float render_progress = (float)render.state->current_frame / (float)render.state->total_frames;
 		bar_percent = u::lerp(bar_percent, render_progress, 5.f * delta_time, 0.005f);
 
 		ui::add_bar(
@@ -117,7 +117,7 @@ void main::render_screen(
 
 		container.push_element_gap(6);
 
-		if (render.is_paused()) {
+		if (render.state->paused) {
 			ui::add_text(
 				"paused text",
 				container,
@@ -128,7 +128,7 @@ void main::render_screen(
 			);
 		}
 
-		bool status_fps_init = render_status.fps != 0.f;
+		bool status_fps_init = render.state->fps != 0.f;
 
 		if (!status_fps_init)
 			container.pop_element_gap();
@@ -136,7 +136,7 @@ void main::render_screen(
 		ui::add_text(
 			"progress text",
 			container,
-			std::format("frame {}/{}", render_status.current_frame, render_status.total_frames),
+			std::format("frame {}/{}", render.state->current_frame, render.state->total_frames),
 			gfx::Color::white(renderer::MUTED_SHADE),
 			fonts::dejavu,
 			FONT_CENTERED_X
@@ -146,7 +146,7 @@ void main::render_screen(
 			ui::add_text(
 				"progress text fps",
 				container,
-				std::format("{:.2f} frames per second", render_status.fps),
+				std::format("{:.2f} frames per second", render.state->fps),
 				gfx::Color::white(renderer::MUTED_SHADE),
 				fonts::dejavu,
 				FONT_CENTERED_X
@@ -154,8 +154,8 @@ void main::render_screen(
 
 			container.pop_element_gap();
 
-			int remaining_frames = render_status.total_frames - render_status.current_frame;
-			int eta_seconds = static_cast<int>(remaining_frames / render_status.fps);
+			int remaining_frames = render.state->total_frames - render.state->current_frame;
+			int eta_seconds = static_cast<int>(remaining_frames / render.state->fps);
 
 			int hours = eta_seconds / 3600;
 			int minutes = (eta_seconds % 3600) / 60;
@@ -182,7 +182,7 @@ void main::render_screen(
 		is_progress_shown = true;
 	}
 	else {
-		if (render.is_paused()) {
+		if (render.state->paused) {
 			ui::add_text(
 				"paused text",
 				container,
@@ -208,9 +208,9 @@ void main::render_screen(
 void main::home_screen(ui::Container& container, float delta_time) {
 	static float bar_percent = 0.f;
 
-	bool queue_empty = rendering.get_queue().empty() && !current_render_copy;
+	const auto& queue = rendering::queue.get_queue_copy();
 
-	if (queue_empty) {
+	if (queue.empty()) {
 		bar_percent = 0.f;
 
 		gfx::Point title_pos = container.get_usable_rect().center();
@@ -254,38 +254,11 @@ void main::home_screen(ui::Container& container, float delta_time) {
 	else {
 		bool is_progress_shown = false;
 
-		rendering.lock();
-		{
-			auto current_render = rendering.get_current_render();
+		for (const auto [i, render] : u::enumerate(queue)) {
+			bool current = i == 0;
 
-			// displays final state of the current render once where it would have been skipped otherwise
-			auto render_current_edge_case = [&] {
-				if (!current_render_copy)
-					return;
-
-				if (current_render) {
-					if ((*current_render)->get_render_id() == (*current_render_copy).get_render_id()) {
-						u::log("render final frame: wasnt deleted so just render normally");
-						return;
-					}
-				}
-
-				u::log("render final frame: it was deleted bro, rendering separately");
-
-				render_screen(container, *current_render_copy, true, delta_time, is_progress_shown, bar_percent);
-
-				current_render_copy.reset();
-			};
-
-			render_current_edge_case();
-
-			for (const auto [i, render] : u::enumerate(rendering.get_queue())) {
-				bool current = current_render && render.get() == current_render.value();
-
-				render_screen(container, *render, current, delta_time, is_progress_shown, bar_percent);
-			}
+			render_screen(container, render, i, current, delta_time, is_progress_shown, bar_percent);
 		}
-		rendering.unlock();
 
 		if (!is_progress_shown) {
 			bar_percent = 0.f; // Reset when no progress bar is shown

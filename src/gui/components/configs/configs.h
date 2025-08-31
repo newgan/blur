@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/config_app.h"
-#include "common/rendering_frame.h"
+#include "common/rendering.h"
 #include "../../ui/ui.h"
 
 namespace gui::components::configs { // naming it configs to avoid conflict with common lol
@@ -27,7 +27,12 @@ namespace gui::components::configs { // naming it configs to avoid conflict with
 	inline float pre_interpolated_fps_mult = 2.f;
 	inline int pre_interpolated_fps = 360;
 
-	inline std::vector<std::unique_ptr<FrameRender>> renders;
+	struct PreviewRenderState {
+		bool can_delete = false;
+		std::shared_ptr<rendering::RenderState> state = std::make_shared<rendering::RenderState>();
+	};
+
+	inline std::vector<std::shared_ptr<PreviewRenderState>> render_states;
 	inline std::mutex render_mutex;
 
 	inline bool just_added_sample_video = false;

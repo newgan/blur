@@ -80,18 +80,15 @@ bool cli::run(
 				std::filesystem::create_directories(output_path->parent_path());
 		}
 
-		// set up render
-		auto render = rendering.queue_render(Render(input_path, video_info, output_path, config_path));
+		rendering::queue.add(input_path, video_info, config_path, config_app::get_app_config(), output_path);
 
 		if (blur.verbose) {
-			u::log(
-				"Queued '{}' for render, outputting to '{}'", render.get_video_name(), render.get_output_video_path()
-			);
+			u::log("Queued '{}' for render", input_path.stem().string());
 		}
 	}
 
 	// render videos
-	while (!blur.exiting && rendering.render_next_video())
+	while (!blur.exiting && rendering::queue.process_next())
 		;
 
 	u::log("Finished rendering");
