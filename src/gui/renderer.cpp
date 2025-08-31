@@ -146,9 +146,9 @@ bool gui::renderer::redraw_window(bool rendered_last, bool want_to_render) {
 				auto current_render = rendering::queue.front();
 				if (current_render) {
 					ui::add_button(
-						current_render->state->paused ? "resume render button" : "pause render button",
+						current_render->state->is_paused() ? "resume render button" : "pause render button",
 						nav_container,
-						current_render->state->paused ? "Resume" : "Pause",
+						current_render->state->is_paused() ? "Resume" : "Pause",
 						fonts::dejavu,
 						[&current_render] {
 							current_render->state->toggle_pause();

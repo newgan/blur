@@ -15,10 +15,14 @@ namespace rendering {
 		bool stopped = false;
 	};
 
+	// -- forward declarations
 	struct RenderState;
 
 	namespace detail {
 		struct PipelineResult;
+
+		void pause(int pid, const std::shared_ptr<RenderState>& state);
+		void resume(int pid, const std::shared_ptr<RenderState>& state);
 
 		tl::expected<PipelineResult, std::string> execute_pipeline(
 			const RenderCommands& commands,
@@ -27,11 +31,34 @@ namespace rendering {
 			const std::function<void()>& progress_callback
 		);
 
-		void pause(int pid, const std::shared_ptr<RenderState>& state);
-		void resume(int pid, const std::shared_ptr<RenderState>& state);
+		tl::expected<RenderResult, std::string> render_video(
+			const std::filesystem::path& input_path,
+			const u::VideoInfo& video_info,
+			const BlurSettings& settings,
+			const std::shared_ptr<RenderState>& state,
+			const GlobalAppSettings& app_settings,
+			const std::optional<std::filesystem::path>& output_path_override,
+			const std::function<void()>& progress_callback
+		);
 	}
 
+	// --
+
 	struct RenderState {
+		struct Progress {
+			bool rendered_a_frame = false;
+			int current_frame = 0;
+			int total_frames = 0;
+
+			bool fps_initialised = false;
+			std::chrono::steady_clock::time_point start_time;
+			int start_frame = 0;
+			std::chrono::duration<double> elapsed_time;
+			float fps = 0.f;
+
+			std::string string;
+		};
+
 		void pause() {
 			to_pause = true;
 		}
@@ -48,19 +75,24 @@ namespace rendering {
 			to_stop = true;
 		}
 
-		struct Progress {
-			bool rendered_a_frame = false;
-			int current_frame = 0;
-			int total_frames = 0;
+		bool is_paused() {
+			std::lock_guard lock(mutex);
+			return paused;
+		}
 
-			bool fps_initialised = false;
-			std::chrono::steady_clock::time_point start_time;
-			int start_frame = 0;
-			std::chrono::duration<double> elapsed_time;
-			float fps = 0.f;
+		std::filesystem::path get_preview_path() {
+			std::lock_guard lock(mutex);
+			return preview_path;
+		}
 
-			std::string string;
-		};
+		Progress get_progress() {
+			std::lock_guard lock(mutex);
+			return progress;
+		}
+
+		// friends
+		friend void detail::pause(int pid, const std::shared_ptr<RenderState>& state);
+		friend void detail::resume(int pid, const std::shared_ptr<RenderState>& state);
 
 		friend tl::expected<detail::PipelineResult, std::string> detail::execute_pipeline(
 			const RenderCommands& commands,
@@ -69,17 +101,24 @@ namespace rendering {
 			const std::function<void()>& progress_callback
 		);
 
-		friend void detail::pause(int pid, const std::shared_ptr<RenderState>& state);
-		friend void detail::resume(int pid, const std::shared_ptr<RenderState>& state);
+		friend tl::expected<RenderResult, std::string> detail::render_video(
+			const std::filesystem::path& input_path,
+			const u::VideoInfo& video_info,
+			const BlurSettings& settings,
+			const std::shared_ptr<RenderState>& state,
+			const GlobalAppSettings& app_settings,
+			const std::optional<std::filesystem::path>& output_path_override,
+			const std::function<void()>& progress_callback
+		);
 
+	private:
 		std::mutex mutex;
+
 		std::filesystem::path preview_path;
 		Progress progress;
 		bool paused = false;
 
-	private:
 		std::atomic<bool> to_pause = false;
-
 		std::atomic<bool> to_stop = false;
 	};
 
