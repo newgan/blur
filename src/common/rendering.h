@@ -60,37 +60,37 @@ namespace rendering {
 		};
 
 		void pause() {
-			to_pause = true;
+			m_to_pause = true;
 		}
 
 		void resume() {
-			to_pause = false;
+			m_to_pause = false;
 		}
 
 		void toggle_pause() {
-			to_pause = !to_pause;
+			m_to_pause = !m_to_pause;
 		}
 
 		void stop() {
-			to_stop = true;
+			m_to_stop = true;
 		}
 
 		bool is_paused() {
-			std::lock_guard lock(mutex);
-			return paused;
+			std::lock_guard lock(m_mutex);
+			return m_paused;
 		}
 
 		std::filesystem::path get_preview_path() {
-			std::lock_guard lock(mutex);
-			return preview_path;
+			std::lock_guard lock(m_mutex);
+			return m_preview_path;
 		}
 
 		Progress get_progress() {
-			std::lock_guard lock(mutex);
-			return progress;
+			std::lock_guard lock(m_mutex);
+			return m_progress;
 		}
 
-		// friends
+		// friends can access non-thread-safe stuff
 		friend void detail::pause(int pid, const std::shared_ptr<RenderState>& state);
 		friend void detail::resume(int pid, const std::shared_ptr<RenderState>& state);
 
@@ -112,14 +112,14 @@ namespace rendering {
 		);
 
 	private:
-		std::mutex mutex;
+		std::mutex m_mutex;
 
-		std::filesystem::path preview_path;
-		Progress progress;
-		bool paused = false;
+		std::filesystem::path m_preview_path;
+		Progress m_progress;
+		bool m_paused = false;
 
-		std::atomic<bool> to_pause = false;
-		std::atomic<bool> to_stop = false;
+		std::atomic<bool> m_to_pause = false;
+		std::atomic<bool> m_to_stop = false;
 	};
 
 	struct QueuedRender {
