@@ -216,8 +216,8 @@ void rendering::detail::pause(int pid, const std::shared_ptr<RenderState>& state
 		state->paused = true;
 	}
 
-	state->fps_initialised = false;
-	state->fps = 0.f;
+	state->progress.fps_initialised = false;
+	state->progress.fps = 0.f;
 
 	u::log("Render paused");
 }
@@ -311,41 +311,42 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 						{
 							std::lock_guard lock(state->mutex);
 
-							state->current_frame = std::stoi(match[1]);
-							state->total_frames = std::stoi(match[2]);
-							state->rendered_a_frame = true;
+							state->progress.current_frame = std::stoi(match[1]);
+							state->progress.total_frames = std::stoi(match[2]);
+							state->progress.rendered_a_frame = true;
 
-							float progress = state->current_frame / (float)state->total_frames;
+							float progress = state->progress.current_frame / (float)state->progress.total_frames;
 
-							if (!state->fps_initialised) {
-								state->fps_initialised = true;
-								state->start_time = std::chrono::steady_clock::now();
-								state->start_frame = state->current_frame;
-								state->fps = 0.f;
+							if (!state->progress.fps_initialised) {
+								state->progress.fps_initialised = true;
+								state->progress.start_time = std::chrono::steady_clock::now();
+								state->progress.start_frame = state->progress.current_frame;
+								state->progress.fps = 0.f;
 
-								state->progress_string = std::format(
+								state->progress.string = std::format(
 									"{:.1f}% complete ({}/{})",
 									progress * 100,
-									state->current_frame,
-									state->total_frames
+									state->progress.current_frame,
+									state->progress.total_frames
 								);
 							}
 							else {
 								auto current_time = std::chrono::steady_clock::now();
-								state->elapsed_time = current_time - state->start_time;
+								state->progress.elapsed_time = current_time - state->progress.start_time;
 
-								state->fps = (state->current_frame - state->start_frame) / state->elapsed_time.count();
+								state->progress.fps = (state->progress.current_frame - state->progress.start_frame) /
+								                      state->progress.elapsed_time.count();
 
-								state->progress_string = std::format(
+								state->progress.string = std::format(
 									"{:.1f}% complete ({}/{}, {:.2f} fps)",
 									progress * 100,
-									state->current_frame,
-									state->total_frames,
-									state->fps
+									state->progress.current_frame,
+									state->progress.total_frames,
+									state->progress.fps
 								);
 							}
 
-							u::log(state->progress_string);
+							u::log(state->progress.string);
 						}
 
 						if (progress_callback)

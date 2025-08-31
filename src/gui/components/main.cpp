@@ -86,21 +86,22 @@ void main::render_screen(
 	int bar_width = 300;
 
 	std::string preview_path = render.state->preview_path;
-	if (!preview_path.empty() && render.state->current_frame > 0) {
+	if (!preview_path.empty() && render.state->progress.current_frame > 0) {
 		auto element = ui::add_image(
 			"preview image",
 			container,
 			preview_path,
 			gfx::Size(container.get_usable_rect().w, container.get_usable_rect().h / 2),
-			std::to_string(render.state->current_frame)
+			std::to_string(render.state->progress.current_frame)
 		);
 		if (element) {
 			bar_width = (*element)->element->rect.w;
 		}
 	}
 
-	if (render.state->rendered_a_frame) {
-		float render_progress = (float)render.state->current_frame / (float)render.state->total_frames;
+	if (render.state->progress.rendered_a_frame) {
+		float render_progress =
+			(float)render.state->progress.current_frame / (float)render.state->progress.total_frames;
 		bar_percent = u::lerp(bar_percent, render_progress, 5.f * delta_time, 0.005f);
 
 		ui::add_bar(
@@ -128,7 +129,7 @@ void main::render_screen(
 			);
 		}
 
-		bool status_fps_init = render.state->fps != 0.f;
+		bool status_fps_init = render.state->progress.fps != 0.f;
 
 		if (!status_fps_init)
 			container.pop_element_gap();
@@ -136,7 +137,7 @@ void main::render_screen(
 		ui::add_text(
 			"progress text",
 			container,
-			std::format("frame {}/{}", render.state->current_frame, render.state->total_frames),
+			std::format("frame {}/{}", render.state->progress.current_frame, render.state->progress.total_frames),
 			gfx::Color::white(renderer::MUTED_SHADE),
 			fonts::dejavu,
 			FONT_CENTERED_X
@@ -146,7 +147,7 @@ void main::render_screen(
 			ui::add_text(
 				"progress text fps",
 				container,
-				std::format("{:.2f} frames per second", render.state->fps),
+				std::format("{:.2f} frames per second", render.state->progress.fps),
 				gfx::Color::white(renderer::MUTED_SHADE),
 				fonts::dejavu,
 				FONT_CENTERED_X
@@ -154,8 +155,8 @@ void main::render_screen(
 
 			container.pop_element_gap();
 
-			int remaining_frames = render.state->total_frames - render.state->current_frame;
-			int eta_seconds = static_cast<int>(remaining_frames / render.state->fps);
+			int remaining_frames = render.state->progress.total_frames - render.state->progress.current_frame;
+			int eta_seconds = static_cast<int>(remaining_frames / render.state->progress.fps);
 
 			int hours = eta_seconds / 3600;
 			int minutes = (eta_seconds % 3600) / 60;

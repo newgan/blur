@@ -15,29 +15,72 @@ namespace rendering {
 		bool stopped = false;
 	};
 
+	struct RenderState;
+
+	namespace detail {
+		struct PipelineResult;
+
+		tl::expected<PipelineResult, std::string> execute_pipeline(
+			const RenderCommands& commands,
+			const std::shared_ptr<RenderState>& state,
+			bool debug,
+			const std::function<void()>& progress_callback
+		);
+
+		void pause(int pid, const std::shared_ptr<RenderState>& state);
+		void resume(int pid, const std::shared_ptr<RenderState>& state);
+	}
+
 	struct RenderState {
+		void pause() {
+			to_pause = true;
+		}
+
+		void resume() {
+			to_pause = false;
+		}
+
+		void toggle_pause() {
+			to_pause = !to_pause;
+		}
+
+		void stop() {
+			to_stop = true;
+		}
+
+		struct Progress {
+			bool rendered_a_frame = false;
+			int current_frame = 0;
+			int total_frames = 0;
+
+			bool fps_initialised = false;
+			std::chrono::steady_clock::time_point start_time;
+			int start_frame = 0;
+			std::chrono::duration<double> elapsed_time;
+			float fps = 0.f;
+
+			std::string string;
+		};
+
+		friend tl::expected<detail::PipelineResult, std::string> detail::execute_pipeline(
+			const RenderCommands& commands,
+			const std::shared_ptr<RenderState>& state,
+			bool debug,
+			const std::function<void()>& progress_callback
+		);
+
+		friend void detail::pause(int pid, const std::shared_ptr<RenderState>& state);
+		friend void detail::resume(int pid, const std::shared_ptr<RenderState>& state);
+
 		std::mutex mutex;
-
 		std::filesystem::path preview_path;
-
-		std::atomic<bool> to_pause = false;
+		Progress progress;
 		bool paused = false;
 
+	private:
+		std::atomic<bool> to_pause = false;
+
 		std::atomic<bool> to_stop = false;
-
-		bool finished = false;
-
-		bool rendered_a_frame = false;
-		int current_frame = 0;
-		int total_frames = 0;
-
-		bool fps_initialised = false;
-		std::chrono::steady_clock::time_point start_time;
-		int start_frame = 0;
-		std::chrono::duration<double> elapsed_time;
-		float fps = 0.f;
-
-		std::string progress_string;
 	};
 
 	struct QueuedRender {
@@ -128,7 +171,7 @@ namespace rendering {
 		);
 
 		bool process_next() {
-			if (m_queue.empty() || m_should_stop)
+			if (m_queue.empty() || !m_active)
 				return false;
 
 			auto cur = m_queue.front();
@@ -153,11 +196,21 @@ namespace rendering {
 		}
 
 		void stop() {
-			m_should_stop = true;
+			m_active = false;
+			// now no more renders will start. see process_next.
 		}
 
 		void stop_and_wait() {
 			stop();
+
+			std::lock_guard lock(m_mutex);
+			if (is_empty())
+				return;
+
+			// still rendering the video at the front, so tell it to stop
+			auto cur = m_queue.front();
+			cur.state->stop();
+
 			while (!is_empty()) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			}
@@ -187,7 +240,7 @@ namespace rendering {
 	private:
 		std::vector<QueuedRender> m_queue;
 		mutable std::mutex m_mutex;
-		std::atomic<bool> m_should_stop = false;
+		std::atomic<bool> m_active = true;
 	};
 
 	inline RenderQueue queue;

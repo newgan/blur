@@ -66,7 +66,7 @@ void configs::config_preview(ui::Container& container) {
 
 				// stop ongoing renders early, a new render's coming bro
 				for (auto& render : render_states) {
-					render->state->to_stop = true;
+					render->state->stop();
 				}
 
 				state = render_states.emplace_back(std::make_shared<PreviewRenderState>());
