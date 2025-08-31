@@ -383,7 +383,6 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 				vspipe_process.terminate();
 				ffmpeg_process.terminate();
 				killed = true;
-				u::debug_log("STOPPING RENDER EARLY");
 				break;
 			}
 
