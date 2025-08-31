@@ -109,9 +109,11 @@ void tasks::add_files(const std::vector<std::filesystem::path>& path_strs) {
 
 		u::log("queueing {}", path);
 
-		gui::components::notifications::add(
-			std::format("Queued '{}' for rendering", path.stem()), ui::NotificationType::INFO
-		);
+		if (gui::renderer::screen != gui::renderer::Screens::MAIN) {
+			gui::components::notifications::add(
+				std::format("Queued '{}' for rendering", path.filename()), ui::NotificationType::INFO
+			);
+		}
 
 		pending_video_paths.push_back(path);
 	}
