@@ -108,10 +108,13 @@ std::vector<std::wstring> rendering::detail::build_color_metadata_args(const u::
 		std::string range = *video_info.color_range == "pc" ? "full" : "limited";
 		params.emplace_back("range=" + range);
 	}
+
 	if (video_info.color_space)
 		params.emplace_back("colorspace=" + *video_info.color_space);
+
 	if (video_info.color_transfer)
 		params.emplace_back("color_trc=" + *video_info.color_transfer);
+
 	if (video_info.color_primaries)
 		params.emplace_back("color_primaries=" + *video_info.color_primaries);
 
