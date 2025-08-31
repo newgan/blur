@@ -18,13 +18,8 @@ void main::open_files_button(ui::Container& container, const std::string& label)
 			if (files && *files) {
 				std::vector<std::filesystem::path> wpaths;
 
-				std::span<const char* const> span_files(files, SIZE_MAX); // big size, we stop manually
-
-				for (const auto& file : span_files) {
-					if (file == nullptr)
-						break; // null-terminated array
-
-					wpaths.emplace_back(u::string_to_path(file));
+				for (const char* const* f = files; *f != nullptr; ++f) {
+					wpaths.emplace_back(u::string_to_path(*f));
 				}
 
 				tasks::add_files(wpaths);
@@ -62,7 +57,7 @@ void main::render_screen(
 	// screen start|      [faded]last_video current_video [faded]next_video next_video2 next_video3 (+5) |
 	// screen end animate sliding in as it moves along the queue
 
-	std::string render_title_text = render.input_path.stem().string();
+	std::string render_title_text = u::path_to_string(render.input_path.stem());
 
 	if (current) {
 		int queue_size = rendering::video_render_queue.size() + tasks::finished_renders;
@@ -85,7 +80,7 @@ void main::render_screen(
 
 	int bar_width = 300;
 
-	std::string preview_path = render.state->get_preview_path();
+	std::string preview_path = u::path_to_string(render.state->get_preview_path());
 	auto progress = render.state->get_progress();
 
 	if (!preview_path.empty() && progress.current_frame > 0) {

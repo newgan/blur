@@ -116,7 +116,9 @@ TEST_F(CLITest, SingleFileNoConfigNoOutput) {
 
 	EXPECT_TRUE(cli::run(inputs, {}, {}, false, true, true));
 
-	EXPECT_TRUE(std::filesystem::exists(m_test_video.parent_path() / (m_test_video.stem().string() + " - blur.mp4")));
+	EXPECT_TRUE(
+		std::filesystem::exists(m_test_video.parent_path() / (std::format("{} - blur.mp4", m_test_video.stem())))
+	);
 }
 
 TEST_F(CLITest, InputOutputCountMismatch) {

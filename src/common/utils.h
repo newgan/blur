@@ -338,6 +338,55 @@ namespace u {
 		}
 	}
 
+	static std::string path_to_string(const std::filesystem::path& p) {
+#if defined(_WIN32) // so fucking annoying
+		return u::tostring(p.wstring());
+#else
+		return p.string();
+#endif
+	}
+
+	// windows is a terrible operating system
+	// boost calls char CreateProcess if args arent widestrings which fucks things up
+	inline
+#ifdef _WIN32
+		std::vector<std::wstring>
+#else
+		std::vector<std::string>
+#endif
+		make_bp_args(const std::vector<std::string>& args) {
+#ifdef _WIN32
+		std::vector<std::wstring> wide_args;
+		wide_args.reserve(args.size());
+		for (const auto& s : args) {
+			wide_args.push_back(towstring(s));
+		}
+		return wide_args;
+#else
+		return args;
+#endif
+	}
+
+	// an attempt to make boost process less hellish
+	// will automatically fix exe path & args to be wide on windows. if you dont do that it doesnt work with unicode
+	// paths
+	template<typename... Args>
+	inline boost::process::child run_command(
+		const std::filesystem::path& exe_path, const std::vector<std::string>& args, Args&&... bp_args
+	) {
+		boost::filesystem::path boost_path(exe_path);
+
+#ifdef _WIN32
+		auto wide_args = make_bp_args(args);
+
+		return boost::process::child(
+			boost_path, wide_args, boost::process::windows::create_no_window, std::forward<Args>(bp_args)...
+		);
+#else
+		return boost::process::child(boost_path, args, std::forward<Args>(bp_args)...);
+#endif
+	}
+
 	std::string trim(std::string_view str);
 	std::string random_string(int len);
 	std::vector<std::string> split_string(std::string str, const std::string& delimiter);
@@ -357,7 +406,7 @@ namespace u {
 	std::filesystem::path get_resources_path();
 	std::filesystem::path get_settings_path();
 
-	boost::process::native_environment setup_vspipe_environment();
+	boost::process::environment setup_vspipe_environment();
 
 	struct VideoInfo {
 		bool has_video_stream = false;

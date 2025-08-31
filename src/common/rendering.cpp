@@ -21,7 +21,7 @@ tl::expected<nlohmann::json, std::string> rendering::detail::merge_settings(
 std::vector<std::string> rendering::detail::build_base_vspipe_args(
 	const std::filesystem::path& input_path, const nlohmann::json& merged_settings
 ) {
-	auto path_str = input_path.string();
+	std::string path_str = u::path_to_string(input_path);
 	std::ranges::replace(path_str, '\\', '/');
 
 	std::vector<std::string> args = {
@@ -39,7 +39,7 @@ std::vector<std::string> rendering::detail::build_base_vspipe_args(
 	args.insert(args.end(), { "-a", std::format("linux_bundled={}", bundled ? "true" : "false") });
 #endif
 
-	args.insert(args.end(), { blur.resources_path / "lib/blur.py", "-" });
+	args.insert(args.end(), { u::path_to_string(blur.resources_path / "lib/blur.py"), "-" });
 	return args;
 }
 
@@ -61,7 +61,7 @@ std::filesystem::path rendering::detail::build_output_filename(
 	auto output_folder = input_path.parent_path() / app_settings.output_prefix;
 	std::filesystem::create_directories(output_folder);
 
-	std::string base_name = input_path.stem().string() + " - blur";
+	std::string base_name = std::format("{} - blur", input_path.stem());
 
 	if (settings.detailed_filenames) {
 		std::string details;
@@ -261,29 +261,17 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 		bp::ipstream vspipe_stderr;
 		bp::ipstream ffmpeg_stderr;
 
-		bp::child vspipe_process(
-			boost::filesystem::path{ blur.vspipe_path },
-			bp::args(commands.vspipe),
-			bp::std_out > vspipe_stdout,
-			bp::std_err > vspipe_stderr,
-			env
-#ifdef _WIN32
-			,
-			bp::windows::create_no_window
-#endif
+		auto vspipe_process = u::run_command(
+			blur.vspipe_path, commands.vspipe, env, bp::std_out > vspipe_stdout, bp::std_err > vspipe_stderr
 		);
 
-		bp::child ffmpeg_process(
-			boost::filesystem::path{ blur.ffmpeg_path },
-			bp::args(commands.ffmpeg),
+		auto ffmpeg_process = u::run_command(
+			blur.ffmpeg_path,
+			commands.ffmpeg,
+			env,
 			bp::std_err > ffmpeg_stderr,
 			bp::std_in < vspipe_stdout,
-			bp::std_out.null(),
-			env
-#ifdef _WIN32
-			,
-			bp::windows::create_no_window
-#endif
+			bp::std_out.null()
 		);
 
 		std::ostringstream vspipe_errors;
@@ -292,9 +280,7 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 		std::thread progress_thread([&]() {
 			std::string line;
 
-			std::string progress_line;
 			char ch = 0;
-
 			while (ffmpeg_process.running() && vspipe_stderr.get(ch)) {
 				if (ch == '\n') {
 					// Handle full line for logging
@@ -353,8 +339,6 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 							progress_callback();
 					}
 
-					// Don't clear the line for logging purposes
-					progress_line = line;
 					line.clear();
 				}
 				else {
@@ -362,7 +346,7 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 				}
 			}
 
-			// Process any remaining data in the pipe
+			// process any remaining data in the pipe
 			std::string remaining;
 			while (std::getline(vspipe_stderr, remaining)) {
 				vspipe_errors << remaining << '\n';
@@ -488,7 +472,7 @@ tl::expected<rendering::RenderResult, std::string> rendering::detail::render_vid
 
 	auto output_path = output_path_override.value_or(detail::build_output_filename(input_path, settings, app_settings));
 
-	u::log("Rendering '{}'", input_path.stem().string());
+	u::log("Rendering '{}'", input_path.stem());
 
 	if (blur.verbose) {
 		u::log("Source video at {:.2f} timescale", settings.input_timescale);
@@ -527,7 +511,7 @@ tl::expected<rendering::RenderResult, std::string> rendering::detail::render_vid
 		                                     "-fflags",
 		                                     "+genpts",
 		                                     "-i",
-		                                     input_path.string(), // original for audio
+		                                     u::path_to_string(input_path), // original for audio
 		                                     "-map",
 		                                     "0:v",
 		                                     "-map",
@@ -545,7 +529,7 @@ tl::expected<rendering::RenderResult, std::string> rendering::detail::render_vid
 	auto encoding_args = detail::build_encoding_args(settings, app_settings);
 	ffmpeg_args.insert(ffmpeg_args.end(), encoding_args.begin(), encoding_args.end());
 
-	ffmpeg_args.push_back(output_path.string());
+	ffmpeg_args.push_back(u::path_to_string(output_path));
 
 	// add preview output if needed
 	std::filesystem::path preview_path;
@@ -569,7 +553,7 @@ tl::expected<rendering::RenderResult, std::string> rendering::detail::render_vid
 					"-atomic_writing",
 					"1",
 					"-y",
-					state->m_preview_path.string(),
+					u::path_to_string(state->m_preview_path),
 				}
 			);
 		}
@@ -587,14 +571,14 @@ tl::expected<rendering::RenderResult, std::string> rendering::detail::render_vid
 
 	if (pipeline_result->stopped) {
 		std::filesystem::remove(output_path);
-		u::log("Stopped render '{}'", input_path.stem().string());
+		u::log("Stopped render '{}'", input_path.stem());
 	}
 	else {
 		if (settings.copy_dates) {
 			detail::copy_file_timestamp(input_path, output_path);
 		}
 		if (blur.verbose) {
-			u::log("Finished rendering '{}'", input_path.stem().string());
+			u::log("Finished rendering '{}'", input_path.stem());
 		}
 	}
 

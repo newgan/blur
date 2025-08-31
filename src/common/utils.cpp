@@ -263,7 +263,7 @@ std::filesystem::path u::get_settings_path() {
 	return settings_path;
 }
 
-boost::process::native_environment u::setup_vspipe_environment() {
+boost::process::environment u::setup_vspipe_environment() {
 	auto env = boost::this_process::environment();
 
 #ifdef __APPLE__
@@ -288,26 +288,26 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 	namespace bp = boost::process;
 
 	bp::ipstream pipe_stream;
-	bp::child c(
-		boost::filesystem::path{ blur.ffprobe_path },
-		"-v",
-		"error",
-		"-select_streams",
-		"v:0", // only want to analyse first video stream
-		"-show_entries",
-		"stream=codec_type,codec_name,duration,color_range,sample_rate,r_frame_rate,pix_fmt,color_space,color_transfer,"
-		"color_primaries",
-		"-show_entries",
-		"format=duration",
-		"-of",
-		"default=noprint_wrappers=1",
-		boost::filesystem::path{ path },
+
+	auto c = u::run_command(
+		blur.ffprobe_path,
+		{
+			"-v",
+			"error",
+			"-select_streams",
+			"v:0", // only want to analyse first video stream
+			"-show_entries",
+			"stream=codec_type,codec_name,duration,color_range,sample_rate,r_frame_rate,pix_fmt,color_space,color_"
+			"transfer,"
+			"color_primaries",
+			"-show_entries",
+			"format=duration",
+			"-of",
+			"default=noprint_wrappers=1",
+			u::path_to_string(path),
+		},
 		bp::std_out > pipe_stream,
 		bp::std_err.null()
-#ifdef _WIN32
-			,
-		bp::windows::create_no_window
-#endif
 	);
 
 	VideoInfo info;
@@ -384,18 +384,17 @@ bool u::test_hardware_device(const std::string& device_type) {
 	namespace bp = boost::process;
 
 	bp::ipstream error_stream;
-	bp::child c(
-		boost::filesystem::path{ blur.ffmpeg_path },
-		"-init_hw_device",
-		(device_type + "=hw"),
-		"-loglevel",
-		"error",
+
+	auto c = u::run_command(
+		blur.ffmpeg_path,
+		{
+			"-init_hw_device",
+			(device_type + "=hw"),
+			"-loglevel",
+			"error",
+		},
 		bp::std_out.null(),
 		bp::std_err > error_stream
-#ifdef _WIN32
-		,
-		bp::windows::create_no_window
-#endif
 	);
 
 	std::string line;
@@ -549,34 +548,32 @@ std::map<int, std::string> u::get_rife_gpus() {
 
 	bp::ipstream err_stream;
 
-	bp::child c(
-		boost::filesystem::path{ blur.vspipe_path },
-		"-c",
-		"y4m",
+	auto c = u::run_command(
+		blur.vspipe_path,
+		{
+			"-c",
+			"y4m",
 #if defined(__APPLE__)
-		"-a",
-		std::format("macos_bundled={}", blur.used_installer ? "true" : "false"),
+			"-a",
+			std::format("macos_bundled={}", blur.used_installer ? "true" : "false"),
 #endif
 #if defined(__linux__)
-		"-a",
-		std::format("linux_bundled={}", vapoursynth_plugins_bundled ? "true" : "false"),
+			"-a",
+			std::format("linux_bundled={}", vapoursynth_plugins_bundled ? "true" : "false"),
 #endif
-		boost::filesystem::path{ get_gpus_script_path },
-		"-",
+			u::path_to_string(get_gpus_script_path),
+			"-",
+		},
 		bp::std_out.null(),
 		bp::std_err > err_stream,
 		env
-#ifdef _WIN32
-		,
-		bp::windows::create_no_window
-#endif
 	);
 
 	std::map<int, std::string> gpu_map;
 
-	std::string line;
 	std::regex gpu_line_pattern(R"(\[(\d+)\s+(.*?)\])"); // regex to match: [0 GPU NAME]
 
+	std::string line;
 	while (err_stream && std::getline(err_stream, line)) {
 		boost::algorithm::trim(line);
 
@@ -616,40 +613,38 @@ int u::get_fastest_rife_gpu_index(
 
 		auto start = std::chrono::steady_clock::now();
 
-		bp::child c(
-			boost::filesystem::path{ blur.vspipe_path },
-			"-c",
-			"y4m",
-			"-p",
-			"-a",
-			std::format("rife_model={}", rife_model_path),
-			"-a",
-			std::format("rife_gpu_index={}", gpu_index),
-			"-a",
-			std::format("benchmark_video_path={}", benchmark_video_path),
+		auto c = u::run_command(
+			blur.vspipe_path,
+			{
+				"-c",
+				"y4m",
+				"-p",
+				"-a",
+				std::format("rife_model={}", rife_model_path),
+				"-a",
+				std::format("rife_gpu_index={}", gpu_index),
+				"-a",
+				std::format("benchmark_video_path={}", benchmark_video_path),
 #if defined(__APPLE__)
-			"-a",
-			std::format("macos_bundled={}", blur.used_installer ? "true" : "false"),
+				"-a",
+				std::format("macos_bundled={}", blur.used_installer ? "true" : "false"),
 #endif
 #if defined(__linux__)
-			"-a",
-			std::format("linux_bundled={}", vapoursynth_plugins_bundled ? "true" : "false"),
+				"-a",
+				std::format("linux_bundled={}", vapoursynth_plugins_bundled ? "true" : "false"),
 #endif
 #if defined(_WIN32)
-			"-a",
-			"enable_lsmash=true",
+				"-a",
+				"enable_lsmash=true",
 #endif
-			"-e",
-			"2",
-			boost::filesystem::path{ benchmark_gpus_script_path },
-			"-",
+				"-e",
+				"2",
+				u::path_to_string(benchmark_gpus_script_path),
+				"-",
+			},
+			env,
 			bp::std_out.null(),
-			bp::std_err.null(),
-			env
-#ifdef _WIN32
-			,
-			bp::windows::create_no_window
-#endif
+			bp::std_err.null()
 		);
 
 		bool killed_early = false;

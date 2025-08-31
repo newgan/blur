@@ -285,7 +285,7 @@ bool gui::renderer::redraw_window(bool rendered_last, bool want_to_render) {
 void gui::renderer::on_render_finished(
 	const rendering::VideoRenderDetails& render, const tl::expected<rendering::RenderResult, std::string>& result
 ) {
-	std::string video_name = render.input_path.stem().string();
+	std::string video_name = u::path_to_string(render.input_path.stem());
 
 	if (!result) {
 		gui::components::notifications::add(

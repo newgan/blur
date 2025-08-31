@@ -85,7 +85,7 @@ bool cli::run(
 		);
 
 		if (blur.verbose) {
-			u::log("Queued '{}' for render", input_path.stem().string());
+			u::log("Queued '{}' for render", input_path.stem());
 		}
 	}
 
