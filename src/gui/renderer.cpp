@@ -283,7 +283,7 @@ bool gui::renderer::redraw_window(bool rendered_last, bool want_to_render) {
 }
 
 void gui::renderer::on_render_finished(
-	const rendering::QueuedRender& render, const tl::expected<rendering::RenderResult, std::string>& result
+	const rendering::VideoRenderDetails& render, const tl::expected<rendering::RenderResult, std::string>& result
 ) {
 	std::string video_name = render.input_path.stem().string();
 

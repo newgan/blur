@@ -51,7 +51,7 @@ void main::open_files_button(ui::Container& container, const std::string& label)
 
 void main::render_screen(
 	ui::Container& container,
-	const rendering::QueuedRender& render,
+	const rendering::VideoRenderDetails& render,
 	size_t render_index,
 	bool current,
 	float delta_time,

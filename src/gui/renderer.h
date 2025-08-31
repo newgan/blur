@@ -29,6 +29,6 @@ namespace gui::renderer {
 	bool redraw_window(bool rendered_last, bool want_to_render);
 
 	void on_render_finished(
-		const rendering::QueuedRender& render, const tl::expected<rendering::RenderResult, std::string>& result
+		const rendering::VideoRenderDetails& render, const tl::expected<rendering::RenderResult, std::string>& result
 	);
 }

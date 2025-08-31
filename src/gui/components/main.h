@@ -8,7 +8,7 @@ namespace gui::components::main {
 
 	void render_screen(
 		ui::Container& container,
-		const rendering::QueuedRender& render,
+		const rendering::VideoRenderDetails& render,
 		size_t render_index,
 		bool current,
 		float delta_time,

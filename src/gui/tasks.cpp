@@ -149,7 +149,7 @@ void tasks::process_pending_files() {
 			config_app::get_app_config(),
 			{},
 			{},
-			[](const rendering::QueuedRender& render,
+			[](const rendering::VideoRenderDetails& render,
 		       const tl::expected<rendering::RenderResult, std::string>& result) {
 				gui::renderer::on_render_finished(render, result);
 			}

@@ -122,7 +122,7 @@ namespace rendering {
 		std::atomic<bool> m_to_stop = false;
 	};
 
-	struct QueuedRender {
+	struct VideoRenderDetails {
 		std::filesystem::path input_path;
 		u::VideoInfo video_info;
 		BlurSettings settings;
@@ -130,7 +130,7 @@ namespace rendering {
 		std::optional<std::filesystem::path> output_path_override;
 		std::function<void()> progress_callback;
 		std::function<
-			void(const QueuedRender& render, const tl::expected<rendering::RenderResult, std::string>& result)>
+			void(const VideoRenderDetails& render, const tl::expected<rendering::RenderResult, std::string>& result)>
 			finish_callback;
 
 		std::shared_ptr<RenderState> state = std::make_shared<RenderState>();
@@ -204,9 +204,9 @@ namespace rendering {
 			const GlobalAppSettings& app_settings = config_app::get_app_config(),
 			const std::optional<std::filesystem::path>& output_path_override = {},
 			const std::function<void()>& progress_callback = {},
-			const std::function<
-				void(const QueuedRender& render, const tl::expected<rendering::RenderResult, std::string>& result)>&
-				finish_callback = {}
+			const std::function<void(
+				const VideoRenderDetails& render, const tl::expected<rendering::RenderResult, std::string>& result
+			)>& finish_callback = {}
 		);
 
 		bool process_next() {
@@ -265,19 +265,19 @@ namespace rendering {
 			return m_queue.size();
 		}
 
-		std::optional<QueuedRender> front() {
+		std::optional<VideoRenderDetails> front() {
 			std::lock_guard lock(m_mutex);
 			if (m_queue.empty())
 				return {};
 			return m_queue.front();
 		}
 
-		std::vector<QueuedRender> get_queue_copy() {
+		std::vector<VideoRenderDetails> get_queue_copy() {
 			return m_queue;
 		}
 
 	private:
-		std::vector<QueuedRender> m_queue;
+		std::vector<VideoRenderDetails> m_queue;
 		mutable std::mutex m_mutex;
 		std::atomic<bool> m_active = true;
 	};

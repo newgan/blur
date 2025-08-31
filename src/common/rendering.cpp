@@ -608,7 +608,7 @@ rendering::QueueAddRes rendering::VideoRenderQueue::add(
 	const std::optional<std::filesystem::path>& output_path_override,
 	const std::function<void()>& progress_callback,
 	const std::function<
-		void(const QueuedRender& render, const tl::expected<rendering::RenderResult, std::string>& result)>&
+		void(const VideoRenderDetails& render, const tl::expected<rendering::RenderResult, std::string>& result)>&
 		finish_callback
 ) {
 	// parse config file (do it now, not when rendering. nice for batch rendering the same file with different
