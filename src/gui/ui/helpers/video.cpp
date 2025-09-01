@@ -214,8 +214,6 @@ void VideoPlayer::initialize_mpv() {
 		},
 		this
 	);
-	mpv_observe_property(m_mpv, 0, "estimated-frame-count", MPV_FORMAT_INT64);
-	mpv_observe_property(m_mpv, 0, "estimated-frame-number", MPV_FORMAT_INT64);
 }
 
 void VideoPlayer::on_mpv_events() {
