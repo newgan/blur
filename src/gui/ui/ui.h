@@ -276,9 +276,12 @@ namespace ui {
 	struct VideoTrackElementData {
 		VideoElementData video_data;
 		std::vector<int16_t>* waveform;
+		float* start;
+		float* end;
 
 		bool operator==(const VideoTrackElementData& other) const {
-			return video_data == other.video_data && waveform == other.waveform;
+			return video_data == other.video_data && waveform == other.waveform && start == other.start &&
+			       end == other.end;
 		}
 	};
 
@@ -666,7 +669,12 @@ namespace ui {
 	);
 
 	AnimatedElement* add_video_track(
-		const std::string& id, Container& container, int width, const VideoElementData& video_data
+		const std::string& id,
+		Container& container,
+		int width,
+		const VideoElementData& video_data,
+		float& start,
+		float& end
 	);
 
 	AnimatedElement* add_separator(const std::string& id, Container& container, SeparatorStyle style);

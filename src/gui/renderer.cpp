@@ -140,28 +140,54 @@ bool gui::renderer::redraw_window(bool rendered_last, bool want_to_render) {
 		case Screens::MAIN: {
 			components::configs::loaded_config = false;
 
-			components::main::home_screen(main_container, delta_time);
+			auto main_screen = components::main::screen(main_container, delta_time);
 
 			if (initialisation_res) {
-				auto current_render = rendering::video_render_queue.front();
-				if (current_render) {
-					ui::add_button(
-						current_render->state->is_paused() ? "resume render button" : "pause render button",
-						nav_container,
-						current_render->state->is_paused() ? "Resume" : "Pause",
-						fonts::dejavu,
-						[&current_render] {
-							current_render->state->toggle_pause();
+				switch (main_screen) {
+					case components::main::MainScreen::HOME: {
+						break;
+					}
+					case components::main::MainScreen::PENDING: {
+						const auto& pending = tasks::get_pending_copy();
+
+						if (pending.size() > 0) {
+							if (pending[0]->video_info) {
+								ui::add_button("go button", nav_container, "Go bro", fonts::dejavu, [] {
+									tasks::start_pending_video(0);
+								});
+							}
 						}
-					);
 
-					ui::set_next_same_line(nav_container);
-					ui::add_button("stop render button", nav_container, "Cancel", fonts::dejavu, [&current_render] {
-						current_render->state->stop();
-					});
+						components::main::open_files_button(nav_container, "Add files");
 
-					ui::set_next_same_line(nav_container);
-					components::main::open_files_button(nav_container, "Add files");
+						break;
+					}
+					case components::main::MainScreen::PROGRESS: {
+						auto current_render = rendering::video_render_queue.front();
+						if (current_render) {
+							ui::add_button(
+								current_render->state->is_paused() ? "resume render button" : "pause render button",
+								nav_container,
+								current_render->state->is_paused() ? "Resume" : "Pause",
+								fonts::dejavu,
+								[] {
+									auto current_render = rendering::video_render_queue.front();
+									current_render->state->toggle_pause();
+								}
+							);
+						}
+
+						ui::set_next_same_line(nav_container);
+						ui::add_button("stop render button", nav_container, "Cancel", fonts::dejavu, [] {
+							auto current_render = rendering::video_render_queue.front();
+							current_render->state->stop();
+						});
+
+						ui::set_next_same_line(nav_container);
+						components::main::open_files_button(nav_container, "Add files");
+
+						break;
+					}
 				}
 
 				ui::set_next_same_line(nav_container);

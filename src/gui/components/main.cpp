@@ -22,7 +22,7 @@ void main::open_files_button(ui::Container& container, const std::string& label)
 					wpaths.emplace_back(u::string_to_path(*f));
 				}
 
-				tasks::set_video_player_path(wpaths[0]);
+				tasks::add_files(wpaths);
 			}
 		};
 
@@ -44,7 +44,7 @@ void main::open_files_button(ui::Container& container, const std::string& label)
 	});
 };
 
-void main::render_screen(
+void main::render_progress(
 	ui::Container& container,
 	const rendering::VideoRenderDetails& render,
 	size_t render_index,
@@ -202,78 +202,115 @@ void main::render_screen(
 	}
 }
 
-void main::home_screen(ui::Container& container, float delta_time) {
+void main::render_pending(ui::Container& container, const std::vector<std::shared_ptr<tasks::PendingVideo>>& pending) {
+	size_t pending_index = 0;
+
+	auto& pending_video = pending[pending_index];
+
+	std::string render_title_text = u::path_to_string(pending_video->video_path.stem());
+
+	int queue_size = pending.size() + tasks::finished_renders;
+	if (queue_size > 1) {
+		render_title_text = std::format("{} ({}/{})", render_title_text, pending_index + 1, queue_size);
+	}
+
+	ui::add_text(
+		std::format("video {} name text", pending_index),
+		container,
+		render_title_text,
+		gfx::Color::white(),
+		fonts::smaller_header_font,
+		FONT_CENTERED_X
+	);
+
+	auto video = ui::add_video(
+		"test video",
+		container,
+		pending_video->video_path,
+		gfx::Size(container.get_usable_rect().w, container.get_usable_rect().h / 2)
+	);
+
+	if (video) {
+		auto video_rect = (*video)->element->rect;
+
+		const auto& video_data = std::get<ui::VideoElementData>((*video)->element->data);
+
+		ui::add_video_track(
+			"test video track", container, video_rect.w, video_data, pending_video->start, pending_video->end
+		);
+	}
+}
+
+void main::render_home(ui::Container& container) {
+	gfx::Point title_pos = container.get_usable_rect().center();
+	if (container.rect.h > 275)
+		title_pos.y = int(renderer::PAD_Y + fonts::header_font.height());
+	else
+		title_pos.y = 10 + fonts::header_font.height();
+
+	ui::add_text_fixed(
+		"blur title text", container, title_pos, "blur", gfx::Color::white(), fonts::header_font, FONT_CENTERED_X
+	);
+
+	if (!initialisation_res) {
+		ui::add_text(
+			"failed to initialise text",
+			container,
+			"Failed to initialise",
+			gfx::Color::white(),
+			fonts::dejavu,
+			FONT_CENTERED_X
+		);
+
+		ui::add_text(
+			"failed to initialise reason",
+			container,
+			initialisation_res.error(),
+			gfx::Color::white(renderer::MUTED_SHADE),
+			fonts::dejavu,
+			FONT_CENTERED_X
+		);
+
+		return;
+	}
+
+	open_files_button(container, "Open files");
+
+	ui::add_text(
+		"drop file text", container, "or drop them anywhere", gfx::Color::white(), fonts::dejavu, FONT_CENTERED_X
+	);
+}
+
+main::MainScreen main::screen(ui::Container& container, float delta_time) {
 	static float bar_percent = 0.f;
+
+	const auto& pending = tasks::get_pending_copy();
+
+	if (pending.size() > 0) {
+		render_pending(container, pending);
+		return MainScreen::PENDING;
+	}
 
 	const auto& queue = rendering::video_render_queue.get_queue_copy();
 
-	if (queue.empty()) {
-		bar_percent = 0.f;
-
-		gfx::Point title_pos = container.get_usable_rect().center();
-		if (container.rect.h > 275)
-			title_pos.y = int(renderer::PAD_Y + fonts::header_font.height());
-		else
-			title_pos.y = 10 + fonts::header_font.height();
-
-		ui::add_text_fixed(
-			"blur title text", container, title_pos, "blur", gfx::Color::white(), fonts::header_font, FONT_CENTERED_X
-		);
-
-		auto video = ui::add_video(
-			"test video",
-			container,
-			tasks::video_player_path,
-			gfx::Size(container.get_usable_rect().w, container.get_usable_rect().h / 2)
-		);
-
-		if (video) {
-			auto video_rect = (*video)->element->rect;
-
-			const auto& video_data = std::get<ui::VideoElementData>((*video)->element->data);
-
-			ui::add_video_track("test video track", container, video_rect.w, video_data);
-		}
-
-		if (!initialisation_res) {
-			ui::add_text(
-				"failed to initialise text",
-				container,
-				"Failed to initialise",
-				gfx::Color::white(),
-				fonts::dejavu,
-				FONT_CENTERED_X
-			);
-
-			ui::add_text(
-				"failed to initialise reason",
-				container,
-				initialisation_res.error(),
-				gfx::Color::white(renderer::MUTED_SHADE),
-				fonts::dejavu,
-				FONT_CENTERED_X
-			);
-
-			return;
-		}
-
-		open_files_button(container, "Open files");
-
-		ui::add_text(
-			"drop file text", container, "or drop them anywhere", gfx::Color::white(), fonts::dejavu, FONT_CENTERED_X
-		);
-	}
-	else {
+	if (!queue.empty()) {
 		bool is_progress_shown = false;
 
 		for (const auto [i, render] : u::enumerate(queue)) {
 			bool current = i == 0;
 
-			render_screen(container, render, i, current, delta_time, is_progress_shown, bar_percent);
+			render_progress(container, render, i, current, delta_time, is_progress_shown, bar_percent);
 		}
 
-		if (!is_progress_shown) {
-			bar_percent = 0.f; // Reset when no progress bar is shown
-		}
+		if (!is_progress_shown)
+			bar_percent = 0.f;
+
+		return MainScreen::PROGRESS;
 	}
+
+	bar_percent = 0.f;
+
+	render_home(container);
+
+	return MainScreen::HOME;
 }

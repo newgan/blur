@@ -38,6 +38,8 @@ namespace rendering {
 			const std::shared_ptr<RenderState>& state,
 			const GlobalAppSettings& app_settings,
 			const std::optional<std::filesystem::path>& output_path_override,
+			float start,
+			float end,
 			const std::function<void()>& progress_callback
 		);
 	}
@@ -108,6 +110,8 @@ namespace rendering {
 			const std::shared_ptr<RenderState>& state,
 			const GlobalAppSettings& app_settings,
 			const std::optional<std::filesystem::path>& output_path_override,
+			float start,
+			float end,
 			const std::function<void()>& progress_callback
 		);
 
@@ -128,6 +132,10 @@ namespace rendering {
 		BlurSettings settings;
 		GlobalAppSettings app_settings;
 		std::optional<std::filesystem::path> output_path_override;
+
+		float start;
+		float end;
+
 		std::function<void()> progress_callback;
 		std::function<
 			void(const VideoRenderDetails& render, const tl::expected<rendering::RenderResult, std::string>& result)>
@@ -203,6 +211,8 @@ namespace rendering {
 			const std::optional<std::filesystem::path>& config_path = {},
 			const GlobalAppSettings& app_settings = config_app::get_app_config(),
 			const std::optional<std::filesystem::path>& output_path_override = {},
+			float start = 0.f,
+			float end = 1.f,
 			const std::function<void()>& progress_callback = {},
 			const std::function<void(
 				const VideoRenderDetails& render, const tl::expected<rendering::RenderResult, std::string>& result
@@ -222,6 +232,8 @@ namespace rendering {
 				cur.state,
 				cur.app_settings,
 				cur.output_path_override,
+				cur.start,
+				cur.end,
 				cur.progress_callback
 			);
 

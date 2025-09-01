@@ -48,15 +48,14 @@ namespace {
 	};
 
 	GrabRects get_grab_rects(const ui::AnimatedElement& element) {
-		float left_grab_percent = element.animations.at(ui::hasher("left_grab_percent")).current;
-		float right_grab_percent = element.animations.at(ui::hasher("right_grab_percent")).current;
+		auto& video_track_data = std::get<ui::VideoTrackElementData>(element.element->data);
 
 		auto left_grab_rect = element.element->rect;
-		left_grab_rect.x += left_grab_rect.w * left_grab_percent;
+		left_grab_rect.x += left_grab_rect.w * *video_track_data.start;
 		left_grab_rect.w = GRABS_LENGTH;
 
 		auto right_grab_rect = element.element->rect;
-		right_grab_rect.x += right_grab_rect.w * right_grab_percent - GRABS_LENGTH;
+		right_grab_rect.x += right_grab_rect.w * *video_track_data.end - GRABS_LENGTH;
 		right_grab_rect.w = GRABS_LENGTH;
 
 		return { .left = left_grab_rect, .right = right_grab_rect };
@@ -95,8 +94,9 @@ void ui::render_video_track(const Container& container, const AnimatedElement& e
 	);
 
 	// dont show progress when grabbing, its implied that you're at where you're grabbing
-	anim *= (1.f - left_grab);
-	anim *= (1.f - right_grab);
+	float progress_anim = anim;
+	progress_anim *= (1.f - left_grab);
+	progress_anim *= (1.f - right_grab);
 
 	if (!video_track_data.video_data.player || !video_track_data.video_data.player->is_video_ready())
 		return;
@@ -119,11 +119,12 @@ void ui::render_video_track(const Container& container, const AnimatedElement& e
 		render::line(seek_point, seek_point.offset_y(rect.h), gfx::Color::white(75 * anim * seeking), false, 2.f);
 	}
 
-	render::waveform(rect, active_rect, gfx::Color::white(100), *video_track_data.waveform);
+	render::waveform(rect, active_rect, gfx::Color::white(100 * anim), *video_track_data.waveform);
 }
 
 bool ui::update_video_track(const Container& container, AnimatedElement& element) {
 	auto& video_track_data = std::get<VideoTrackElementData>(element.element->data);
+
 	auto rect = element.element->rect;
 
 	// Get animations once
@@ -140,7 +141,7 @@ bool ui::update_video_track(const Container& container, AnimatedElement& element
 		const char* name{};
 		gfx::Rect rect;
 		ui::AnimationState& anim;
-		ui::AnimationState& percent_anim;
+		float* var_ptr;
 
 		bool hovered = false;
 	};
@@ -152,13 +153,13 @@ bool ui::update_video_track(const Container& container, AnimatedElement& element
 			.name = "left",
 			.rect = grab_rects.left.expand(GRAB_CLICK_EXPANSION),
 			.anim = get_anim("left_grab"),
-			.percent_anim = get_anim("left_grab_percent"),
+			.var_ptr = video_track_data.start,
 		},
 		GrabHandle{
 			.name = "right",
 			.rect = grab_rects.right.expand(GRAB_CLICK_EXPANSION),
 			.anim = get_anim("right_grab"),
-			.percent_anim = get_anim("right_grab_percent"),
+			.var_ptr = video_track_data.end,
 		},
 	};
 
@@ -184,7 +185,7 @@ bool ui::update_video_track(const Container& container, AnimatedElement& element
 					rect.mouse_percent_x(); // TODO: when you initially click it if you arent exactly at the right spot
 				                            // itll shift the grab a little which is annoying
 
-				grab.percent_anim.set_goal(mouse_percent);
+				*grab.var_ptr = mouse_percent;
 
 				// video_track_data.video_data.player->seek(mouse_percent, true, true);
 				video_track_data.video_data.player->set_end(mouse_percent * 10.f);
@@ -238,7 +239,7 @@ bool ui::update_video_track(const Container& container, AnimatedElement& element
 }
 
 ui::AnimatedElement* ui::add_video_track(
-	const std::string& id, Container& container, int width, const VideoElementData& video_data
+	const std::string& id, Container& container, int width, const VideoElementData& video_data, float& start, float& end
 ) {
 	gfx::Size size(std::max(MIN_TRACK_WIDTH, width), TRACK_HEIGHT);
 
@@ -253,6 +254,8 @@ ui::AnimatedElement* ui::add_video_track(
 		VideoTrackElementData{
 			.video_data = video_data,
 			.waveform = *waveform,
+			.start = &start,
+			.end = &end,
 		},
 		render_video_track,
 		update_video_track
@@ -268,9 +271,7 @@ ui::AnimatedElement* ui::add_video_track(
 			{ hasher("seeking"), AnimationState(70.f) },
 			{ hasher("seek"), AnimationState(70.f) },
 			{ hasher("left_grab"), AnimationState(150.f) },
-			{ hasher("left_grab_percent"), AnimationState(150.f) },
 			{ hasher("right_grab"), AnimationState(150.f) },
-			{ hasher("right_grab_percent"), AnimationState(150.f, 1.f) },
 		}
 	);
 

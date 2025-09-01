@@ -418,6 +418,7 @@ namespace u {
 		int sample_rate = -1;
 		int fps_num = -1;
 		int fps_den = -1;
+		float duration = 0.f;
 	};
 
 	VideoInfo get_video_info(const std::filesystem::path& path);

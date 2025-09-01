@@ -63,8 +63,7 @@ int gui::run() {
 						}
 					}
 
-					// tasks::add_files_for_render(paths);
-					tasks::set_video_player_path(paths[0]);
+					tasks::add_files(paths);
 
 					break;
 				}

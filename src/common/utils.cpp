@@ -313,7 +313,6 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 	VideoInfo info;
 
 	bool has_video_stream = false;
-	double duration = 0.0;
 	std::string codec_name;
 
 	std::string line;
@@ -328,10 +327,10 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 		}
 		else if (line.find("duration=") != std::string::npos) {
 			try {
-				duration = std::stod(line.substr(line.find('=') + 1));
+				info.duration = std::stod(line.substr(line.find('=') + 1));
 			}
 			catch (...) {
-				duration = 0.0;
+				info.duration = 0.0;
 			}
 		}
 		else if (line.find("color_range=") != std::string::npos) {
@@ -371,7 +370,7 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 	// 2. Either it has a non-zero duration or it's an animated format
 	// Static images will typically have duration=0 or N/A
 	bool is_animated_format = u::contains(codec_name, "gif") || u::contains(codec_name, "webp");
-	info.has_video_stream = has_video_stream && (duration > 0.1 || is_animated_format);
+	info.has_video_stream = has_video_stream && (info.duration > 0.1 || is_animated_format);
 
 	if (info.sample_rate == -1) {
 		// todo: throw?

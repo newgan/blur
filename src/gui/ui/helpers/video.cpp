@@ -161,6 +161,7 @@ void VideoPlayer::initialize_mpv() {
 	mpv_set_option_string(m_mpv, "hwdec", "yes");
 	mpv_set_option_string(m_mpv, "profile", "fast");
 	mpv_set_option_string(m_mpv, "keep-open", "yes"); // dont close when finished
+	mpv_set_option_string(m_mpv, "pause", "yes");
 	// mpv_set_option_string(m_mpv, "mute", "yes");
 
 	int result = mpv_initialize(m_mpv);

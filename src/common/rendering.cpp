@@ -459,6 +459,8 @@ tl::expected<rendering::RenderResult, std::string> rendering::detail::render_vid
 	const std::shared_ptr<RenderState>& state,
 	const GlobalAppSettings& app_settings,
 	const std::optional<std::filesystem::path>& output_path_override,
+	float start,
+	float end,
 	const std::function<void()>& progress_callback
 ) {
 	if (!blur.initialised)
@@ -491,13 +493,23 @@ tl::expected<rendering::RenderResult, std::string> rendering::detail::render_vid
 	auto vspipe_args = detail::build_base_vspipe_args(input_path, *merged_settings);
 	vspipe_args.insert(
 		vspipe_args.end() - 2,
-		{ // insert before script path and "-"
-	      "-a",
-	      std::format("fps_num={}", video_info.fps_num),
-	      "-a",
-	      std::format("fps_den={}", video_info.fps_den),
-	      "-a",
-	      "color_range=" + (video_info.color_range ? *video_info.color_range : "undefined") }
+		{
+			// insert before script path and "-"
+			"-a",
+			std::format("fps_num={}", video_info.fps_num),
+			"-a",
+			std::format("fps_den={}", video_info.fps_den),
+			"-a",
+			"color_range=" + (video_info.color_range ? *video_info.color_range : "undefined"),
+			"-s",
+			std::to_string(
+				int((double)settings.blur_output_fps * video_info.duration * start)
+			), // TODO MR: make this exact?
+			"-e",
+			std::to_string(
+				int((double)settings.blur_output_fps * video_info.duration * end)
+			), // TODO MR: make this exact?
+		}
 	);
 
 	// build ffmpeg command
@@ -596,6 +608,8 @@ rendering::QueueAddRes rendering::VideoRenderQueue::add(
 	const std::optional<std::filesystem::path>& config_path,
 	const GlobalAppSettings& app_settings,
 	const std::optional<std::filesystem::path>& output_path_override,
+	float start,
+	float end,
 	const std::function<void()>& progress_callback,
 	const std::function<
 		void(const VideoRenderDetails& render, const tl::expected<rendering::RenderResult, std::string>& result)>&
@@ -616,6 +630,8 @@ rendering::QueueAddRes rendering::VideoRenderQueue::add(
 			.settings = config_res.config,
 			.app_settings = app_settings,
 			.output_path_override = output_path_override,
+			.start = start,
+			.end = end,
 			.progress_callback = progress_callback,
 			.finish_callback = finish_callback,
 		}
