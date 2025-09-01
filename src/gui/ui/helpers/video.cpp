@@ -152,12 +152,16 @@ void VideoPlayer::initialize_mpv() {
 		throw std::runtime_error("MPV context creation failed");
 	}
 
-	// configure mpv
-	mpv_set_option_string(m_mpv, "vo", "libmpv");
-	mpv_set_option_string(m_mpv, "hwdec", "auto-safe"); // enable hardware decoding
-	mpv_set_option_string(m_mpv, "profile", "gpu-hq");  // high quality profile
-	mpv_set_option_string(m_mpv, "keep-open", "yes");
-	mpv_set_option_string(m_mpv, "mute", "yes");
+	// required
+	mpv_set_option_string(
+		m_mpv, "vo", "libmpv"
+	); // note: this is slower than gpu, but cant do anything abt it - https://github.com/mpv-player/mpv/issues/6829
+
+	// options
+	mpv_set_option_string(m_mpv, "hwdec", "yes");
+	mpv_set_option_string(m_mpv, "profile", "fast");
+	mpv_set_option_string(m_mpv, "keep-open", "yes"); // dont close when finished
+	// mpv_set_option_string(m_mpv, "mute", "yes");
 
 	int result = mpv_initialize(m_mpv);
 	if (result < 0) {

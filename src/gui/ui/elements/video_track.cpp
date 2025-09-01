@@ -7,7 +7,7 @@ constexpr int GRABS_THICKNESS = 1;
 constexpr int GRABS_LENGTH = 5;
 constexpr gfx::Color GRABS_COLOR(80, 80, 80);
 constexpr gfx::Color GRABS_ACTIVE_COLOR(175, 175, 175);
-constexpr gfx::Size GRAB_CLICK_EXPANSION(20, 5);
+constexpr gfx::Size GRAB_CLICK_EXPANSION(15, 5);
 
 namespace {
 	std::unordered_map<std::string, std::vector<int16_t>> waveforms;
@@ -180,7 +180,9 @@ bool ui::update_video_track(const Container& container, AnimatedElement& element
 			if (keys::is_mouse_down()) {
 				grab.anim.set_goal(1.f);
 
-				float mouse_percent = rect.mouse_percent_x();
+				float mouse_percent =
+					rect.mouse_percent_x(); // TODO: when you initially click it if you arent exactly at the right spot
+				                            // itll shift the grab a little which is annoying
 
 				grab.percent_anim.set_goal(mouse_percent);
 
