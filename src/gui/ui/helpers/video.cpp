@@ -275,21 +275,6 @@ void VideoPlayer::process_mpv_events() {
 				m_video_loaded = false;
 				break;
 			}
-			case MPV_EVENT_PROPERTY_CHANGE: {
-				auto* prop = static_cast<mpv_event_property*>(mp_event->data);
-
-				if (strcmp(prop->name, "estimated-frame-count") == 0) {
-					if (prop->data) {
-						m_frame_data.total_frames = *static_cast<int*>(prop->data);
-					}
-				}
-				else if (strcmp(prop->name, "estimated-frame-number") == 0) {
-					if (prop->data) {
-						m_frame_data.current_frame = *static_cast<int*>(prop->data);
-					}
-				}
-				break;
-			}
 			default:
 				u::log("MPV Event: {}", mpv_event_name(mp_event->event_id));
 				break;
@@ -299,7 +284,7 @@ void VideoPlayer::process_mpv_events() {
 
 std::optional<std::pair<int, int>> VideoPlayer::get_video_dimensions() const {
 	if (!m_mpv || !m_video_loaded) {
-		return std::nullopt;
+		return {};
 	}
 
 	int64_t width = 0;
@@ -312,7 +297,28 @@ std::optional<std::pair<int, int>> VideoPlayer::get_video_dimensions() const {
 		return std::make_pair(static_cast<int>(width), static_cast<int>(height));
 	}
 
-	return std::nullopt;
+	return {};
+}
+
+std::optional<FrameData> VideoPlayer::get_video_frame_data() const {
+	if (!m_mpv || !m_video_loaded) {
+		return {};
+	}
+
+	int64_t current_frame = 0;
+	int64_t total_frames = 0;
+
+	int result1 = mpv_get_property(m_mpv, "estimated-frame-number", MPV_FORMAT_INT64, &current_frame);
+	int result2 = mpv_get_property(m_mpv, "estimated-frame-count", MPV_FORMAT_INT64, &total_frames);
+
+	if (result1 == 0 && result2 == 0 && current_frame > 0 && total_frames > 0) {
+		return FrameData{
+			.current_frame = current_frame,
+			.total_frames = total_frames,
+		};
+	}
+
+	return {};
 }
 
 bool VideoPlayer::is_video_ready() const {

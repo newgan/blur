@@ -89,14 +89,16 @@ void ui::render_video(const Container& container, const AnimatedElement& element
 		IM_COL32(255, 255, 255, alpha) // apply alpha for fade animations
 	);
 
-	auto frame_data = video_data.player->get_frame_data();
+	auto frame_data = video_data.player->get_video_frame_data();
 
-	render::text(
-		{ usable_rect.center().x + 30, usable_rect.y - fonts::dejavu.height() },
-		gfx::Color::white(),
-		std::format("{}/{}", frame_data.current_frame, frame_data.total_frames),
-		fonts::dejavu
-	);
+	if (frame_data) {
+		render::text(
+			{ usable_rect.center().x + 30, usable_rect.y - fonts::dejavu.height() },
+			gfx::Color::white(),
+			std::format("{}/{}", frame_data->current_frame, frame_data->total_frames),
+			fonts::dejavu
+		);
+	}
 }
 
 bool ui::update_video(const Container& container, AnimatedElement& element) {

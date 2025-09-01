@@ -36,23 +36,17 @@ public:
 
 	void load_file(const char* file_path);
 
-	// returns true if render was successful, false if video not ready
 	bool render(int w, int h);
 
 	[[nodiscard]] GLuint get_frame_texture_for_render() const {
 		return m_tex;
 	}
 
-	[[nodiscard]] FrameData get_frame_data() const {
-		return m_frame_data;
-	}
-
 	void handle_mpv_event(const SDL_Event& event, bool& redraw);
 
-	// get actual video dimensions - returns nullopt if video not ready
 	[[nodiscard]] std::optional<std::pair<int, int>> get_video_dimensions() const;
+	[[nodiscard]] std::optional<FrameData> get_video_frame_data() const;
 
-	// check if video is loaded and ready to render
 	[[nodiscard]] bool is_video_ready() const;
 
 private:
@@ -64,13 +58,10 @@ private:
 	GLuint m_fbo;
 	GLuint m_tex;
 
-	// cache current texture dimensions to avoid unnecessary recreations
 	int m_current_width;
 	int m_current_height;
 
-	// track if video is loaded and ready to render
 	bool m_video_loaded;
-	FrameData m_frame_data;
 
 	void initialize_mpv();
 
