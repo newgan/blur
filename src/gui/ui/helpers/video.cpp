@@ -1,6 +1,10 @@
 #include "video.h"
 
 VideoPlayer::~VideoPlayer() {
+	m_thread_exit = true;
+	if (m_mpv_thread.joinable())
+		m_mpv_thread.join();
+
 	// clean up opengl resources
 	if (m_tex) {
 		glDeleteTextures(1, &m_tex);
@@ -24,14 +28,13 @@ VideoPlayer::~VideoPlayer() {
 
 void VideoPlayer::handle_key_press(SDL_Keycode key) {
 	if (key == SDLK_SPACE) {
-		std::array<const char*, 3> cmd = { "cycle", "pause", nullptr };
-		mpv_command_async(m_mpv, 0, cmd.data());
+		run_command_async({ "cycle", "pause" });
 	}
 }
 
-void VideoPlayer::load_file(const char* file_path) {
-	std::array<const char*, 3> cmd = { "loadfile", file_path, nullptr };
-	mpv_command_async(m_mpv, 0, cmd.data());
+void VideoPlayer::load_file(const std::filesystem::path& file_path) {
+	run_command_async({ "loadfile", file_path });
+
 	m_video_loaded = false; // reset video loaded state
 }
 
@@ -154,6 +157,7 @@ void VideoPlayer::initialize_mpv() {
 	mpv_set_option_string(m_mpv, "hwdec", "auto-safe"); // enable hardware decoding
 	mpv_set_option_string(m_mpv, "profile", "gpu-hq");  // high quality profile
 	mpv_set_option_string(m_mpv, "keep-open", "yes");
+	mpv_set_option_string(m_mpv, "mute", "yes");
 
 	int result = mpv_initialize(m_mpv);
 	if (result < 0) {
@@ -214,6 +218,41 @@ void VideoPlayer::initialize_mpv() {
 		},
 		this
 	);
+
+	m_thread_exit = false;
+	m_mpv_thread = std::thread(&VideoPlayer::mpv_thread, this);
+}
+
+void VideoPlayer::mpv_thread() {
+	while (!blur.exiting && !m_thread_exit) {
+		if (!m_mpv || !m_video_loaded) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			continue;
+		}
+
+		{
+			std::unique_lock<std::mutex> lock(m_mutex);
+			if (m_queued_seek) {
+				auto seek = *m_queued_seek;
+				m_queued_seek = {};
+
+				if (!m_last_seek || *m_last_seek != seek) {
+					m_last_seek = seek;
+					lock.unlock();
+
+					std::string flags = "absolute-percent";
+					if (seek.exact)
+						flags += "+exact";
+
+					run_command({ "seek", std::to_string(seek.time * 100), flags });
+
+					// mpv_set_property_async(m_mpv, 0, "percent-pos", MPV_FORMAT_DOUBLE, &seek_to);
+				}
+			}
+		}
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	}
 }
 
 void VideoPlayer::on_mpv_events() {
@@ -292,20 +331,12 @@ std::optional<std::pair<int, int>> VideoPlayer::get_video_dimensions() const {
 	return {};
 }
 
-std::optional<FrameData> VideoPlayer::get_video_frame_data() const {
-	// TODO: get this from observer instead?
+std::optional<float> VideoPlayer::get_percent_pos() const {
+	return get_property<double>("percent-pos", MPV_FORMAT_DOUBLE);
+}
 
-	auto current_frame = get_property<int64_t>("estimated-frame-number", MPV_FORMAT_INT64);
-	auto total_frames = get_property<int64_t>("estimated-frame-count", MPV_FORMAT_INT64);
-
-	if (current_frame && total_frames) {
-		return FrameData{
-			.current_frame = *current_frame,
-			.total_frames = *total_frames,
-		};
-	}
-
-	return {};
+std::optional<float> VideoPlayer::get_duration() const {
+	return get_property<double>("duration", MPV_FORMAT_DOUBLE);
 }
 
 bool VideoPlayer::is_video_ready() const {

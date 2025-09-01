@@ -35,6 +35,7 @@ namespace ui {
 		WEIGHTING_GRAPH,
 		TABS,
 		HINT,
+		VIDEO_TRACK
 	};
 
 	struct BarElementData {
@@ -272,6 +273,15 @@ namespace ui {
 		}
 	};
 
+	struct VideoTrackElementData {
+		VideoElementData video_data;
+		std::vector<int16_t>* waveform;
+
+		bool operator==(const VideoTrackElementData& other) const {
+			return video_data == other.video_data && waveform == other.waveform;
+		}
+	};
+
 	using ElementData = std::variant<
 		BarElementData,
 		TextElementData,
@@ -286,7 +296,8 @@ namespace ui {
 		SeparatorElementData,
 		WeightingGraphElementData,
 		TabsElementData,
-		HintElementData>;
+		HintElementData,
+		VideoTrackElementData>;
 
 	struct AnimationState {
 		float speed;
@@ -434,9 +445,6 @@ namespace ui {
 
 	void render_image(const Container& container, const AnimatedElement& element);
 
-	void render_video_track(
-		const Container& container, const AnimatedElement& element, std::optional<FrameData> video_track
-	);
 	void render_video(const Container& container, const AnimatedElement& element);
 	bool update_video(const Container& container, AnimatedElement& element);
 	void remove_video(AnimatedElement& element);
@@ -471,6 +479,9 @@ namespace ui {
 	bool update_tabs(const Container& container, AnimatedElement& element);
 
 	void render_hint(const Container& container, const AnimatedElement& element);
+
+	void render_video_track(const Container& container, const AnimatedElement& element);
+	bool update_video_track(const Container& container, AnimatedElement& element);
 
 	void reset_container(
 		Container& container,
@@ -654,6 +665,10 @@ namespace ui {
 		const render::Font& font
 	);
 
+	AnimatedElement* add_video_track(
+		const std::string& id, Container& container, int width, const VideoElementData& video_data
+	);
+
 	AnimatedElement* add_separator(const std::string& id, Container& container, SeparatorStyle style);
 
 	void add_spacing(Container& container, int spacing);
@@ -669,6 +684,7 @@ namespace ui {
 	void set_active_element(AnimatedElement& element, const std::string& type = "");
 	AnimatedElement* get_active_element();
 	std::string get_active_element_type();
+	bool is_active_element(const AnimatedElement& element, const std::string& type = "");
 	void reset_active_element();
 
 	bool set_hovered_element(AnimatedElement& element);

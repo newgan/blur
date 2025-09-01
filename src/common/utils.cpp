@@ -380,6 +380,54 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 	return info;
 }
 
+std::vector<int16_t> u::get_video_waveform(const std::filesystem::path& path) {
+	namespace bp = boost::process;
+
+	bp::ipstream pipe_stream;
+	bp::child c(
+		boost::filesystem::path{ blur.ffmpeg_path },
+		"-v",
+		"error",
+		"-i",
+		path.string(),
+		"-f",
+		"s16le",
+		"-acodec",
+		"pcm_s16le",
+		"-ac",
+		"1",
+		"-ar",
+		"44100",
+		"-",
+		bp::std_out > pipe_stream,
+		bp::std_err.null()
+#ifdef _WIN32
+			,
+		bp::windows::create_no_window
+#endif
+	);
+
+	std::vector<int16_t> samples;
+	std::vector<char> buffer(4096);
+
+	while (pipe_stream.read(buffer.data(), buffer.size()) || pipe_stream.gcount() > 0) {
+		auto bytes_read = static_cast<std::size_t>(pipe_stream.gcount());
+
+		// Ensure we read full samples
+		if (bytes_read % 2 != 0)
+			--bytes_read;
+
+		std::vector<int16_t> chunk(bytes_read / 2);
+		std::memcpy(chunk.data(), buffer.data(), bytes_read);
+
+		samples.insert(samples.end(), chunk.begin(), chunk.end());
+	}
+
+	c.wait();
+
+	return samples;
+}
+
 bool u::test_hardware_device(const std::string& device_type) {
 	namespace bp = boost::process;
 

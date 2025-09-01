@@ -421,6 +421,7 @@ namespace u {
 	};
 
 	VideoInfo get_video_info(const std::filesystem::path& path);
+	std::vector<int16_t> get_video_waveform(const std::filesystem::path& path);
 
 	struct EncodingDevice {
 		std::string type;   // "nvidia", "amd", "intel", "mac"

@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "../ui.h"
 #include "../../render/render.h"
 #include "../keys.h"
@@ -17,11 +19,11 @@ namespace {
 
 			if (it == video_players.end()) {
 				auto player = std::make_shared<VideoPlayer>();
-				player->load_file(key.c_str());
+				player->load_file(key);
 				u::log("loaded video from {}", key);
 
 				auto insert_result = video_players.insert({ key, player });
-				it = insert_result.first; // safe because insert always returns valid iterator
+				it = insert_result.first;
 			}
 
 			return it->second;
@@ -61,23 +63,6 @@ void ui::handle_videos_event(const SDL_Event& event, bool& to_render) {
 	}
 }
 
-void ui::render_video_track(
-	const Container& container, const AnimatedElement& element, std::optional<FrameData> frame_data
-) {
-	const auto& video_data = std::get<VideoElementData>(element.element->data);
-	float anim = element.animations.at(hasher("main")).current;
-
-	auto usable_rect = element.element->rect.expand(2);
-
-	render::line({ usable_rect.x, usable_rect.y2() }, { usable_rect.x2(), usable_rect.y2() }, gfx::Color::green());
-
-	if (frame_data) {
-		float perc = static_cast<float>(frame_data->current_frame) / static_cast<float>(frame_data->total_frames);
-		auto progress = perc * usable_rect.w;
-		render::circle_filled({ static_cast<int>(usable_rect.x + progress), usable_rect.y2() }, 99, gfx::Color::red());
-	}
-}
-
 void ui::render_video(const Container& container, const AnimatedElement& element) {
 	const auto& video_data = std::get<VideoElementData>(element.element->data);
 
@@ -94,7 +79,7 @@ void ui::render_video(const Container& container, const AnimatedElement& element
 		return;
 	}
 
-	auto usable_rect = element.element->rect.shrink(2); // account for border
+	auto usable_rect = element.element->rect.shrink(3); // account for border
 
 	// TODO: render::image
 	render::imgui.drawlist->AddImage(
@@ -106,18 +91,9 @@ void ui::render_video(const Container& container, const AnimatedElement& element
 		IM_COL32(255, 255, 255, alpha) // apply alpha for fade animations
 	);
 
-	auto frame_data = video_data.player->get_video_frame_data();
-
-	if (frame_data) {
-		render::text(
-			{ usable_rect.center().x + 30, usable_rect.y - fonts::dejavu.height() },
-			gfx::Color::white(),
-			std::format("{}/{}", frame_data->current_frame, frame_data->total_frames),
-			fonts::dejavu
-		);
-	}
-
-	render_video_track(container, element, frame_data);
+	render::borders(
+		element.element->rect, gfx::Color(155, 155, 155, stroke_alpha), gfx::Color(80, 80, 80, stroke_alpha)
+	);
 }
 
 bool ui::update_video(const Container& container, AnimatedElement& element) {

@@ -258,6 +258,10 @@ std::string ui::get_active_element_type() {
 	return active_element_type;
 }
 
+bool ui::is_active_element(const AnimatedElement& element, const std::string& type) {
+	return active_element == &element && active_element_type == type;
+}
+
 void ui::reset_active_element() {
 	active_element = nullptr;
 	active_element_type = "";

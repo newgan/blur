@@ -220,12 +220,20 @@ void main::home_screen(ui::Container& container, float delta_time) {
 			"blur title text", container, title_pos, "blur", gfx::Color::white(), fonts::header_font, FONT_CENTERED_X
 		);
 
-		ui::add_video(
+		auto video = ui::add_video(
 			"test video",
 			container,
 			tasks::video_player_path,
 			gfx::Size(container.get_usable_rect().w, container.get_usable_rect().h / 2)
 		);
+
+		if (video) {
+			auto video_rect = (*video)->element->rect;
+
+			const auto& video_data = std::get<ui::VideoElementData>((*video)->element->data);
+
+			ui::add_video_track("test video track", container, video_rect.w, video_data);
+		}
 
 		if (!initialisation_res) {
 			ui::add_text(

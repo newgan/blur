@@ -6,6 +6,8 @@
 #include <misc/freetype/imgui_freetype.h>
 #include <imgui_internal.h>
 
+#include <algorithm>
+
 #include "../fonts/dejavu_sans.h"
 #include "../fonts/eb_garamond.h"
 #include "../fonts/icons.h"
@@ -660,6 +662,84 @@ void render::borders(const gfx::Rect& rect, const gfx::Color& border_color, cons
 void render::loader(const gfx::Rect& rect, const gfx::Color& color) {
 	// TODO: make this nicer? use in other places too?
 	text(rect.center(), color, "loading...", fonts::dejavu, FONT_CENTERED_X | FONT_CENTERED_Y);
+}
+
+void render::waveform(
+	const gfx::Rect& rect,
+	const gfx::Rect& active_rect,
+	const gfx::Color& color,
+	const std::vector<int16_t>& samples,
+	bool filled
+) {
+	if (samples.empty())
+		return;
+
+	const size_t width = rect.w;
+	const size_t height = rect.h;
+
+	// Find max amplitude to normalize waveform
+	int16_t max_sample = 1;
+	for (auto s : samples) {
+		max_sample = std::max<int>(std::abs(s), max_sample);
+	}
+
+	for (size_t x = 0; x < width; ++x) {
+		// Map pixel x to corresponding sample index
+		float sample_pos = static_cast<float>(x) / width * samples.size();
+		auto idx_start = static_cast<size_t>(sample_pos);
+		size_t idx_end =
+			std::min(static_cast<size_t>(sample_pos + (samples.size() / static_cast<float>(width))), samples.size());
+
+		// Take max amplitude in this range
+		int16_t max_amp = 0;
+		for (size_t i = idx_start; i < idx_end; ++i) {
+			max_amp = std::max(max_amp, static_cast<int16_t>(std::abs(samples[i])));
+		}
+
+		// Normalize to [0,1]
+		float norm = static_cast<float>(max_amp) / max_sample;
+		int y_center = rect.y + (height / 2);
+		int y_half = static_cast<int>(norm * (height / 2.f));
+
+		auto x_color = color;
+		if (!active_rect.contains(gfx::Point(rect.x + x, y_center)))
+			x_color = color.adjust_alpha(0.5f);
+
+		if (filled) {
+			gfx::Rect r{ static_cast<int>(rect.x + x), y_center - y_half, 1, y_half * 2 };
+			rect_filled(r, x_color);
+		}
+		else {
+			gfx::Point p1{ static_cast<int>(rect.x + x), y_center - y_half };
+			gfx::Point p2{ static_cast<int>(rect.x + x), y_center + y_half };
+			line(p1, p2, x_color, true);
+		}
+	}
+}
+
+void render::rect_side(const gfx::Rect& rect, const gfx::Color& color, RectSide side, int thickness) {
+	switch (side) {
+		case RectSide::LEFT: {
+			// Top horizontal
+			rect_filled(gfx::Rect{ rect.x, rect.y - thickness, rect.w, thickness }, color);
+			// Vertical
+			rect_filled(
+				gfx::Rect{ rect.x - thickness, rect.y - thickness, thickness, rect.h + (thickness * 2) }, color
+			);
+			// Bottom horizontal
+			rect_filled(gfx::Rect{ rect.x, rect.y + rect.h, rect.w, thickness }, color);
+			break;
+		}
+		case RectSide::RIGHT: {
+			// Top horizontal
+			rect_filled(gfx::Rect{ rect.x, rect.y - thickness, rect.w, thickness }, color);
+			// Vertical
+			rect_filled(gfx::Rect{ rect.x + rect.w, rect.y - thickness, thickness, rect.h + (thickness * 2) }, color);
+			// Bottom horizontal
+			rect_filled(gfx::Rect{ rect.x, rect.y + rect.h, rect.w, thickness }, color);
+			break;
+		}
+	}
 }
 
 void render::push_clip_rect(const gfx::Rect& rect, bool intersect_clip_rect) {

@@ -241,6 +241,21 @@ namespace render {
 
 	void loader(const gfx::Rect& rect, const gfx::Color& color);
 
+	void waveform(
+		const gfx::Rect& rect,
+		const gfx::Rect& active_rect,
+		const gfx::Color& color,
+		const std::vector<int16_t>& samples,
+		bool filled = true
+	);
+
+	enum class RectSide {
+		LEFT,
+		RIGHT
+	};
+
+	void rect_side(const gfx::Rect& rect, const gfx::Color& color, RectSide side, int thickness = 1);
+
 	void push_clip_rect(const gfx::Rect& rect, bool intersect_clip_rect = false);
 	void push_clip_rect(int x1, int y1, int x2, int y2, bool intersect_clip_rect = false);
 	void push_fullscreen_clip_rect();
