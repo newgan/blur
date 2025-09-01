@@ -288,17 +288,8 @@ std::optional<std::pair<int, int>> VideoPlayer::get_video_dimensions() const {
 	int64_t width = 0;
 	int64_t height = 0;
 
-	// try to get display width/height first (accounts for aspect ratio)
 	int result1 = mpv_get_property(m_mpv, "dwidth", MPV_FORMAT_INT64, &width);
 	int result2 = mpv_get_property(m_mpv, "dheight", MPV_FORMAT_INT64, &height);
-
-	if (result1 == 0 && result2 == 0 && width > 0 && height > 0) {
-		return std::make_pair(static_cast<int>(width), static_cast<int>(height));
-	}
-
-	// fallback to video width/height
-	result1 = mpv_get_property(m_mpv, "video-params/w", MPV_FORMAT_INT64, &width);
-	result2 = mpv_get_property(m_mpv, "video-params/h", MPV_FORMAT_INT64, &height);
 
 	if (result1 == 0 && result2 == 0 && width > 0 && height > 0) {
 		return std::make_pair(static_cast<int>(width), static_cast<int>(height));
