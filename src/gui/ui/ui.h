@@ -134,9 +134,10 @@ namespace ui {
 	struct VideoElementData {
 		std::filesystem::path video_path;
 		std::shared_ptr<VideoPlayer> player;
+		bool loading;
 
 		bool operator==(const VideoElementData& other) const {
-			return video_path == other.video_path;
+			return video_path == other.video_path && loading == other.loading;
 		}
 	};
 

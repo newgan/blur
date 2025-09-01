@@ -3,6 +3,9 @@
 #include "../keys.h"
 #include "../helpers/video.h"
 
+constexpr gfx::Size LOADER_SIZE(20, 20);
+constexpr gfx::Size LOADER_PAD(5, 5);
+
 namespace {
 	std::unordered_map<std::string, std::shared_ptr<VideoPlayer>> video_players;
 
@@ -61,15 +64,18 @@ void ui::handle_videos_event(const SDL_Event& event, bool& to_render) {
 void ui::render_video(const Container& container, const AnimatedElement& element) {
 	const auto& video_data = std::get<VideoElementData>(element.element->data);
 
-	if (!video_data.player->is_video_ready()) {
-		// TODO: loading indicator? if so, remove the code in add_video
-		return;
-	}
-
 	float anim = element.animations.at(hasher("main")).current;
 
 	int alpha = anim * 255;
 	int stroke_alpha = anim * 125;
+
+	if (video_data.loading) {
+		int loader_alpha = anim * 155;
+
+		gfx::Rect loader_rect = element.element->rect.shrink(LOADER_PAD, true);
+		render::loader(loader_rect, gfx::Color::white(loader_alpha));
+		return;
+	}
 
 	auto usable_rect = element.element->rect.shrink(2); // account for border
 
@@ -143,50 +149,51 @@ std::optional<ui::AnimatedElement*> ui::add_video(
 
 	auto player = *player_res;
 
-	if (!player->is_video_ready())
-		return {}; // TODO: loading indicator? remove this.
+	gfx::Size elem_size = LOADER_SIZE;
+	bool loading = !player->is_video_ready();
 
-	gfx::Rect video_rect;
+	if (!loading) {
+		auto dimensions = player->get_video_dimensions();
 
-	auto dimensions = player->get_video_dimensions();
+		if (dimensions) {
+			// we have valid dimensions, calculate proper aspect ratio
+			auto [video_width, video_height] = *dimensions;
+			float aspect_ratio = static_cast<float>(video_width) / static_cast<float>(video_height);
 
-	if (dimensions) {
-		// we have valid dimensions, calculate proper aspect ratio
-		auto [video_width, video_height] = *dimensions;
-		float aspect_ratio = static_cast<float>(video_width) / static_cast<float>(video_height);
+			elem_size = max_size;
 
-		video_rect = gfx::Rect(container.current_position, max_size);
+			// maintain aspect ratio while fitting within max_size
+			float target_width = elem_size.h * aspect_ratio;
+			float target_height = elem_size.w / aspect_ratio;
 
-		// maintain aspect ratio while fitting within max_size
-		float target_width = video_rect.h * aspect_ratio;
-		float target_height = video_rect.w / aspect_ratio;
+			if (target_width <= max_size.w) {
+				elem_size.w = static_cast<int>(target_width);
+			}
+			else {
+				elem_size.h = static_cast<int>(target_height);
+			}
 
-		if (target_width <= max_size.w) {
-			video_rect.w = static_cast<int>(target_width);
-		}
-		else {
-			video_rect.h = static_cast<int>(target_height);
-		}
+			// ensure we don't exceed max dimensions
+			if (elem_size.h > max_size.h) {
+				elem_size.h = max_size.h;
+				elem_size.w = static_cast<int>(max_size.h * aspect_ratio);
+			}
 
-		// ensure we don't exceed max dimensions
-		if (video_rect.h > max_size.h) {
-			video_rect.h = max_size.h;
-			video_rect.w = static_cast<int>(max_size.h * aspect_ratio);
-		}
-
-		if (video_rect.w > max_size.w) {
-			video_rect.w = max_size.w;
-			video_rect.h = static_cast<int>(max_size.w / aspect_ratio);
+			if (elem_size.w > max_size.w) {
+				elem_size.w = max_size.w;
+				elem_size.h = static_cast<int>(max_size.w / aspect_ratio);
+			}
 		}
 	}
 
 	Element element(
 		id,
 		ElementType::VIDEO,
-		video_rect,
+		gfx::Rect(container.current_position, elem_size),
 		VideoElementData{
 			.video_path = video_path,
 			.player = std::move(player),
+			.loading = loading,
 		},
 		render_video,
 		update_video,

@@ -657,6 +657,11 @@ void render::borders(const gfx::Rect& rect, const gfx::Color& border_color, cons
 	rect_stroke(rect, border_color, 1.f);
 }
 
+void render::loader(const gfx::Rect& rect, const gfx::Color& color) {
+	// TODO: make this nicer? use in other places too?
+	text(rect.center(), color, "loading...", fonts::dejavu, FONT_CENTERED_X | FONT_CENTERED_Y);
+}
+
 void render::push_clip_rect(const gfx::Rect& rect, bool intersect_clip_rect) {
 	imgui.drawlist->PushClipRect(rect.origin(), rect.max(), intersect_clip_rect);
 }

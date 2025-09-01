@@ -239,6 +239,8 @@ namespace render {
 
 	void borders(const gfx::Rect& rect, const gfx::Color& border_color, const gfx::Color& inner_border_color);
 
+	void loader(const gfx::Rect& rect, const gfx::Color& color);
+
 	void push_clip_rect(const gfx::Rect& rect, bool intersect_clip_rect = false);
 	void push_clip_rect(int x1, int y1, int x2, int y2, bool intersect_clip_rect = false);
 	void push_fullscreen_clip_rect();
