@@ -4,25 +4,28 @@
 #include "../helpers/video.h"
 
 namespace {
-	std::unordered_map<std::string, std::unique_ptr<VideoPlayer>> video_players;
+	std::unordered_map<std::string, std::shared_ptr<VideoPlayer>> video_players;
 
-	VideoPlayer* get_or_add_player(const std::filesystem::path& video_path) {
+	tl::expected<std::shared_ptr<VideoPlayer>, std::string> get_or_add_player(const std::filesystem::path& video_path) {
 		auto key = video_path.string();
 
 		try {
-			auto [it, inserted] = video_players.try_emplace(key, std::make_unique<VideoPlayer>());
-			auto* player = it->second.get();
+			auto it = video_players.find(key);
 
-			if (inserted) {
+			if (it == video_players.end()) {
+				auto player = std::make_shared<VideoPlayer>();
 				player->load_file(key.c_str());
 				u::log("loaded video from {}", key);
+
+				auto insert_result = video_players.insert({ key, player });
+				it = insert_result.first; // safe because insert always returns valid iterator
 			}
 
-			return player;
+			return it->second;
 		}
 		catch (const std::exception& e) {
 			u::log_error("failed to load video from {} ({})", key, e.what());
-			return nullptr;
+			return tl::unexpected("failed to load video");
 		}
 	}
 }
@@ -126,13 +129,16 @@ void ui::remove_video(AnimatedElement& element) {
 std::optional<ui::AnimatedElement*> ui::add_video(
 	const std::string& id, Container& container, const std::filesystem::path& video_path, const gfx::Size& max_size
 ) {
-	if (video_path.empty()) {
+	if (video_path.empty())
 		return {};
-	}
 
-	VideoPlayer* player = get_or_add_player(video_path);
+	auto player_res = get_or_add_player(video_path);
+	if (!player_res)
+		return {};
 
-	if (!player || !player->is_video_ready())
+	auto player = *player_res;
+
+	if (!player->is_video_ready())
 		return {}; // TODO: loading indicator? remove this.
 
 	gfx::Rect video_rect;
@@ -175,7 +181,7 @@ std::optional<ui::AnimatedElement*> ui::add_video(
 		video_rect,
 		VideoElementData{
 			.video_path = video_path,
-			.player = player,
+			.player = std::move(player),
 		},
 		render_video,
 		update_video,

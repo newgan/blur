@@ -133,7 +133,7 @@ namespace ui {
 
 	struct VideoElementData {
 		std::filesystem::path video_path;
-		VideoPlayer* player;
+		std::shared_ptr<VideoPlayer> player;
 
 		bool operator==(const VideoElementData& other) const {
 			return video_path == other.video_path;
