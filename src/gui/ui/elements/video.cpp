@@ -83,8 +83,13 @@ void ui::render_video(const Container& container, const AnimatedElement& element
 		IM_COL32(255, 255, 255, alpha) // apply alpha for fade animations
 	);
 
-	render::borders(
-		element.element->rect, gfx::Color(155, 155, 155, stroke_alpha), gfx::Color(80, 80, 80, stroke_alpha)
+	auto frame_data = video_data.player->get_frame_data();
+
+	render::text(
+		{ usable_rect.center().x + 30, usable_rect.y - fonts::dejavu.height() },
+		gfx::Color::white(),
+		std::format("{}/{}", frame_data.current_frame, frame_data.total_frames),
+		fonts::dejavu
 	);
 }
 

@@ -5,6 +5,11 @@
 #include <utility>
 #include <optional>
 
+struct FrameData {
+	int64_t current_frame = 0;
+	int64_t total_frames = 0;
+};
+
 class VideoPlayer {
 public:
 	VideoPlayer()
@@ -38,6 +43,10 @@ public:
 		return m_tex;
 	}
 
+	[[nodiscard]] FrameData get_frame_data() const {
+		return m_frame_data;
+	}
+
 	void handle_mpv_event(const SDL_Event& event, bool& redraw);
 
 	// get actual video dimensions - returns nullopt if video not ready
@@ -61,6 +70,7 @@ private:
 
 	// track if video is loaded and ready to render
 	bool m_video_loaded;
+	FrameData m_frame_data;
 
 	void initialize_mpv();
 

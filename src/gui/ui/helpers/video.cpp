@@ -214,6 +214,8 @@ void VideoPlayer::initialize_mpv() {
 		},
 		this
 	);
+	mpv_observe_property(m_mpv, 0, "estimated-frame-count", MPV_FORMAT_INT64);
+	mpv_observe_property(m_mpv, 0, "estimated-frame-number", MPV_FORMAT_INT64);
 }
 
 void VideoPlayer::on_mpv_events() {
@@ -271,6 +273,21 @@ void VideoPlayer::process_mpv_events() {
 					u::log("MPV: File ended normally");
 				}
 				m_video_loaded = false;
+				break;
+			}
+			case MPV_EVENT_PROPERTY_CHANGE: {
+				auto* prop = static_cast<mpv_event_property*>(mp_event->data);
+
+				if (strcmp(prop->name, "estimated-frame-count") == 0) {
+					if (prop->data) {
+						m_frame_data.total_frames = *static_cast<int*>(prop->data);
+					}
+				}
+				else if (strcmp(prop->name, "estimated-frame-number") == 0) {
+					if (prop->data) {
+						m_frame_data.current_frame = *static_cast<int*>(prop->data);
+					}
+				}
 				break;
 			}
 			default:
