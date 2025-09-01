@@ -89,9 +89,10 @@ void VideoPlayer::initialize_mpv() {
 
 	// configure mpv
 	mpv_set_option_string(m_mpv, "vo", "libmpv");
+	mpv_set_option_string(m_mpv, "hwdec", "auto-safe"); // enable hardware decoding
+	mpv_set_option_string(m_mpv, "profile", "gpu-hq");  // high quality profile
+	mpv_set_option_string(m_mpv, "keep-open", "yes");
 
-	if (mpv_initialize(m_mpv) < 0) {
-		throw std::runtime_error("MPV initialization failed");
 	}
 
 	mpv_request_log_messages(m_mpv, "debug");
