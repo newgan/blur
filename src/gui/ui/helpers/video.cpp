@@ -285,6 +285,8 @@ std::optional<std::pair<int, int>> VideoPlayer::get_video_dimensions() const {
 		return {};
 	}
 
+	// TODO: get this from observer instead?
+
 	int64_t width = 0;
 	int64_t height = 0;
 
@@ -302,6 +304,8 @@ std::optional<FrameData> VideoPlayer::get_video_frame_data() const {
 	if (!m_mpv || !m_video_loaded) {
 		return {};
 	}
+
+	// TODO: get this from observer instead?
 
 	int64_t current_frame = 0;
 	int64_t total_frames = 0;
