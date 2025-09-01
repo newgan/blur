@@ -1,6 +1,16 @@
 #include "video.h"
 
 VideoPlayer::~VideoPlayer() {
+	// clean up opengl resources
+	if (m_tex) {
+		glDeleteTextures(1, &m_tex);
+		m_tex = 0;
+	}
+	if (m_fbo) {
+		glDeleteFramebuffers(1, &m_fbo);
+		m_fbo = 0;
+	}
+
 	if (m_mpv_gl) {
 		mpv_render_context_free(m_mpv_gl);
 	}
@@ -14,43 +24,85 @@ VideoPlayer::~VideoPlayer() {
 
 void VideoPlayer::handle_key_press(SDL_Keycode key) {
 	if (key == SDLK_SPACE) {
-		static std::array<const char*, 3> cmd = { "cycle", "pause", nullptr };
+		std::array<const char*, 3> cmd = { "cycle", "pause", nullptr };
 		mpv_command_async(m_mpv, 0, cmd.data());
 	}
 }
 
 void VideoPlayer::load_file(const char* file_path) {
-	static std::array<const char*, 3> cmd = { "loadfile", file_path, nullptr };
+	std::array<const char*, 3> cmd = { "loadfile", file_path, nullptr };
 	mpv_command_async(m_mpv, 0, cmd.data());
+	m_video_loaded = false; // reset video loaded state
 }
 
 void VideoPlayer::gen_fbo_texture() {
 	glGenFramebuffers(1, &m_fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
-
 	glGenTextures(1, &m_tex);
-	glBindTexture(GL_TEXTURE_2D, m_tex);
 
+	glBindTexture(GL_TEXTURE_2D, m_tex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// initialize with a default size
+	m_current_width = 0;
+	m_current_height = 0;
 }
 
-void VideoPlayer::setup_fbo_texture(int w, int h) const {
-	glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
-	glBindTexture(GL_TEXTURE_2D, m_tex);
+void VideoPlayer::setup_fbo_texture(int w, int h) {
+	// only recreate texture if dimensions changed
+	if (w != m_current_width || h != m_current_height) {
+		glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+		glBindTexture(GL_TEXTURE_2D, m_tex);
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex, 0);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glBindTexture(GL_TEXTURE_2D, 0);
+		// check framebuffer completeness
+		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		if (status != GL_FRAMEBUFFER_COMPLETE) {
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glBindTexture(GL_TEXTURE_2D, 0);
+			throw std::runtime_error("Framebuffer not complete");
+		}
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		m_current_width = w;
+		m_current_height = h;
+
+		if (glGetError() != GL_NO_ERROR) {
+			throw std::runtime_error("OpenGL error during FBO setup");
+		}
+	}
 }
 
-void VideoPlayer::render(int w, int h) {
+bool VideoPlayer::render(int w, int h) {
+	// don't render if we don't have valid dimensions
+	if (w <= 0 || h <= 0) {
+		return false;
+	}
+
+	// don't render until video is actually loaded and ready
+	if (!m_video_loaded) {
+		return false;
+	}
+
 	setup_fbo_texture(w, h);
+
+	// save current opengl state
+	GLint prev_fbo = 0;
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+
+	// clear the framebuffer
+	glViewport(0, 0, w, h);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	mpv_opengl_fbo fbo{
 		.fbo = (int)m_fbo,
@@ -65,7 +117,17 @@ void VideoPlayer::render(int w, int h) {
 		                                  { .type = MPV_RENDER_PARAM_FLIP_Y, .data = &flip_y },
 		                                  { .type = MPV_RENDER_PARAM_INVALID } };
 
-	mpv_render_context_render(m_mpv_gl, params.data());
+	int result = mpv_render_context_render(m_mpv_gl, params.data());
+	if (result < 0) {
+		u::log_error("MPV render failed: {}", mpv_error_string(result));
+		// restore previous framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, prev_fbo);
+		return false;
+	}
+
+	// restore previous framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, prev_fbo);
+	return true;
 }
 
 void VideoPlayer::handle_mpv_event(const SDL_Event& event, bool& redraw) {
@@ -93,9 +155,14 @@ void VideoPlayer::initialize_mpv() {
 	mpv_set_option_string(m_mpv, "profile", "gpu-hq");  // high quality profile
 	mpv_set_option_string(m_mpv, "keep-open", "yes");
 
+	int result = mpv_initialize(m_mpv);
+	if (result < 0) {
+		mpv_destroy(m_mpv);
+		m_mpv = nullptr;
+		throw std::runtime_error("MPV initialization failed: " + std::string(mpv_error_string(result)));
 	}
 
-	mpv_request_log_messages(m_mpv, "debug");
+	mpv_request_log_messages(m_mpv, "warn");
 
 	// set up callbacks
 	mpv_set_wakeup_callback(
@@ -131,8 +198,11 @@ void VideoPlayer::initialize_mpv() {
 		                                  { .type = MPV_RENDER_PARAM_INVALID } };
 
 	// create mpv render context
-	if (mpv_render_context_create(&m_mpv_gl, m_mpv, params.data()) < 0) {
-		throw std::runtime_error("Failed to initialize MPV GL context");
+	result = mpv_render_context_create(&m_mpv_gl, m_mpv, params.data());
+	if (result < 0) {
+		mpv_destroy(m_mpv);
+		m_mpv = nullptr;
+		throw std::runtime_error("Failed to initialize MPV GL context: " + std::string(mpv_error_string(result)));
 	}
 
 	// set up render update callback
@@ -148,12 +218,16 @@ void VideoPlayer::initialize_mpv() {
 
 void VideoPlayer::on_mpv_events() {
 	SDL_Event event = { .type = m_wakeup_on_mpv_events };
-	SDL_PushEvent(&event);
+	if (!SDL_PushEvent(&event)) {
+		u::log_error("Failed to push MPV event: {}", SDL_GetError());
+	}
 }
 
 void VideoPlayer::on_mpv_render_update() {
 	SDL_Event event = { .type = m_wakeup_on_mpv_render_update };
-	SDL_PushEvent(&event);
+	if (!SDL_PushEvent(&event)) {
+		u::log_error("Failed to push MPV render update event: {}", SDL_GetError());
+	}
 }
 
 void VideoPlayer::process_mpv_events() {
@@ -165,15 +239,74 @@ void VideoPlayer::process_mpv_events() {
 			break;
 		}
 
-		if (mp_event->event_id == MPV_EVENT_LOG_MESSAGE) {
-			auto* msg = static_cast<mpv_event_log_message*>(mp_event->data);
-			// print specific debug log messages
-			if (std::strstr(msg->text, "DR image")) {
-				u::log("Log: {}", msg->text);
+		switch (mp_event->event_id) {
+			case MPV_EVENT_LOG_MESSAGE: {
+				auto* msg = static_cast<mpv_event_log_message*>(mp_event->data);
+				if (std::strstr(msg->text, "DR image")) {
+					u::log("MPV Log: {}", msg->text);
+				}
+				break;
 			}
-			continue;
+			case MPV_EVENT_START_FILE:
+				u::log("MPV: Starting file");
+				m_video_loaded = false;
+				break;
+			case MPV_EVENT_FILE_LOADED:
+				u::log("MPV: File loaded");
+				break;
+			case MPV_EVENT_VIDEO_RECONFIG:
+				u::log("MPV: Video reconfigured");
+				// video is now ready to render
+				m_video_loaded = true;
+				break;
+			case MPV_EVENT_PLAYBACK_RESTART:
+				u::log("MPV: Playback restarted");
+				break;
+			case MPV_EVENT_END_FILE: {
+				auto* end_event = static_cast<mpv_event_end_file*>(mp_event->data);
+				if (end_event->reason == MPV_END_FILE_REASON_ERROR) {
+					u::log_error("MPV: File ended with error: {}", mpv_error_string(end_event->error));
+				}
+				else {
+					u::log("MPV: File ended normally");
+				}
+				m_video_loaded = false;
+				break;
+			}
+			default:
+				u::log("MPV Event: {}", mpv_event_name(mp_event->event_id));
+				break;
 		}
-
-		u::log("Event: ", mpv_event_name(mp_event->event_id));
 	}
+}
+
+std::optional<std::pair<int, int>> VideoPlayer::get_video_dimensions() const {
+	if (!m_mpv || !m_video_loaded) {
+		return std::nullopt;
+	}
+
+	int64_t width = 0;
+	int64_t height = 0;
+
+	// try to get display width/height first (accounts for aspect ratio)
+	int result1 = mpv_get_property(m_mpv, "dwidth", MPV_FORMAT_INT64, &width);
+	int result2 = mpv_get_property(m_mpv, "dheight", MPV_FORMAT_INT64, &height);
+
+	if (result1 == 0 && result2 == 0 && width > 0 && height > 0) {
+		return std::make_pair(static_cast<int>(width), static_cast<int>(height));
+	}
+
+	// fallback to video width/height
+	result1 = mpv_get_property(m_mpv, "video-params/w", MPV_FORMAT_INT64, &width);
+	result2 = mpv_get_property(m_mpv, "video-params/h", MPV_FORMAT_INT64, &height);
+
+	if (result1 == 0 && result2 == 0 && width > 0 && height > 0) {
+		return std::make_pair(static_cast<int>(width), static_cast<int>(height));
+	}
+
+	return std::nullopt;
+}
+
+bool VideoPlayer::is_video_ready() const {
+	return m_video_loaded;
 }

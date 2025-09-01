@@ -5,12 +5,36 @@
 
 namespace {
 	std::unordered_map<std::string, std::unique_ptr<VideoPlayer>> video_players;
+
+	VideoPlayer* get_or_add_player(const std::filesystem::path& video_path) {
+		auto key = video_path.string();
+
+		try {
+			auto [it, inserted] = video_players.try_emplace(key, std::make_unique<VideoPlayer>());
+			auto* player = it->second.get();
+
+			if (inserted) {
+				player->load_file(key.c_str());
+				u::log("loaded video from {}", key);
+			}
+
+			return player;
+		}
+		catch (const std::exception& e) {
+			u::log_error("failed to load video from {} ({})", key, e.what());
+			return nullptr;
+		}
+	}
 }
 
 void ui::render_videos() {
 	for (auto& [id, player] : video_players) {
-		if (player) {
-			player->render(1000, 1000);
+		if (player && player->is_video_ready()) {
+			auto dimensions = player->get_video_dimensions();
+			if (dimensions) {
+				auto [width, height] = *dimensions;
+				player->render(width, height);
+			}
 		}
 	}
 }
@@ -33,17 +57,27 @@ void ui::handle_videos_event(const SDL_Event& event, bool& to_render) {
 
 void ui::render_video(const Container& container, const AnimatedElement& element) {
 	const auto& video_data = std::get<VideoElementData>(element.element->data);
+
+	if (!video_data.player->is_video_ready()) {
+		// TODO: loading indicator? if so, remove the code in add_video
+		return;
+	}
+
 	float anim = element.animations.at(hasher("main")).current;
 
 	int alpha = anim * 255;
 	int stroke_alpha = anim * 125;
 
+	auto usable_rect = element.element->rect.shrink(2); // account for border
+
+	// TODO: render::image
 	render::imgui.drawlist->AddImage(
 		video_data.player->get_frame_texture_for_render(),
-		element.element->rect.origin(),
-		element.element->rect.max(),
+		usable_rect.origin(),
+		usable_rect.max(),
 		ImVec2(0, 0),
-		ImVec2(1, 1)
+		ImVec2(1, 1),
+		IM_COL32(255, 255, 255, alpha) // apply alpha for fade animations
 	);
 
 	render::borders(
@@ -95,46 +129,44 @@ std::optional<ui::AnimatedElement*> ui::add_video(
 	if (video_path.empty()) {
 		return {};
 	}
-	VideoPlayer* player = nullptr;
 
-	auto video_player_it = video_players.find(video_path.string());
+	VideoPlayer* player = get_or_add_player(video_path);
 
-	if (video_player_it == video_players.end()) {
-		try {
-			auto player_ref = video_players.emplace(video_path.string(), std::make_unique<VideoPlayer>());
-			player = player_ref.first->second.get();
-			player->load_file(video_path.string().c_str());
-			u::log("{} loaded video from {}", id, video_path.string());
+	if (!player || !player->is_video_ready())
+		return {}; // TODO: loading indicator? remove this.
+
+	gfx::Rect video_rect;
+
+	auto dimensions = player->get_video_dimensions();
+
+	if (dimensions) {
+		// we have valid dimensions, calculate proper aspect ratio
+		auto [video_width, video_height] = *dimensions;
+		float aspect_ratio = static_cast<float>(video_width) / static_cast<float>(video_height);
+
+		video_rect = gfx::Rect(container.current_position, max_size);
+
+		// maintain aspect ratio while fitting within max_size
+		float target_width = video_rect.h * aspect_ratio;
+		float target_height = video_rect.w / aspect_ratio;
+
+		if (target_width <= max_size.w) {
+			video_rect.w = static_cast<int>(target_width);
 		}
-		catch (const std::exception& e) {
-			u::log_error("{} failed to load video from {} ({})", id, video_path.string(), e.what());
-			return {};
+		else {
+			video_rect.h = static_cast<int>(target_height);
 		}
-	}
 
-	float aspect_ratio = 16.0f / 9.0f; // todo: proper aspect ratio
+		// ensure we don't exceed max dimensions
+		if (video_rect.h > max_size.h) {
+			video_rect.h = max_size.h;
+			video_rect.w = static_cast<int>(max_size.h * aspect_ratio);
+		}
 
-	gfx::Rect video_rect(container.current_position, max_size);
-
-	// maintain aspect ratio
-	float target_width = video_rect.h * aspect_ratio;
-	float target_height = video_rect.w / aspect_ratio;
-
-	if (target_width <= video_rect.w) {
-		video_rect.w = static_cast<int>(target_width);
-	}
-	else {
-		video_rect.h = static_cast<int>(target_height);
-	}
-
-	if (video_rect.h > max_size.h) {
-		video_rect.h = max_size.h;
-		video_rect.w = static_cast<int>(max_size.h * aspect_ratio);
-	}
-
-	if (video_rect.w > max_size.w) {
-		video_rect.w = max_size.w;
-		video_rect.h = static_cast<int>(max_size.w / aspect_ratio);
+		if (video_rect.w > max_size.w) {
+			video_rect.w = max_size.w;
+			video_rect.h = static_cast<int>(max_size.w / aspect_ratio);
+		}
 	}
 
 	Element element(
