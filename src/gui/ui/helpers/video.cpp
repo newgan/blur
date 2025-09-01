@@ -281,42 +281,27 @@ void VideoPlayer::process_mpv_events() {
 }
 
 std::optional<std::pair<int, int>> VideoPlayer::get_video_dimensions() const {
-	if (!m_mpv || !m_video_loaded) {
-		return {};
-	}
-
 	// TODO: get this from observer instead?
 
-	int64_t width = 0;
-	int64_t height = 0;
+	auto width = get_property<int64_t>("dwidth", MPV_FORMAT_INT64);
+	auto height = get_property<int64_t>("dheight", MPV_FORMAT_INT64);
 
-	int result1 = mpv_get_property(m_mpv, "dwidth", MPV_FORMAT_INT64, &width);
-	int result2 = mpv_get_property(m_mpv, "dheight", MPV_FORMAT_INT64, &height);
-
-	if (result1 == 0 && result2 == 0 && width > 0 && height > 0) {
-		return std::make_pair(static_cast<int>(width), static_cast<int>(height));
-	}
+	if (width && height)
+		return std::make_pair(static_cast<int>(*width), static_cast<int>(*height));
 
 	return {};
 }
 
 std::optional<FrameData> VideoPlayer::get_video_frame_data() const {
-	if (!m_mpv || !m_video_loaded) {
-		return {};
-	}
-
 	// TODO: get this from observer instead?
 
-	int64_t current_frame = 0;
-	int64_t total_frames = 0;
+	auto current_frame = get_property<int64_t>("estimated-frame-number", MPV_FORMAT_INT64);
+	auto total_frames = get_property<int64_t>("estimated-frame-count", MPV_FORMAT_INT64);
 
-	int result1 = mpv_get_property(m_mpv, "estimated-frame-number", MPV_FORMAT_INT64, &current_frame);
-	int result2 = mpv_get_property(m_mpv, "estimated-frame-count", MPV_FORMAT_INT64, &total_frames);
-
-	if (result1 == 0 && result2 == 0 && current_frame > 0 && total_frames > 0) {
+	if (current_frame && total_frames) {
 		return FrameData{
-			.current_frame = current_frame,
-			.total_frames = total_frames,
+			.current_frame = *current_frame,
+			.total_frames = *total_frames,
 		};
 	}
 

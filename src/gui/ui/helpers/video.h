@@ -74,4 +74,18 @@ private:
 	void gen_fbo_texture();
 
 	void setup_fbo_texture(int w, int h);
+
+	template<typename VariableType>
+	std::optional<VariableType> get_property(const std::string& key, mpv_format variable_format) const {
+		if (!m_mpv || !m_video_loaded)
+			return {};
+
+		VariableType data = 0;
+		int res = mpv_get_property(m_mpv, key.c_str(), variable_format, &data);
+
+		if (res != 0)
+			return {};
+
+		return data;
+	}
 };
