@@ -170,6 +170,7 @@ void render::ImGuiWrap::end(SDL_Window* window) { // NOLINT(readability-convert-
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	SDL_GL_SwapWindow(window);
 }
 
 void render::line(

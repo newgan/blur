@@ -220,15 +220,15 @@ void main::render_pending(ui::Container& container, const std::vector<std::share
 		render_title_text,
 		gfx::Color::white(),
 		fonts::smaller_header_font,
-		FONT_CENTERED_X
+		FONT_CENTERED_X | FONT_OUTLINE
 	);
 
-	auto video = ui::add_video(
-		"test video",
-		container,
-		pending_video->video_path,
-		gfx::Size(container.get_usable_rect().w, container.get_usable_rect().h / 2)
-	);
+	std::vector<std::filesystem::path> video_paths;
+	for (const auto& pv : pending) {
+		video_paths.push_back(pv->video_path);
+	}
+
+	auto video = ui::add_videos("test video", container, video_paths);
 
 	if (video) {
 		auto video_rect = (*video)->element->rect;

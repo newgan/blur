@@ -226,10 +226,6 @@ namespace u {
 			std::is_const_v<container_type>,
 			typename container_type::const_iterator,
 			typename container_type::iterator>;
-		using pointer_type = std::conditional_t<
-			std::is_const_v<container_type>,
-			typename container_type::const_pointer,
-			typename container_type::pointer>;
 		using reference_type = std::conditional_t<
 			std::is_const_v<container_type>,
 			typename container_type::const_reference,
@@ -237,7 +233,7 @@ namespace u {
 
 		constexpr enumerate_wrapper(container_type& c) : container(c) {}
 
-		struct enumerate_wrapper_iter {
+		struct iter {
 			size_t index;
 			iterator_type value;
 
@@ -245,23 +241,59 @@ namespace u {
 				return value != other;
 			}
 
-			constexpr enumerate_wrapper_iter& operator++() {
+			constexpr iter& operator++() {
 				++index;
 				++value;
 				return *this;
 			}
 
 			constexpr std::pair<size_t, reference_type> operator*() {
-				return std::pair<size_t, reference_type>{ index, *value };
+				return { index, *value };
 			}
 		};
 
-		constexpr enumerate_wrapper_iter begin() {
+		struct reverse_iter {
+			size_t index;
+			std::reverse_iterator<iterator_type> value;
+
+			constexpr bool operator!=(const std::reverse_iterator<iterator_type>& other) const {
+				return value != other;
+			}
+
+			constexpr reverse_iter& operator++() {
+				++value;
+				--index;
+				return *this;
+			}
+
+			constexpr std::pair<size_t, reference_type> operator*() {
+				return { index, *value };
+			}
+		};
+
+		constexpr iter begin() {
 			return { 0, std::begin(container) };
 		}
 
 		constexpr iterator_type end() {
 			return std::end(container);
+		}
+
+		// --- Reverse range wrapper ---
+		struct reverse_range {
+			enumerate_wrapper& parent;
+
+			constexpr reverse_iter begin() {
+				return { parent.container.size() - 1, std::rbegin(parent.container) };
+			}
+
+			constexpr std::reverse_iterator<iterator_type> end() {
+				return std::rend(parent.container);
+			}
+		};
+
+		constexpr reverse_range reverse() {
+			return reverse_range{ *this };
 		}
 
 		container_type& container;

@@ -383,27 +383,26 @@ std::vector<int16_t> u::get_video_waveform(const std::filesystem::path& path) {
 	namespace bp = boost::process;
 
 	bp::ipstream pipe_stream;
-	bp::child c(
-		boost::filesystem::path{ blur.ffmpeg_path },
-		"-v",
-		"error",
-		"-i",
-		path.string(),
-		"-f",
-		"s16le",
-		"-acodec",
-		"pcm_s16le",
-		"-ac",
-		"1",
-		"-ar",
-		"44100",
-		"-",
+
+	auto c = u::run_command(
+		blur.ffmpeg_path,
+		{
+			"-v",
+			"error",
+			"-i",
+			path.string(),
+			"-f",
+			"s16le",
+			"-acodec",
+			"pcm_s16le",
+			"-ac",
+			"1",
+			"-ar",
+			"44100",
+			"-",
+		},
 		bp::std_out > pipe_stream,
 		bp::std_err.null()
-#ifdef _WIN32
-			,
-		bp::windows::create_no_window
-#endif
 	);
 
 	std::vector<int16_t> samples;

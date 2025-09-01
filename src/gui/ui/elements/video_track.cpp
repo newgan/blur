@@ -37,7 +37,7 @@ namespace {
 		auto& video_track_data = std::get<ui::VideoTrackElementData>(element.element->data);
 		auto& progress_anim = element.animations.at(ui::hasher("progress"));
 
-		auto progress_percent = video_track_data.video_data.player->get_percent_pos();
+		auto progress_percent = video_track_data.video_data.players[0]->get_percent_pos();
 		if (progress_percent)
 			progress_anim.set_goal(*progress_percent / 100.f);
 	}
@@ -98,7 +98,7 @@ void ui::render_video_track(const Container& container, const AnimatedElement& e
 	progress_anim *= (1.f - left_grab);
 	progress_anim *= (1.f - right_grab);
 
-	if (!video_track_data.video_data.player || !video_track_data.video_data.player->is_video_ready())
+	if (!video_track_data.video_data.players[0] || !video_track_data.video_data.players[0]->is_video_ready())
 		return;
 
 	auto rect = element.element->rect.shrink(1);
@@ -188,12 +188,12 @@ bool ui::update_video_track(const Container& container, AnimatedElement& element
 				*grab.var_ptr = mouse_percent;
 
 				// video_track_data.video_data.player->seek(mouse_percent, true, true);
-				video_track_data.video_data.player->set_end(mouse_percent * 10.f);
+				video_track_data.video_data.players[0]->set_end(mouse_percent * 10.f);
 
 				return true;
 			}
 			else {
-				video_track_data.video_data.player->set_paused(true);
+				video_track_data.video_data.players[0]->set_paused(true);
 
 				reset_active_element();
 			}
@@ -218,7 +218,7 @@ bool ui::update_video_track(const Container& container, AnimatedElement& element
 
 			float mouse_percent = rect.mouse_percent_x();
 
-			video_track_data.video_data.player->seek(mouse_percent, true, false);
+			video_track_data.video_data.players[0]->seek(mouse_percent, true, false);
 
 			if (seeking_anim.current == 0.f) // new seek, start from current. otherwise smoothly animate from last seek
 				seek_anim.current = progress_anim.current;
@@ -232,7 +232,7 @@ bool ui::update_video_track(const Container& container, AnimatedElement& element
 		}
 	}
 
-	if (!video_track_data.video_data.player->get_queued_seek())
+	if (!video_track_data.video_data.players[0]->get_queued_seek())
 		seeking_anim.set_goal(0.f);
 
 	return false;
@@ -243,7 +243,7 @@ ui::AnimatedElement* ui::add_video_track(
 ) {
 	gfx::Size size(std::max(MIN_TRACK_WIDTH, width), TRACK_HEIGHT);
 
-	auto waveform = get_waveform(video_data.video_path);
+	auto waveform = get_waveform(video_data.video_paths[0]);
 	if (!waveform)
 		return {};
 

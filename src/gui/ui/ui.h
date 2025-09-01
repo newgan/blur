@@ -133,12 +133,12 @@ namespace ui {
 	};
 
 	struct VideoElementData {
-		std::filesystem::path video_path;
-		std::shared_ptr<VideoPlayer> player;
+		std::vector<std::filesystem::path> video_paths;
+		std::vector<std::shared_ptr<VideoPlayer>> players;
 		bool loading;
 
 		bool operator==(const VideoElementData& other) const {
-			return video_path == other.video_path && loading == other.loading;
+			return video_paths == other.video_paths && players == other.players && loading == other.loading;
 		}
 	};
 
@@ -448,11 +448,10 @@ namespace ui {
 
 	void render_image(const Container& container, const AnimatedElement& element);
 
-	void render_video(const Container& container, const AnimatedElement& element);
-	bool update_video(const Container& container, AnimatedElement& element);
-	void remove_video(AnimatedElement& element);
+	void render_videos(const Container& container, const AnimatedElement& element);
+	bool update_videos(const Container& container, AnimatedElement& element);
+	void remove_videos(AnimatedElement& element);
 
-	void render_videos();
 	void handle_videos_event(const SDL_Event& event, bool& to_render);
 
 	void render_button(const Container& container, const AnimatedElement& element);
@@ -568,8 +567,8 @@ namespace ui {
 		gfx::Color image_color = gfx::Color::white()
 	); // use image_id to distinguish images that have the same filename and reload it (e.g. if its updated)
 
-	std::optional<AnimatedElement*> add_video(
-		const std::string& id, Container& container, const std::filesystem::path& video_path, const gfx::Size& max_size
+	std::optional<AnimatedElement*> add_videos(
+		const std::string& id, Container& container, const std::vector<std::filesystem::path>& video_paths
 	);
 
 	AnimatedElement* add_button(
