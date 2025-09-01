@@ -166,13 +166,13 @@ bool ui::update_video_track(const Container& container, AnimatedElement& element
 	for (auto& grab : grabs) {
 		std::string action = "video track grab " + std::string(grab.name);
 
-		if (!get_active_element()) {
-			grab.hovered = grab.rect.contains(keys::mouse_pos) && set_hovered_element(element);
-			if (grab.hovered) {
-				set_cursor(SDL_SYSTEM_CURSOR_POINTER);
-				if (keys::is_mouse_down()) {
-					set_active_element(element, action);
-				}
+		grab.hovered = grab.rect.contains(keys::mouse_pos) && set_hovered_element(element);
+
+		if (grab.hovered) {
+			set_cursor(SDL_SYSTEM_CURSOR_POINTER);
+
+			if (!get_active_element() && keys::is_mouse_down()) {
+				set_active_element(element, action);
 			}
 		}
 
