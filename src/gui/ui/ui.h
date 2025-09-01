@@ -34,8 +34,7 @@ namespace ui {
 		SEPARATOR,
 		WEIGHTING_GRAPH,
 		TABS,
-		HINT,
-		VIDEO_TRACK
+		HINT
 	};
 
 	struct BarElementData {
@@ -133,12 +132,24 @@ namespace ui {
 	};
 
 	struct VideoElementData {
-		std::vector<std::filesystem::path> video_paths;
-		std::vector<std::shared_ptr<VideoPlayer>> players;
-		bool loading;
+		struct Video {
+			std::filesystem::path path;
+			std::shared_ptr<VideoPlayer> player;
+			gfx::Size size;
+			std::vector<int16_t>* waveform;
+
+			bool operator==(const Video& other) const = default;
+		};
+
+		std::vector<Video> videos;
+		gfx::Size active_video_size;
+		size_t* index;
+		float* start;
+		float* end;
 
 		bool operator==(const VideoElementData& other) const {
-			return video_paths == other.video_paths && players == other.players && loading == other.loading;
+			return videos == other.videos && active_video_size == other.active_video_size && index == other.index &&
+			       start == other.start && end == other.end;
 		}
 	};
 
@@ -273,18 +284,6 @@ namespace ui {
 		}
 	};
 
-	struct VideoTrackElementData {
-		VideoElementData video_data;
-		std::vector<int16_t>* waveform;
-		float* start;
-		float* end;
-
-		bool operator==(const VideoTrackElementData& other) const {
-			return video_data == other.video_data && waveform == other.waveform && start == other.start &&
-			       end == other.end;
-		}
-	};
-
 	using ElementData = std::variant<
 		BarElementData,
 		TextElementData,
@@ -299,8 +298,7 @@ namespace ui {
 		SeparatorElementData,
 		WeightingGraphElementData,
 		TabsElementData,
-		HintElementData,
-		VideoTrackElementData>;
+		HintElementData>;
 
 	struct AnimationState {
 		float speed;
@@ -482,9 +480,6 @@ namespace ui {
 
 	void render_hint(const Container& container, const AnimatedElement& element);
 
-	void render_video_track(const Container& container, const AnimatedElement& element);
-	bool update_video_track(const Container& container, AnimatedElement& element);
-
 	void reset_container(
 		Container& container,
 		SDL_Window* window,
@@ -568,7 +563,12 @@ namespace ui {
 	); // use image_id to distinguish images that have the same filename and reload it (e.g. if its updated)
 
 	std::optional<AnimatedElement*> add_videos(
-		const std::string& id, Container& container, const std::vector<std::filesystem::path>& video_paths
+		const std::string& id,
+		Container& container,
+		const std::vector<std::filesystem::path>& video_paths,
+		size_t& index,
+		float& start,
+		float& end
 	);
 
 	AnimatedElement* add_button(
@@ -665,15 +665,6 @@ namespace ui {
 		const std::vector<std::string>& paragraphs,
 		gfx::Color color,
 		const render::Font& font
-	);
-
-	AnimatedElement* add_video_track(
-		const std::string& id,
-		Container& container,
-		int width,
-		const VideoElementData& video_data,
-		float& start,
-		float& end
 	);
 
 	AnimatedElement* add_separator(const std::string& id, Container& container, SeparatorStyle style);

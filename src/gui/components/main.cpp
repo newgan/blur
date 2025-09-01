@@ -203,7 +203,8 @@ void main::render_progress(
 }
 
 void main::render_pending(ui::Container& container, const std::vector<std::shared_ptr<tasks::PendingVideo>>& pending) {
-	size_t pending_index = 0;
+	static size_t pending_index = 0;
+	pending_index = (size_t)std::clamp((int)pending_index, 0, int(pending.size() - 1));
 
 	auto& pending_video = pending[pending_index];
 
@@ -228,17 +229,7 @@ void main::render_pending(ui::Container& container, const std::vector<std::share
 		video_paths.push_back(pv->video_path);
 	}
 
-	auto video = ui::add_videos("test video", container, video_paths);
-
-	if (video) {
-		auto video_rect = (*video)->element->rect;
-
-		const auto& video_data = std::get<ui::VideoElementData>((*video)->element->data);
-
-		ui::add_video_track(
-			"test video track", container, video_rect.w, video_data, pending_video->start, pending_video->end
-		);
-	}
+	ui::add_videos("test video", container, video_paths, pending_index, pending_video->start, pending_video->end);
 }
 
 void main::render_home(ui::Container& container) {
