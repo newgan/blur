@@ -434,6 +434,9 @@ namespace ui {
 
 	void render_image(const Container& container, const AnimatedElement& element);
 
+	void render_video_track(
+		const Container& container, const AnimatedElement& element, std::optional<FrameData> video_track
+	);
 	void render_video(const Container& container, const AnimatedElement& element);
 	bool update_video(const Container& container, AnimatedElement& element);
 	void remove_video(AnimatedElement& element);

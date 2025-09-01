@@ -61,6 +61,23 @@ void ui::handle_videos_event(const SDL_Event& event, bool& to_render) {
 	}
 }
 
+void ui::render_video_track(
+	const Container& container, const AnimatedElement& element, std::optional<FrameData> frame_data
+) {
+	const auto& video_data = std::get<VideoElementData>(element.element->data);
+	float anim = element.animations.at(hasher("main")).current;
+
+	auto usable_rect = element.element->rect.expand(2);
+
+	render::line({ usable_rect.x, usable_rect.y2() }, { usable_rect.x2(), usable_rect.y2() }, gfx::Color::green());
+
+	if (frame_data) {
+		float perc = static_cast<float>(frame_data->current_frame) / static_cast<float>(frame_data->total_frames);
+		auto progress = perc * usable_rect.w;
+		render::circle_filled({ static_cast<int>(usable_rect.x + progress), usable_rect.y2() }, 99, gfx::Color::red());
+	}
+}
+
 void ui::render_video(const Container& container, const AnimatedElement& element) {
 	const auto& video_data = std::get<VideoElementData>(element.element->data);
 
@@ -99,6 +116,8 @@ void ui::render_video(const Container& container, const AnimatedElement& element
 			fonts::dejavu
 		);
 	}
+
+	render_video_track(container, element, frame_data);
 }
 
 bool ui::update_video(const Container& container, AnimatedElement& element) {
