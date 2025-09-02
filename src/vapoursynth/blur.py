@@ -64,11 +64,6 @@ else:
         fpsden=fps_den if fps_den != -1 else None,
     )
 
-audio = core.bs.AudioSource(
-    source=video_path,
-    cachemode=0,
-)
-
 # input timescale
 if settings["timescale"]:
     input_timescale = float(settings["input_timescale"])
@@ -287,5 +282,5 @@ if settings["filters"]:
             ),
         )
 
-video.set_output(0)
-audio.set_output(1)
+
+video.set_output()

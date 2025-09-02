@@ -3,8 +3,7 @@
 #include "config_app.h"
 
 struct RenderCommands {
-	std::vector<std::string> vspipe_video;
-	std::vector<std::string> vspipe_audio;
+	std::vector<std::string> vspipe;
 	std::vector<std::string> ffmpeg;
 	bool vspipe_will_stop_early; // for frame renders, stopping early is expected, so using this to selectively ignore
 	                             // vspipe response code not being 0
@@ -26,7 +25,7 @@ namespace rendering {
 		void resume(int pid, const std::shared_ptr<RenderState>& state);
 
 		tl::expected<PipelineResult, std::string> execute_pipeline(
-			RenderCommands commands,
+			const RenderCommands& commands,
 			const std::shared_ptr<RenderState>& state,
 			bool debug,
 			const std::function<void()>& progress_callback
@@ -98,7 +97,7 @@ namespace rendering {
 		friend void detail::resume(int pid, const std::shared_ptr<RenderState>& state);
 
 		friend tl::expected<detail::PipelineResult, std::string> detail::execute_pipeline(
-			RenderCommands commands,
+			const RenderCommands& commands,
 			const std::shared_ptr<RenderState>& state,
 			bool debug,
 			const std::function<void()>& progress_callback
@@ -154,8 +153,8 @@ namespace rendering {
 			const BlurSettings& blur_settings, const GlobalAppSettings& app_settings
 		);
 
-		std::vector<std::string> build_vspipe_args(
-			const std::filesystem::path& input_path, const nlohmann::json& merged_settings, bool is_video
+		std::vector<std::string> build_base_vspipe_args(
+			const std::filesystem::path& input_path, const nlohmann::json& merged_settings
 		);
 
 		boost::process::native_environment setup_environment();
@@ -180,7 +179,7 @@ namespace rendering {
 		void resume(int pid, const std::shared_ptr<RenderState>& state);
 
 		tl::expected<PipelineResult, std::string> execute_pipeline(
-			RenderCommands commands,
+			const RenderCommands& commands,
 			const std::shared_ptr<RenderState>& state,
 			bool debug,
 			const std::function<void()>& progress_callback
