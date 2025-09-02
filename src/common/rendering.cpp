@@ -345,6 +345,9 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 			while (ffmpeg_process.running() && vspipe_stderr.get(ch)) {
 				if (ch == '\n') {
 					vspipe_errors << line << '\n';
+
+					DEBUG_LOG("[vspipe error] {}", line);
+
 					line.clear();
 				}
 				else if (ch == '\r') {
@@ -416,6 +419,8 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 			std::string line;
 			while (std::getline(vspipe_audio_stderr, line)) {
 				vspipe_audio_errors << line << '\n';
+
+				DEBUG_LOG("[vspipe audio error] {}", line);
 			}
 		});
 
@@ -423,6 +428,8 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 			std::string line;
 			while (std::getline(ffmpeg_stderr, line)) {
 				ffmpeg_errors << line << '\n';
+
+				DEBUG_LOG("[ffmpeg error] {}", line);
 			}
 		});
 
