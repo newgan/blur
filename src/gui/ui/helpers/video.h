@@ -79,6 +79,14 @@ public:
 		m_start_percent = percent;
 	}
 
+	[[nodiscard]] bool is_focused_player() const {
+		return m_focused_player;
+	}
+
+	void set_focused_player(bool focused) {
+		m_focused_player = focused;
+	}
+
 	std::optional<Seek> get_queued_seek() {
 		std::lock_guard<std::mutex> lock(m_mutex);
 		return m_queued_seek;
@@ -104,6 +112,7 @@ private:
 	int m_current_height{};
 
 	bool m_video_loaded{};
+	bool m_focused_player{};
 
 	std::mutex m_mutex;
 	std::optional<Seek> m_queued_seek;

@@ -217,7 +217,7 @@ namespace {
 
 void ui::handle_videos_event(const SDL_Event& event, bool& to_render) {
 	for (auto& [id, player] : video_players) {
-		if (player) {
+		if (player->is_focused_player() || !player->is_video_ready()) {
 			switch (event.type) {
 				case SDL_EVENT_KEY_DOWN:
 					player->handle_key_press(event.key.key);
@@ -507,7 +507,15 @@ bool update_videos_actual(const ui::Container& container, ui::AnimatedElement& e
 		if (rects[i].contains(keys::mouse_pos)) {
 			if (keys::is_mouse_down()) {
 				keys::on_mouse_press_handled(SDL_BUTTON_LEFT);
+
 				*video_data.index = i;
+
+				// Reset focus state on all players
+				for (auto [j, video] : u::enumerate(video_data.videos)) {
+					if (video.player) {
+						video.player->set_focused_player(j == i);
+					}
+				}
 			}
 		}
 	}
@@ -593,8 +601,13 @@ std::optional<ui::AnimatedElement*> ui::add_videos(
 			}
 		);
 
-		if (i == index)
+		if (i == index) {
 			active_video_size = size;
+			player->set_focused_player(true);
+		}
+		else {
+			player->set_focused_player(false);
+		}
 	}
 
 	auto positions = get_positions(container.current_position, active_video_size);
