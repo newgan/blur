@@ -388,7 +388,9 @@ tl::expected<rendering::detail::PipelineResult, std::string> rendering::detail::
 			return PipelineResult{ .stopped = true };
 
 		if ((!commands.vspipe_will_stop_early && vspipe_process.exit_code() != 0) || ffmpeg_process.exit_code() != 0) {
-			return tl::unexpected(vspipe_errors.str() + ffmpeg_errors.str());
+			return tl::unexpected(
+				std::format("--- [vspipe] ---\n{}\n--- [ffmpeg] ---\n{}", vspipe_errors.str(), ffmpeg_errors.str())
+			);
 		}
 
 		return PipelineResult{ .stopped = false };
