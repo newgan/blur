@@ -365,49 +365,48 @@ bool update_track(
 ) {
 	const auto& video_data = std::get<ui::VideoElementData>(element.element->data);
 
-	auto& progress_anim = element.animations.at(ui::hasher("progress"));
-	auto& seeking_anim = element.animations.at(ui::hasher("seeking"));
-	auto& seek_anim = element.animations.at(ui::hasher("seek"));
-
-	// Grab handle data
-	struct GrabHandle {
-		const char* name{};
-		gfx::Rect rect;
-		ui::AnimationState& anim;
-		float* var_ptr{};
-
-		bool hovered = false;
-	};
+	bool updated = false;
 
 	auto grab_rects = get_grab_rects(element, rect);
 
+	struct GrabHandle {
+		gfx::Rect rect;
+		ui::AnimationState& anim;
+		float* var_ptr;
+		void (*update_fn)(const ui::VideoElementData::Video&, float);
+		bool hovered = false;
+	};
+
 	std::array grabs = {
 		GrabHandle{
-			.name = "left",
 			.rect = grab_rects.left.expand(GRAB_CLICK_EXPANSION),
 			.anim = element.animations.at(ui::hasher("left_grab")),
 			.var_ptr = video_data.start,
+			.update_fn =
+				[](const auto& v, float p) {
+					v.player->set_start(p);
+				},
 		},
 		GrabHandle{
-			.name = "right",
 			.rect = grab_rects.right.expand(GRAB_CLICK_EXPANSION),
 			.anim = element.animations.at(ui::hasher("right_grab")),
 			.var_ptr = video_data.end,
+			.update_fn =
+				[](const auto& v, float p) {
+					v.player->set_end(p);
+				},
 		},
 	};
 
-	// Process both grab handles
-	for (auto& grab : grabs) {
-		std::string action = "video track grab " + std::string(grab.name);
+	for (auto [i, grab] : u::enumerate(grabs)) {
+		std::string action = "grab_" + std::to_string(i);
 
 		grab.hovered = grab.rect.contains(keys::mouse_pos) && set_hovered_element(element);
 
 		if (grab.hovered) {
 			ui::set_cursor(SDL_SYSTEM_CURSOR_POINTER);
-
-			if (!ui::get_active_element() && keys::is_mouse_down()) {
+			if (!ui::get_active_element() && keys::is_mouse_down())
 				ui::set_active_element(element, action);
-			}
 		}
 
 		if (is_active_element(element, action)) {
@@ -417,30 +416,23 @@ bool update_track(
 				float mouse_percent =
 					rect.mouse_percent_x(); // TODO: when you initially click it if you arent exactly at the right spot
 				                            // itll shift the grab a little which is annoying
-
 				*grab.var_ptr = mouse_percent;
-
-				if (strcmp(grab.name, "right") == 0) {
-					video.player->set_end(mouse_percent);
-				}
-				else if (strcmp(grab.name, "left") == 0) {
-					video.player->set_start(mouse_percent);
-				}
-
-				return true;
+				grab.update_fn(video, mouse_percent);
+				updated = true;
 			}
 			else {
 				video.player->set_paused(true);
-
 				ui::reset_active_element();
 			}
 		}
-
 		grab.anim.set_goal(grab.hovered ? 0.5f : 0.f);
 	}
 
-	bool hovered =
-		!grabs[0].hovered && !grabs[1].hovered && rect.contains(keys::mouse_pos) && set_hovered_element(element);
+	auto& progress_anim = element.animations.at(ui::hasher("progress"));
+	auto& seeking_anim = element.animations.at(ui::hasher("seeking"));
+	auto& seek_anim = element.animations.at(ui::hasher("seek"));
+
+	bool hovered = !updated && rect.contains(keys::mouse_pos) && set_hovered_element(element);
 	bool active = ui::get_active_element() == &element;
 
 	if (hovered) {
@@ -462,7 +454,7 @@ bool update_track(
 
 			seek_anim.set_goal(mouse_percent);
 
-			return true;
+			updated = true;
 		}
 		else {
 			ui::reset_active_element();
@@ -472,7 +464,7 @@ bool update_track(
 	if (!video.player->get_queued_seek())
 		seeking_anim.set_goal(0.f);
 
-	return false;
+	return updated;
 }
 
 bool update_videos_actual(const ui::Container& container, ui::AnimatedElement& element, gfx::Rect rect) {
