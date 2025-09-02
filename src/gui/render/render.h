@@ -95,6 +95,8 @@ namespace render {
 	bool init(SDL_Window* window, const SDL_GLContext& context);
 	void destroy();
 
+	// TODO: antialiased doesnt do anything anywhere
+
 	void line(
 		const gfx::Point& pos1,
 		const gfx::Point& pos2,
@@ -166,14 +168,7 @@ namespace render {
 		float thickness = 1.f
 	);
 
-	void triangle_filled(
-		const gfx::Point& p1,
-		const gfx::Point& p2,
-		const gfx::Point& p3,
-		const gfx::Color& col,
-		float thickness = 1.f,
-		bool anti_aliased = false
-	);
+	void triangle_filled(const gfx::Point& p1, const gfx::Point& p2, const gfx::Point& p3, const gfx::Color& col);
 
 	void triangle_stroke(
 		const gfx::Point& p1,

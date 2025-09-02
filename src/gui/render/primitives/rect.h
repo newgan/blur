@@ -48,6 +48,10 @@ namespace gfx {
 		[[nodiscard]] constexpr Point top_right() const;
 		[[nodiscard]] constexpr Point bottom_left() const;
 		[[nodiscard]] constexpr Point bottom_right() const;
+		[[nodiscard]] constexpr Point top_center() const;
+		[[nodiscard]] constexpr Point bottom_center() const;
+		[[nodiscard]] constexpr Point left_center() const;
+		[[nodiscard]] constexpr Point right_center() const;
 		[[nodiscard]] constexpr Point center() const;
 
 		[[nodiscard]] constexpr Point origin() const {

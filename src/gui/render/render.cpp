@@ -395,14 +395,7 @@ void render::quadrilateral_stroke(
 	);
 }
 
-void render::triangle_filled(
-	const gfx::Point& p1,
-	const gfx::Point& p2,
-	const gfx::Point& p3,
-	const gfx::Color& col,
-	float thickness,
-	bool anti_aliased
-) {
+void render::triangle_filled(const gfx::Point& p1, const gfx::Point& p2, const gfx::Point& p3, const gfx::Color& col) {
 	imgui.drawlist->AddTriangleFilled(p1, p2, p3, col.to_imgui());
 }
 

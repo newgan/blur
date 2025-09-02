@@ -304,9 +304,11 @@ namespace ui {
 		float speed;
 		float current = 0.f;
 		float goal = 0.f;
+		float snap = 0.001f;
 		bool complete = false;
 
-		AnimationState(float speed, float value = 0.f) : speed(speed), current(value), goal(value) {}
+		AnimationState(float speed, float value = 0.f, float snap = 0.001f)
+			: speed(speed), current(value), goal(value), snap(snap) {}
 
 		// delete default constructor since we always need a duration
 		AnimationState() = delete;
@@ -318,7 +320,7 @@ namespace ui {
 		bool update(float delta_time) {
 			float old_current = current;
 			current = std::clamp(
-				u::lerp(current, goal, speed * delta_time, 0.001f), std::min(current, goal), std::max(current, goal)
+				u::lerp(current, goal, speed * delta_time, snap), std::min(current, goal), std::max(current, goal)
 			);
 
 			complete = current == goal;

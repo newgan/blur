@@ -16,7 +16,8 @@ namespace tasks {
 	void add_sample_video(const std::filesystem::path& path_str);
 	void process_pending_files();
 
-	void start_pending_video(size_t index);
+	void cancel_pending();
+	void start_pending_videos();
 
 	std::vector<std::shared_ptr<tasks::PendingVideo>> get_pending_copy();
 }

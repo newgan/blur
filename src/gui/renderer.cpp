@@ -150,13 +150,14 @@ bool gui::renderer::redraw_window(bool rendered_last, bool want_to_render) {
 					case components::main::MainScreen::PENDING: {
 						const auto& pending = tasks::get_pending_copy();
 
-						if (pending.size() > 0) {
-							if (pending[0]->video_info) {
-								ui::add_button("go button", nav_container, "Go bro", fonts::dejavu, [] {
-									tasks::start_pending_video(0);
-								});
-							}
-						}
+						ui::add_button("go button", nav_container, "Start", fonts::dejavu, [] {
+							tasks::start_pending_videos();
+						});
+
+						ui::set_next_same_line(nav_container);
+						ui::add_button("cancel button", nav_container, "Cancel", fonts::dejavu, [] {
+							tasks::cancel_pending();
+						});
 
 						components::main::open_files_button(nav_container, "Add files");
 

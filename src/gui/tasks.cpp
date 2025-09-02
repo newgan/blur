@@ -179,41 +179,45 @@ void tasks::add_sample_video(const std::filesystem::path& path_str) {
 	gui::components::configs::just_added_sample_video = true;
 }
 
-void tasks::start_pending_video(size_t index) {
+void tasks::cancel_pending() {
+	std::lock_guard<std::mutex> lock(pending_videos_mutex);
+	pending_videos.clear();
+}
+
+void tasks::start_pending_videos() {
 	std::lock_guard<std::mutex> lock(pending_videos_mutex);
 
-	if (index >= pending_videos.size()) {
-		// TODO MR: handle
-		return;
-	}
+	while (!pending_videos.empty()) {
+		auto pending_video = std::move(pending_videos.front());
+		pending_videos.erase(pending_videos.begin());
 
-	auto pending_video = std::move(pending_videos[index]);
-	pending_videos.erase(pending_videos.begin() + index);
+		if (!pending_video->video_info)
+			continue;
 
-	if (!pending_video->video_info)
-		return;
+		auto app_config = config_app::get_app_config();
 
-	auto app_config = config_app::get_app_config();
+		auto queue_config_res = rendering::video_render_queue.add(
+			pending_video->video_path,
+			*pending_video->video_info,
+			{},
+			app_config,
+			{},
+			pending_video->start,
+			pending_video->end,
+			{},
+			[](const rendering::VideoRenderDetails& render,
+		       const tl::expected<rendering::RenderResult, std::string>& result) {
+				gui::renderer::on_render_finished(render, result);
+			}
+		);
 
-	auto queue_config_res = rendering::video_render_queue.add(
-		pending_video->video_path,
-		*pending_video->video_info,
-		{},
-		app_config,
-		{},
-		pending_video->start,
-		pending_video->end,
-		{},
-		[](const rendering::VideoRenderDetails& render,
-	       const tl::expected<rendering::RenderResult, std::string>& result) {
-			gui::renderer::on_render_finished(render, result);
+		// Show notification if config override is used
+		if (app_config.notify_about_config_override) {
+			if (!queue_config_res.is_global_config)
+				gui::components::notifications::add(
+					"Using override config from video folder", ui::NotificationType::INFO
+				);
 		}
-	);
-
-	// TODO MR: show this in pending screen
-	if (app_config.notify_about_config_override) {
-		if (!queue_config_res.is_global_config)
-			gui::components::notifications::add("Using override config from video folder", ui::NotificationType::INFO);
 	}
 }
 

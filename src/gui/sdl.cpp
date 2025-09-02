@@ -64,7 +64,7 @@ tl::expected<void, std::string> sdl::initialise() {
 	if (!window)
 		return tl::unexpected("Failed to create SDL window");
 
-	SDL_SetWindowMinimumSize(window, 450, 250);
+	SDL_SetWindowMinimumSize(window, MINIMUM_WINDOW_SIZE.w, MINIMUM_WINDOW_SIZE.h);
 
 	SDL_AddEventWatch(event_watcher, window);
 

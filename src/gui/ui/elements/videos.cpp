@@ -2,6 +2,7 @@
 #include "../../render/render.h"
 #include "../keys.h"
 #include "../helpers/video.h"
+#include "../../sdl.h"
 
 // videos
 constexpr gfx::Size LOADER_SIZE(20, 20);
@@ -12,12 +13,14 @@ constexpr int VIDEO_GAP = 30;
 
 // track
 constexpr int TRACK_GAP = 10;
-constexpr int MIN_TRACK_WIDTH = 250;
+constexpr int TRACK_SIDES_GAP = 45;
+constexpr int MIN_TRACK_WIDTH = sdl::MINIMUM_WINDOW_SIZE.w - (TRACK_SIDES_GAP * 2);
+
 constexpr int TRACK_HEIGHT = 40;
 constexpr int GRABS_THICKNESS = 1;
 constexpr int GRABS_LENGTH = 5;
-constexpr gfx::Color GRABS_COLOR(80, 80, 80);
-constexpr gfx::Color GRABS_ACTIVE_COLOR(175, 175, 175);
+constexpr gfx::Color GRABS_COLOR(175, 175, 175);
+constexpr gfx::Color GRABS_ACTIVE_COLOR(100, 100, 100);
 constexpr gfx::Size GRAB_CLICK_EXPANSION(15, 5);
 
 namespace {
@@ -125,7 +128,7 @@ namespace {
 
 		std::vector<gfx::Rect> rects;
 
-		float offset = element.animations.at(ui::hasher("video_offset")).current;
+		float offset = 0.f;
 
 		for (auto [i, video] : u::enumerate(video_data.videos)) {
 			gfx::Rect player_rect(rect.origin().offset_x(offset), video.size);
@@ -182,19 +185,41 @@ namespace {
 	}
 
 	// both
-	struct Positions {
-		gfx::Rect videos_rect;
-		gfx::Rect track_rect;
-	};
+	gfx::Rect get_video_rect(const gfx::Point& origin, const gfx::Size& video_size, float offset) {
+		return gfx::Rect{ origin.offset_x(offset), video_size };
+	}
 
-	Positions get_positions(const gfx::Point& origin, const gfx::Size& video_size) {
-		auto videos_rect = gfx::Rect{ origin, video_size };
-		auto track_rect = gfx::Rect{
-			videos_rect.bottom_left().offset_y(TRACK_GAP),
-			gfx::Size(std::max(videos_rect.w, MIN_TRACK_WIDTH), TRACK_HEIGHT),
+	gfx::Rect get_track_rect(const gfx::Point& origin, const gfx::Size& video_size) {
+		return gfx::Rect{
+			gfx::Point(origin.x, origin.y + video_size.h).offset_y(TRACK_GAP),
+			gfx::Size(MIN_TRACK_WIDTH, TRACK_HEIGHT),
 		};
+	}
 
-		return { .videos_rect = videos_rect, .track_rect = track_rect };
+	std::optional<float> get_offset(const ui::Element& element) {
+		auto& video_data = std::get<ui::VideoElementData>(element.data);
+
+		auto track_rect = get_track_rect(element.rect.origin(), video_data.active_video_size);
+
+		float offset = 0;
+		int last_width = 0;
+		for (int i = 0; i <= *video_data.index; ++i) {
+			// TODO MR: safety checks?
+			auto video = video_data.videos[i];
+			if (!video.player || !video.player->get_video_dimensions())
+				return {};
+
+			int width = video.size.w;
+
+			if (i != *video_data.index)
+				offset -= width + VIDEO_GAP; // shift left by widths + spacing
+			else
+				offset += (float)track_rect.w / 2 - (float)width / 2;
+
+			last_width = width;
+		}
+
+		return offset;
 	}
 
 	// cancer cause have to pointer
@@ -222,6 +247,17 @@ namespace {
 		if (progress_percent)
 			progress_anim.set_goal(*progress_percent / 100.f);
 	}
+
+	void update_offset(ui::AnimatedElement& element) {
+		auto& offset_anim = element.animations.at(ui::hasher("video_offset"));
+		auto offset = get_offset(*element.element);
+		if (offset) {
+			bool initial = offset_anim.goal == FLT_MAX;
+			if (initial)
+				offset_anim.current = *offset;
+			offset_anim.set_goal(*offset);
+		}
+	}
 }
 
 void ui::handle_videos_event(const SDL_Event& event, bool& to_render) {
@@ -240,14 +276,17 @@ void ui::handle_videos_event(const SDL_Event& event, bool& to_render) {
 	}
 }
 
-void render_videos_actual(const ui::Container& container, const ui::AnimatedElement& element, gfx::Rect rect) {
+void render_videos_actual(const ui::Container& container, const ui::AnimatedElement& element) {
 	const auto& video_data = std::get<ui::VideoElementData>(element.element->data);
 
 	float anim = element.animations.at(ui::hasher("main")).current;
+	float offset = element.animations.at(ui::hasher("video_offset")).current;
 
 	int alpha = anim * 255;
 
 	float fade_step = START_FADE / video_data.videos.size();
+
+	auto rect = get_video_rect(element.element->rect.origin(), video_data.active_video_size, offset);
 
 	std::vector<gfx::Rect> rects = get_video_rects(element, rect);
 
@@ -288,12 +327,14 @@ void render_videos_actual(const ui::Container& container, const ui::AnimatedElem
 	}
 }
 
-void render_track(const ui::Container& container, const ui::AnimatedElement& element, gfx::Rect rect) {
+void render_track(const ui::Container& container, const ui::AnimatedElement& element) {
 	const auto& video_data = std::get<ui::VideoElementData>(element.element->data);
 
 	auto active_video = get_active_video(element);
 	if (!active_video || !(*active_video)->player)
 		return;
+
+	auto rect = get_track_rect(element.element->rect.origin(), video_data.active_video_size);
 
 	float anim = element.animations.at(ui::hasher("main")).current;
 	float progress = element.animations.at(ui::hasher("progress")).current;
@@ -352,23 +393,18 @@ void render_track(const ui::Container& container, const ui::AnimatedElement& ele
 void ui::render_videos(const Container& container, const AnimatedElement& element) {
 	const auto& video_data = std::get<ui::VideoElementData>(element.element->data);
 
-	auto positions = get_positions(element.element->rect.origin(), video_data.active_video_size);
-
-	render_videos_actual(container, element, positions.videos_rect);
-	render_track(container, element, positions.track_rect);
-
-	auto grab_rects = get_grab_rects(element, positions.track_rect);
+	render_videos_actual(container, element);
+	render_track(container, element);
 }
 
 bool update_track(
-	const ui::Container& container,
-	ui::AnimatedElement& element,
-	const ui::VideoElementData::Video& video,
-	gfx::Rect rect
+	const ui::Container& container, ui::AnimatedElement& element, const ui::VideoElementData::Video& video
 ) {
 	const auto& video_data = std::get<ui::VideoElementData>(element.element->data);
 
 	bool updated = false;
+
+	auto rect = get_track_rect(element.element->rect.origin(), video_data.active_video_size);
 
 	auto grab_rects = get_grab_rects(element, rect);
 
@@ -378,6 +414,7 @@ bool update_track(
 		float* var_ptr;
 		void (*update_fn)(const ui::VideoElementData::Video&, float);
 		bool hovered = false;
+		bool active = false;
 	};
 
 	std::array grabs = {
@@ -414,6 +451,7 @@ bool update_track(
 
 		if (is_active_element(element, action)) {
 			if (keys::is_mouse_down()) {
+				grab.active = true;
 				grab.anim.set_goal(1.f);
 
 				float mouse_percent =
@@ -421,14 +459,17 @@ bool update_track(
 				                            // itll shift the grab a little which is annoying
 				*grab.var_ptr = mouse_percent;
 				grab.update_fn(video, mouse_percent);
-				updated = true;
 			}
 			else {
 				video.player->set_paused(true);
 				ui::reset_active_element();
 			}
 		}
-		grab.anim.set_goal(grab.hovered ? 0.5f : 0.f);
+
+		if (!grab.active)
+			grab.anim.set_goal(grab.hovered ? 0.5f : 0.f);
+
+		updated |= grab.active;
 	}
 
 	auto& progress_anim = element.animations.at(ui::hasher("progress"));
@@ -470,7 +511,7 @@ bool update_track(
 	return updated;
 }
 
-bool update_videos_actual(const ui::Container& container, ui::AnimatedElement& element, gfx::Rect rect) {
+bool update_videos_actual(const ui::Container& container, ui::AnimatedElement& element) {
 	const auto& video_data = std::get<ui::VideoElementData>(element.element->data);
 
 	auto active_video = get_active_video(element);
@@ -487,14 +528,10 @@ bool update_videos_actual(const ui::Container& container, ui::AnimatedElement& e
 		}
 	}
 
-	// update offset
-	float offset = 0;
-	for (int i = 0; i < *video_data.index; ++i) {
-		offset -= video_data.videos[i].size.w + VIDEO_GAP; // shift left by widths + spacing
-	}
+	auto track_rect = get_track_rect(element.element->rect.origin(), video_data.active_video_size);
 
 	auto& offset_anim = element.animations.at(ui::hasher("video_offset"));
-	offset_anim.set_goal(offset);
+	auto rect = get_video_rect(element.element->rect.origin(), video_data.active_video_size, offset_anim.current);
 
 	std::vector<gfx::Rect> rects = get_video_rects(element, rect);
 
@@ -528,12 +565,10 @@ bool ui::update_videos(const Container& container, AnimatedElement& element) {
 	if (!active_video)
 		return false;
 
-	auto positions = get_positions(element.element->rect.origin(), video_data.active_video_size);
-
 	bool res = false;
 
-	res |= update_videos_actual(container, element, positions.videos_rect);
-	res |= update_track(container, element, *(*active_video), positions.track_rect);
+	res |= update_videos_actual(container, element);
+	res |= update_track(container, element, *(*active_video));
 
 	return res;
 }
@@ -605,12 +640,17 @@ std::optional<ui::AnimatedElement*> ui::add_videos(
 		}
 	}
 
-	auto positions = get_positions(container.current_position, active_video_size);
+	auto track_rect = get_track_rect(container.current_position, active_video_size);
 
 	Element element(
 		id,
 		ElementType::VIDEO,
-		gfx::Rect(positions.videos_rect.origin(), positions.track_rect.max()),
+		gfx::Rect{
+			track_rect.x,
+			container.current_position.y,
+			track_rect.w,
+			track_rect.y2() - container.current_position.y,
+		},
 		VideoElementData{
 			.videos = std::move(videos),
 			.active_video_size = active_video_size,
@@ -629,7 +669,7 @@ std::optional<ui::AnimatedElement*> ui::add_videos(
 		container.element_gap,
 		{
 			{ hasher("main"), AnimationState(25.f) },
-			{ hasher("video_offset"), AnimationState(25.f) },
+			{ hasher("video_offset"), AnimationState(25.f, FLT_MAX, 1.f) },
 			{ hasher("progress"), AnimationState(70.f) },
 			{ hasher("seeking"), AnimationState(70.f) },
 			{ hasher("seek"), AnimationState(70.f) },
@@ -638,7 +678,9 @@ std::optional<ui::AnimatedElement*> ui::add_videos(
 		}
 	);
 
+	// some stuff has to update every time, not just on events
 	update_progress(*elem);
+	update_offset(*elem);
 
 	return elem;
 }
