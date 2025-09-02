@@ -503,33 +503,71 @@ tl::expected<rendering::RenderResult, std::string> rendering::detail::render_vid
 			std::format("fps_den={}", video_info.fps_den),
 			"-a",
 			"color_range=" + (video_info.color_range ? *video_info.color_range : "undefined"),
-			"-s",
-			std::to_string(
-				int((double)settings.blur_output_fps * video_info.duration * start)
-			), // TODO MR: make this exact?
-			"-e",
-			std::to_string(
-				int((double)settings.blur_output_fps * video_info.duration * end)
-			), // TODO MR: make this exact?
 		}
 	);
 
-	// build ffmpeg command
-	std::vector<std::string> ffmpeg_args = { "-loglevel",
-		                                     "error",
-		                                     "-hide_banner",
-		                                     "-stats",
-		                                     "-y",
-		                                     "-i",
-		                                     "-", // piped video
-		                                     "-fflags",
-		                                     "+genpts",
-		                                     "-i",
-		                                     u::path_to_string(input_path), // original for audio
-		                                     "-map",
-		                                     "0:v",
-		                                     "-map",
-		                                     "1:a?" };
+	if (start != 0.f) {
+		vspipe_args.insert(
+			vspipe_args.end() - 2,
+			{
+				"-s",
+				std::to_string(
+					int((double)settings.blur_output_fps * video_info.duration * start)
+				), // TODO MR: make this exact?
+			}
+		);
+	}
+
+	if (end != 1.f) {
+		// TODO MR: if this is like 0.999 does it still error? if you omit the 1.f check and do this then itll error
+		// with "Trim: last frame beyond clip end"
+		vspipe_args.insert(
+			vspipe_args.end() - 2,
+			{
+				"-e",
+				std::to_string(
+					int((double)settings.blur_output_fps * video_info.duration * end)
+				), // TODO MR: make this exact?
+			}
+		);
+	}
+	std::vector<std::string> ffmpeg_args = {
+		"-loglevel", "error",   "-hide_banner", "-stats", "-y", "-i", "-", // piped video
+		"-fflags",   "+genpts",
+	};
+
+	if (start != 0.f) {
+		ffmpeg_args.insert(
+			ffmpeg_args.end(),
+			{
+				"-ss",
+				std::to_string(video_info.duration * start),
+			}
+		);
+	}
+
+	if (end != 1.f) {
+		ffmpeg_args.insert(
+			ffmpeg_args.end(),
+			{
+				"-to",
+				std::to_string(video_info.duration * end),
+			}
+		);
+	}
+
+	// Add the remaining fixed args
+	ffmpeg_args.insert(
+		ffmpeg_args.end(),
+		{
+			"-i",
+			u::path_to_string(input_path),
+			"-map",
+			"0:v",
+			"-map",
+			"1:a?",
+		}
+	);
 
 	// add color metadata
 	auto color_args = detail::build_color_metadata_args(video_info);
