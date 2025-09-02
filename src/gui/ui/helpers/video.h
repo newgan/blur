@@ -75,6 +75,10 @@ public:
 		m_end_percent = percent;
 	}
 
+	void set_start(float percent) {
+		m_start_percent = percent;
+	}
+
 	std::optional<Seek> get_queued_seek() {
 		std::lock_guard<std::mutex> lock(m_mutex);
 		return m_queued_seek;
@@ -109,6 +113,7 @@ private:
 	std::atomic<bool> m_thread_exit{ false };
 
 	float m_end_percent{};
+	float m_start_percent{};
 
 	void initialize_mpv();
 

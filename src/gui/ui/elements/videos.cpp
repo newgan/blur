@@ -420,8 +420,12 @@ bool update_track(
 
 				*grab.var_ptr = mouse_percent;
 
-				// video_data.player->seek(mouse_percent, true, true);
-				video.player->set_end(mouse_percent * 10.f);
+				if (strcmp(grab.name, "right") == 0) {
+					video.player->set_end(mouse_percent);
+				}
+				else if (strcmp(grab.name, "left") == 0) {
+					video.player->set_start(mouse_percent);
+				}
 
 				return true;
 			}
