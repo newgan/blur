@@ -162,23 +162,6 @@ namespace {
 		}
 	}
 
-	void update_progress(ui::AnimatedElement& element) {
-		const auto& video_data = std::get<ui::VideoElementData>(element.element->data);
-
-		if (video_data.videos.size() == 0 || *video_data.index < 0 || *video_data.index >= video_data.videos.size())
-			return;
-
-		const auto& video = video_data.videos[*video_data.index];
-		if (!video.player)
-			return;
-
-		auto& progress_anim = element.animations.at(ui::hasher("progress"));
-
-		auto progress_percent = video.player->get_percent_pos();
-		if (progress_percent)
-			progress_anim.set_goal(*progress_percent / 100.f);
-	}
-
 	struct GrabRects {
 		gfx::Rect left;
 		gfx::Rect right;
@@ -212,6 +195,32 @@ namespace {
 		};
 
 		return { .videos_rect = videos_rect, .track_rect = track_rect };
+	}
+
+	// cancer cause have to pointer
+	std::optional<const ui::VideoElementData::Video*> get_active_video(const ui::AnimatedElement& element) {
+		const auto& video_data = std::get<ui::VideoElementData>(element.element->data);
+
+		if (video_data.videos.size() == 0 || *video_data.index < 0 || *video_data.index >= video_data.videos.size())
+			return {};
+
+		const auto& video = video_data.videos[*video_data.index];
+
+		return &video;
+	}
+
+	void update_progress(ui::AnimatedElement& element) {
+		const auto& video_data = std::get<ui::VideoElementData>(element.element->data);
+
+		auto active_video_player = get_active_video(element);
+		if (!active_video_player || !(*active_video_player)->player)
+			return;
+
+		auto& progress_anim = element.animations.at(ui::hasher("progress"));
+
+		auto progress_percent = (*active_video_player)->player->get_percent_pos();
+		if (progress_percent)
+			progress_anim.set_goal(*progress_percent / 100.f);
 	}
 }
 
@@ -282,11 +291,8 @@ void render_videos_actual(const ui::Container& container, const ui::AnimatedElem
 void render_track(const ui::Container& container, const ui::AnimatedElement& element, gfx::Rect rect) {
 	const auto& video_data = std::get<ui::VideoElementData>(element.element->data);
 
-	if (video_data.videos.size() == 0 || *video_data.index < 0 || *video_data.index >= video_data.videos.size())
-		return;
-
-	const auto& video = video_data.videos[*video_data.index];
-	if (!video.player)
+	auto active_video = get_active_video(element);
+	if (!active_video || !(*active_video)->player)
 		return;
 
 	float anim = element.animations.at(ui::hasher("main")).current;
@@ -322,9 +328,6 @@ void render_track(const ui::Container& container, const ui::AnimatedElement& ele
 	progress_anim *= (1.f - left_grab);
 	progress_anim *= (1.f - right_grab);
 
-	if (!video.player || !video.player->is_video_ready())
-		return;
-
 	rect = rect.shrink(1);
 
 	auto active_rect = rect;
@@ -343,7 +346,7 @@ void render_track(const ui::Container& container, const ui::AnimatedElement& ele
 		render::line(seek_point, seek_point.offset_y(rect.h), gfx::Color::white(75 * anim * seeking), false, 2.f);
 	}
 
-	render::waveform(rect, active_rect, gfx::Color::white(100 * anim), *video.waveform);
+	render::waveform(rect, active_rect, gfx::Color::white(100 * anim), *(*active_video)->waveform);
 }
 
 void ui::render_videos(const Container& container, const AnimatedElement& element) {
@@ -470,17 +473,17 @@ bool update_track(
 bool update_videos_actual(const ui::Container& container, ui::AnimatedElement& element, gfx::Rect rect) {
 	const auto& video_data = std::get<ui::VideoElementData>(element.element->data);
 
-	// TODO MR: idk if you even need this, been working fine without (it was bugged)
-	for (auto [i, video] : u::enumerate(video_data.videos)) {
-		if (i == *video_data.index) {
-			while (!ui::event_queue.empty()) {
-				auto& event = ui::event_queue.front();
+	auto active_video = get_active_video(element);
 
-				bool blah;
-				video.player->handle_mpv_event(event, blah);
+	if (active_video && (*active_video)->player) {
+		// TODO MR: idk if you even need this, been working fine without (it was bugged)
+		while (!ui::event_queue.empty()) {
+			auto& event = ui::event_queue.front();
 
-				ui::event_queue.erase(ui::event_queue.begin());
-			}
+			bool blah;
+			(*active_video)->player->handle_mpv_event(event, blah);
+
+			ui::event_queue.erase(ui::event_queue.begin());
 		}
 	}
 
@@ -500,6 +503,9 @@ bool update_videos_actual(const ui::Container& container, ui::AnimatedElement& e
 			if (keys::is_mouse_down()) {
 				keys::on_mouse_press_handled(SDL_BUTTON_LEFT);
 
+				if (active_video && (*active_video)->player)
+					(*active_video)->player->set_paused(true);
+
 				*video_data.index = i;
 
 				// Reset focus state on all players
@@ -518,11 +524,8 @@ bool update_videos_actual(const ui::Container& container, ui::AnimatedElement& e
 bool ui::update_videos(const Container& container, AnimatedElement& element) {
 	const auto& video_data = std::get<VideoElementData>(element.element->data);
 
-	if (video_data.videos.size() == 0 || *video_data.index < 0 || *video_data.index >= video_data.videos.size())
-		return false;
-
-	const auto& video = video_data.videos[*video_data.index];
-	if (!video.player)
+	auto active_video = get_active_video(element);
+	if (!active_video)
 		return false;
 
 	auto positions = get_positions(element.element->rect.origin(), video_data.active_video_size);
@@ -530,7 +533,7 @@ bool ui::update_videos(const Container& container, AnimatedElement& element) {
 	bool res = false;
 
 	res |= update_videos_actual(container, element, positions.videos_rect);
-	res |= update_track(container, element, video, positions.track_rect);
+	res |= update_track(container, element, *(*active_video), positions.track_rect);
 
 	return res;
 }
