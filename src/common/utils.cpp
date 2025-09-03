@@ -379,7 +379,7 @@ u::VideoInfo u::get_video_info(const std::filesystem::path& path) {
 	return info;
 }
 
-std::vector<int16_t> u::get_video_waveform(const std::filesystem::path& path) {
+std::vector<int16_t> u::get_video_waveform(const std::filesystem::path& path, int target_width) {
 	namespace bp = boost::process;
 
 	bp::ipstream pipe_stream;
@@ -405,25 +405,37 @@ std::vector<int16_t> u::get_video_waveform(const std::filesystem::path& path) {
 		bp::std_err.null()
 	);
 
-	std::vector<int16_t> samples;
 	std::vector<char> buffer(4096);
+	std::vector<int16_t> raw_samples;
 
 	while (pipe_stream.read(buffer.data(), buffer.size()) || pipe_stream.gcount() > 0) {
-		auto bytes_read = static_cast<std::size_t>(pipe_stream.gcount());
+		auto bytes_read = static_cast<size_t>(pipe_stream.gcount());
 
-		// Ensure we read full samples
 		if (bytes_read % 2 != 0)
 			--bytes_read;
 
-		std::vector<int16_t> chunk(bytes_read / 2);
-		std::memcpy(chunk.data(), buffer.data(), bytes_read);
-
-		samples.insert(samples.end(), chunk.begin(), chunk.end());
+		size_t sample_count = bytes_read / 2;
+		size_t old_size = raw_samples.size();
+		raw_samples.resize(raw_samples.size() + sample_count);
+		std::memcpy(&raw_samples[old_size], buffer.data(), bytes_read);
 	}
 
-	c.wait();
+	std::vector<int16_t> downsampled;
+	if (!raw_samples.empty()) {
+		size_t samples_per_pixel = std::max<size_t>(1, raw_samples.size() / target_width);
 
-	return samples;
+		for (size_t i = 0; i < raw_samples.size(); i += samples_per_pixel) {
+			float sum = 0.0f;
+			for (size_t j = i; j < std::min(i + samples_per_pixel, raw_samples.size()); ++j) {
+				auto sample = static_cast<float>(raw_samples[j]);
+				sum += sample * sample;
+			}
+			float rms = std::sqrt(sum / samples_per_pixel);
+			downsampled.push_back(static_cast<int16_t>(rms));
+		}
+	}
+
+	return downsampled;
 }
 
 bool u::test_hardware_device(const std::string& device_type) {

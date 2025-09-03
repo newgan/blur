@@ -151,7 +151,7 @@ namespace {
 			auto it = waveforms.find(key);
 
 			if (it == waveforms.end()) {
-				auto waveform = u::get_video_waveform(key);
+				auto waveform = u::get_video_waveform(key, MIN_TRACK_WIDTH);
 
 				auto insert_result = waveforms.insert({ key, waveform });
 				it = insert_result.first;
