@@ -151,6 +151,7 @@ namespace {
 			auto it = waveforms.find(key);
 
 			if (it == waveforms.end()) {
+				// todo: don't hardcode this, use calculated track rect
 				auto waveform = u::get_video_waveform(key, MIN_TRACK_WIDTH);
 
 				auto insert_result = waveforms.insert({ key, waveform });
